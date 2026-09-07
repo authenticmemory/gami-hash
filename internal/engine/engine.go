@@ -862,6 +862,13 @@ func (r *engineRun) hashFileOnce(abs string, buf []byte) (hashed, error) {
 	if before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) || n != after.Size() {
 		return got, errFileChanged
 	}
+	// The open handle may remain readable after its directory entry is deleted
+	// or replaced. Verify that the path still names this same file before
+	// accepting the digest.
+	current, err := os.Lstat(abs)
+	if err != nil || !current.Mode().IsRegular() || !os.SameFile(before, current) {
+		return got, errFileChanged
+	}
 	return got, nil
 }
 

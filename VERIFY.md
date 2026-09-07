@@ -14,7 +14,7 @@ source code — nothing added, nothing removed.
 ## Steps
 
 ```sh
-git clone <repository-url>
+git clone https://github.com/authenticmemory/gami-hash.git
 cd gami-hash
 git checkout <release-tag>          # e.g. v1.0.0
 ./build.sh v1.0.0                   # or the version you checked out
@@ -26,7 +26,7 @@ On Windows, instead of `build.sh` run the equivalent commands:
 ```powershell
 $env:CGO_ENABLED = "0"; $env:GOFLAGS = "-trimpath -buildvcs=false"
 $env:GOOS = "windows"; $env:GOARCH = "amd64"
-go build -ldflags "-s -w -buildid= -X github.com/PJET2000/gami-hash/internal/engine.Version=v1.0.0 -H=windowsgui" -o gami-hash-v1.0.0-windows-amd64.exe .
+go build -ldflags "-s -w -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=v1.0.0 -H=windowsgui" -o gami-hash-v1.0.0-windows-amd64.exe .
 Get-FileHash .\gami-hash-v1.0.0-windows-amd64.exe -Algorithm SHA256
 ```
 

@@ -9,7 +9,7 @@
 set -eu
 
 VERSION="${1:?usage: ./build.sh vX.Y.Z}"
-LDFLAGS_COMMON="-s -w -buildid= -X github.com/PJET2000/gami-hash/internal/engine.Version=$VERSION"
+LDFLAGS_COMMON="-s -w -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=$VERSION"
 
 export CGO_ENABLED=0   # pure Go: static binaries, no C toolchain influence
 export GOFLAGS="-trimpath -buildvcs=false"
