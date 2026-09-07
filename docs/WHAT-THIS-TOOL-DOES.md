@@ -30,6 +30,9 @@ the files themselves.
 - No writes into the scanned folder. Enforced in code, and every file is
   opened with read-only flags. You can run it against a read-only share or a
   write-protected drive.
+- Output paths are resolved before use, including Windows junctions. Output
+  files are built separately and then published without truncating an existing
+  symlink or hard-link target in place.
 - No installation, no admin rights, no services, no registry changes, no
   drivers. Delete the file and it is gone.
 - No file contents leave the machine. The output CSV contains only: relative

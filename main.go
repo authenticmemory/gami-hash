@@ -22,7 +22,7 @@ func main() {
 		attachConsole() // no-op except on Windows GUI-subsystem builds
 		os.Exit(runCLI(os.Args[1:]))
 	}
-	os.Exit(ui.Run(i18n.T{}, workersFromEnv(), time.Now().Format("2006-01-02")))
+	os.Exit(ui.Run(i18n.T{}, engine.DefaultWorkers, time.Now().Format("2006-01-02")))
 }
 
 // workersFromEnv allows a manual override of the hashing parallelism without

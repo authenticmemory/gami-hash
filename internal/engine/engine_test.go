@@ -7,9 +7,11 @@ import (
 	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -128,7 +130,7 @@ func TestSpecialFilenames(t *testing.T) {
 	files := map[string]string{
 		"Bericht_Über_Grüße.pdf":       "umlauts NFC",
 		"Bericht_Über (NFD) Kopie.md": "umlauts NFD",
-		"comma, quote\" file.txt":      "punctuation",
+		"comma, file.txt":              "punctuation",
 		"emoji 📁 name.bin":             "emoji",
 		"日本語ファイル.txt":                  "cjk",
 		" leading space.txt":           "space",
@@ -136,8 +138,10 @@ func TestSpecialFilenames(t *testing.T) {
 	}
 	// Control characters in names are recorded percent-encoded so the
 	// manifest stays one line per file.
-	encoded := map[string]string{"tab\tname.txt": "tab%09name.txt"}
+	encoded := map[string]string{}
 	if runtime.GOOS != "windows" {
+		files["comma, quote\" file.txt"] = "quoted punctuation"
+		encoded["tab\tname.txt"] = "tab%09name.txt"
 		encoded["new\nline.txt"] = "new%0Aline.txt"
 	}
 	for raw, enc := range encoded {
@@ -203,15 +207,15 @@ func TestInvalidUTF8Filename(t *testing.T) {
 func TestEncodeNameSpecials(t *testing.T) {
 	cases := []struct{ in, want string }{
 		{"normal.txt", "normal.txt"},
-		{"Grüße.pdf", "Grüße.pdf"},         // valid UTF-8 untouched
-		{"gru\xdf.txt", "gru%DF.txt"},      // latin1 ß
-		{"\xe4bc.txt", "%E4bc.txt"},        // latin1 ä
-		{"a\xff\xfeb", "a%FF%FEb"},         // multiple invalid bytes
-		{"50%rabatt.txt", "50%rabatt.txt"}, // literal % stays
-		{"new\nline", "new%0Aline"},        // newline
-		{"tab\there", "tab%09here"},        // tab
-		{"cr\rhere", "cr%0Dhere"},          // carriage return
-		{"del\x7fhere", "del%7Fhere"},      // DEL
+		{"Grüße.pdf", "Grüße.pdf"},           // valid UTF-8 untouched
+		{"gru\xdf.txt", "gru%DF.txt"},        // latin1 ß
+		{"\xe4bc.txt", "%E4bc.txt"},          // latin1 ä
+		{"a\xff\xfeb", "a%FF%FEb"},           // multiple invalid bytes
+		{"50%rabatt.txt", "50%25rabatt.txt"}, // literal % is escaped to keep encoding injective
+		{"new\nline", "new%0Aline"},          // newline
+		{"tab\there", "tab%09here"},          // tab
+		{"cr\rhere", "cr%0Dhere"},            // carriage return
+		{"del\x7fhere", "del%7Fhere"},        // DEL
 	}
 	for _, c := range cases {
 		if got := encodeNameSpecials(c.in); got != c.want {
@@ -251,7 +255,24 @@ func TestDeterministicOutput(t *testing.T) {
 	}
 }
 
+func TestOrderingIsGlobalEncodedPathOrder(t *testing.T) {
+	root := buildTree(t, map[string]string{
+		"a/child.txt": "1", "a.txt": "2", "a-/child.txt": "3", "a%.txt": "4", "z.txt": "5",
+	})
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	runFresh(t, root, out)
+	rows := readRows(t, out)
+	for i := 1; i < len(rows); i++ {
+		if rows[i-1][0] >= rows[i][0] {
+			t.Fatalf("rows not globally sorted: %q before %q", rows[i-1][0], rows[i][0])
+		}
+	}
+}
+
 func TestUnreadableFileAndDirDoNotAbort(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod does not remove read access on Windows")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("running as root, permissions are not enforced")
 	}
@@ -425,7 +446,7 @@ func TestResumeRepairsTruncatedTail(t *testing.T) {
 	assertSameRowSet(t, refRows, readRows(t, out))
 }
 
-func TestResumeIgnoredWhenRootDiffers(t *testing.T) {
+func TestResumeRootMismatchRequiresExplicitDecision(t *testing.T) {
 	root := buildTree(t, map[string]string{"a.txt": "1"})
 	out := filepath.Join(t.TempDir(), "m.csv")
 	runFresh(t, root, out)
@@ -435,17 +456,10 @@ func TestResumeIgnoredWhenRootDiffers(t *testing.T) {
 	if !st.Resumable || SameRoot(st.Root, root) {
 		t.Fatalf("unexpected state: %+v", st)
 	}
-	// Engine started without Fresh must NOT append to the foreign manifest —
-	// the roots differ, so it starts over.
-	res, err := Run(context.Background(), Options{Root: root, Output: out}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.FilesResumed != 0 || res.FilesHashed != 1 {
-		t.Fatalf("resume across different roots must start fresh: %+v", res)
-	}
-	if len(readRows(t, out)) != 1 {
-		t.Fatal("manifest should have been rewritten")
+	// The engine must not silently overwrite or append. A GUI confirmation
+	// sets AllowRootMismatch; an intentional replacement sets Fresh.
+	if _, err := Run(context.Background(), Options{Root: root, Output: out}, nil); err == nil {
+		t.Fatal("resume across different roots must require an explicit decision")
 	}
 }
 
@@ -597,6 +611,231 @@ func TestLargeFileStreaming(t *testing.T) {
 	}
 }
 
+func TestFreshOutputHardLinkCannotTruncateSource(t *testing.T) {
+	root := buildTree(t, map[string]string{"precious.bin": "irreplaceable"})
+	source := filepath.Join(root, "precious.bin")
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	if err := os.Link(source, out); err != nil {
+		t.Skipf("hard links unavailable: %v", err)
+	}
+
+	res := runFresh(t, root, out)
+	if res.FilesHashed != 1 {
+		t.Fatalf("unexpected result: %+v", res)
+	}
+	data, err := os.ReadFile(source)
+	if err != nil || string(data) != "irreplaceable" {
+		t.Fatalf("source was changed through output hard link: %q, %v", data, err)
+	}
+}
+
+func TestOutputDirectorySymlinkIntoRootRejected(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("covered by the Windows junction/reparse integration test")
+	}
+	root := buildTree(t, map[string]string{"a.txt": "x"})
+	alias := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(root, alias); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	_, err := Run(context.Background(), Options{Root: root, Output: filepath.Join(alias, "manifest.csv"), Fresh: true}, nil)
+	if err == nil {
+		t.Fatal("resolved output inside root must be rejected")
+	}
+	if fileExists(filepath.Join(root, "manifest.csv")) {
+		t.Fatal("output was created in source tree")
+	}
+}
+
+func TestChangedResumeRowIsRehashed(t *testing.T) {
+	root := buildTree(t, map[string]string{"a.txt": "old"})
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	runFresh(t, root, out)
+	if err := os.WriteFile(filepath.Join(root, "a.txt"), []byte("new-and-different"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	writeCheckpoint(t, out, root)
+	res, err := Run(context.Background(), Options{Root: root, Output: out}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesResumed != 0 || res.FilesHashed != 1 {
+		t.Fatalf("changed row was reused: %+v", res)
+	}
+	if got := readRows(t, out)[0][3]; got != sha256hex("new-and-different") {
+		t.Fatalf("stale hash: %s", got)
+	}
+}
+
+func TestDeletedResumeRowIsRemoved(t *testing.T) {
+	root := buildTree(t, map[string]string{"keep.txt": "keep", "delete.txt": "delete"})
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	runFresh(t, root, out)
+	if err := os.Remove(filepath.Join(root, "delete.txt")); err != nil {
+		t.Fatal(err)
+	}
+	writeCheckpoint(t, out, root)
+	res, err := Run(context.Background(), Options{Root: root, Output: out}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(readRows(t, out)) != 1 || res.FilesResumed != 1 {
+		t.Fatalf("deleted row retained: %+v", res)
+	}
+	if _, exists := rowMap(readRows(t, out))["delete.txt"]; exists {
+		t.Fatal("deleted file remains in manifest")
+	}
+}
+
+func TestRehashExistingDoesNotReuseRows(t *testing.T) {
+	root := buildTree(t, map[string]string{"a.txt": "same"})
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	runFresh(t, root, out)
+	writeCheckpoint(t, out, root)
+	res, err := Run(context.Background(), Options{Root: root, Output: out, RehashExisting: true}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesResumed != 0 || res.FilesHashed != 1 {
+		t.Fatalf("strict resume reused a row: %+v", res)
+	}
+}
+
+func TestFileChangingDuringHashIsOmitted(t *testing.T) {
+	root := buildTree(t, map[string]string{"moving.bin": strings.Repeat("x", 1<<20)})
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	var hookErr error
+	res, err := Run(context.Background(), Options{
+		Root: root, Output: out, Fresh: true, Workers: 1,
+		afterHashRead: func(path string) {
+			f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+			if err == nil {
+				_, err = f.Write([]byte("changed"))
+				_ = f.Close()
+			}
+			if err != nil {
+				hookErr = err
+			}
+		},
+	}, nil)
+	if hookErr != nil {
+		t.Skipf("filesystem did not permit concurrent mutation: %v", hookErr)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesFailed != 1 || len(readRows(t, out)) != 0 {
+		t.Fatalf("unstable file was accepted: %+v", res)
+	}
+	log, _ := os.ReadFile(ErrorLogPath(out))
+	if !strings.Contains(string(log), "FILE_CHANGED") || !strings.Contains(string(log), "file changed while hashing") {
+		t.Fatalf("unstable file not reported: %s", log)
+	}
+}
+
+func TestPercentEncodingIsInjective(t *testing.T) {
+	if got := encodeNameSpecials("%FF"); got != "%25FF" {
+		t.Fatalf("literal percent: %q", got)
+	}
+	if got := encodeNameSpecials(string([]byte{0xff})); got != "%FF" {
+		t.Fatalf("raw byte: %q", got)
+	}
+}
+
+func TestCorruptMiddleRecordIsFatal(t *testing.T) {
+	root := buildTree(t, map[string]string{"a.txt": "a", "b.txt": "b", "c.txt": "c"})
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	runFresh(t, root, out)
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := bytes.Split(data, []byte("\r\n"))
+	if len(lines) < 4 {
+		t.Fatalf("unexpected manifest")
+	}
+	lines[2] = []byte(`"broken`)
+	if err := os.WriteFile(out, bytes.Join(lines, []byte("\r\n")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	writeCheckpoint(t, out, root)
+	if _, err := Run(context.Background(), Options{Root: root, Output: out}, nil); err == nil {
+		t.Fatal("middle corruption must be fatal")
+	}
+}
+
+func TestErrorLogCreationFailureIsFatal(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating a symlink warning requires privileges; covered on POSIX CI")
+	}
+	root := buildTree(t, map[string]string{"ok.txt": "ok"})
+	if err := os.Symlink(filepath.Join(root, "ok.txt"), filepath.Join(root, "link.txt")); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	injected := errors.New("injected error-log failure")
+	_, err := Run(context.Background(), Options{
+		Root: root, Output: out, Fresh: true,
+		openErrorLog: func(string) (*os.File, error) { return nil, injected },
+	}, nil)
+	if !errors.Is(err, injected) {
+		t.Fatalf("logging failure was not fatal: %v", err)
+	}
+}
+
+func TestForcedTerminationLeavesResumableManifest(t *testing.T) {
+	if os.Getenv("GAMI_CRASH_HELPER") == "1" {
+		_, _ = Run(context.Background(), Options{
+			Root: os.Getenv("GAMI_CRASH_ROOT"), Output: os.Getenv("GAMI_CRASH_OUTPUT"), Fresh: true, Workers: 1,
+			afterHashRead: func(string) { time.Sleep(20 * time.Millisecond) },
+		}, nil)
+		return
+	}
+	files := make(map[string]string)
+	for i := 0; i < 40; i++ {
+		files[fmt.Sprintf("f%02d.bin", i)] = strings.Repeat("x", 1<<20)
+	}
+	root := buildTree(t, files)
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	cmd := exec.Command(os.Args[0], "-test.run=^TestForcedTerminationLeavesResumableManifest$")
+	cmd.Env = append(os.Environ(), "GAMI_CRASH_HELPER=1", "GAMI_CRASH_ROOT="+root, "GAMI_CRASH_OUTPUT="+out)
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	killed := false
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		data, err := os.ReadFile(CheckpointPath(out))
+		if err == nil {
+			var cp checkpoint
+			if json.Unmarshal(data, &cp) == nil && cp.WorkPath != "" {
+				if fi, err := os.Stat(cp.WorkPath); err == nil && fi.Size() > 200 {
+					if err := cmd.Process.Kill(); err != nil {
+						t.Fatal(err)
+					}
+					killed = true
+					break
+				}
+			}
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	_ = cmd.Wait()
+	if !killed {
+		t.Fatal("helper completed before forced termination could be tested")
+	}
+	if st := CheckResume(out); !st.Resumable {
+		t.Fatal("forced termination did not leave resumable state")
+	}
+	res, err := Run(context.Background(), Options{Root: root, Output: out}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesHashed+res.FilesResumed != 40 || len(readRows(t, out)) != 40 {
+		t.Fatalf("resume incomplete: %+v", res)
+	}
+}
+
 type zeroReader struct{}
 
 func (zeroReader) Read(p []byte) (int, error) {
@@ -627,7 +866,18 @@ func writePartialCopy(t *testing.T, src, dst string, n int) {
 
 func writeCheckpoint(t *testing.T, output, root string) {
 	t.Helper()
-	cp := checkpoint{Version: Version, Root: root, Started: time.Now().UTC().Format(time.RFC3339)}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absOutput, err := resolveOutput(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cp := checkpoint{
+		Format: manifestFormatVersion, Version: Version, Root: absRoot, Output: absOutput,
+		Started: time.Now().UTC().Format(time.RFC3339), CSVHeader: strings.Join(csvHeader, ","),
+	}
 	data, _ := json.Marshal(cp)
 	if err := os.WriteFile(CheckpointPath(output), data, 0o644); err != nil {
 		t.Fatal(err)

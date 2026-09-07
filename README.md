@@ -36,6 +36,12 @@ IT.
   time (cancel button, Ctrl-C, crash, power loss). The next start offers to
   continue right away; one click picks up where it stopped. A torn CSV line
   from a hard crash is repaired automatically.
+- Resume rows are reused only while path, byte size, and precise modification
+  time still match. Changed files are hashed again and deleted files disappear
+  from the reconstructed result. IT can force full verification with
+  `--rehash-existing`.
+- A file that changes while it is being read is retried once, then omitted and
+  clearly reported rather than receiving an unreliable checksum.
 - **Errors never abort the run.** Unreadable files, permission problems and
   vanished files are recorded in an error log next to the output file
   (`…_errors.log`) and skipped.
@@ -62,7 +68,7 @@ start, progress, done. Step-by-step guide with screenshots:
 **CLI (for IT staff / scripting):**
 
 ```
-gami-hash -root FOLDER -output FILE.csv [-workers N] [-fresh] [-quiet]
+gami-hash --root FOLDER --output FILE.csv [--workers N] [--fresh] [--rehash-existing] [--quiet]
 ```
 
 Exit codes: `0` done · `1` fatal error · `2` done but some files unreadable

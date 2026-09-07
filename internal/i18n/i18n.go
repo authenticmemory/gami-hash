@@ -123,6 +123,10 @@ func (t T) DoneWithErrors(failed, errorLog string) string {
 	return "\n\nNote: " + failed + " files could not be read and are missing from the list. Details are in the error log:\n" + errorLog + "\nJust send the log along."
 }
 
+func (t T) DoneWithWarnings(warnings, errorLog string) string {
+	return "\n\nNote: " + warnings + " link or special-name warnings were recorded. No eligible regular file was omitted. Details are in:\n" + errorLog
+}
+
 func (t T) FatalError(err error) string {
 	return "The program could not continue:\n\n" + err.Error()
 }
