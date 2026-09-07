@@ -18,8 +18,8 @@ import (
 
 	"github.com/ncruces/zenity"
 
-	"github.com/PJET2000/gami-hash/internal/engine"
-	"github.com/PJET2000/gami-hash/internal/i18n"
+	"github.com/authenticmemory/gami-hash/internal/engine"
+	"github.com/authenticmemory/gami-hash/internal/i18n"
 )
 
 // Run executes the wizard and returns a process exit code.

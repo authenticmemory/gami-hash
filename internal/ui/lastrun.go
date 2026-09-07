@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/PJET2000/gami-hash/internal/engine"
+	"github.com/authenticmemory/gami-hash/internal/engine"
 )
 
 // The GUI remembers an interrupted run in one small file in the user's

@@ -1,4 +1,4 @@
-module github.com/PJET2000/gami-hash
+module github.com/authenticmemory/gami-hash
 
 go 1.27.0
 

@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/PJET2000/gami-hash/internal/engine"
-	"github.com/PJET2000/gami-hash/internal/i18n"
-	"github.com/PJET2000/gami-hash/internal/ui"
+	"github.com/authenticmemory/gami-hash/internal/engine"
+	"github.com/authenticmemory/gami-hash/internal/i18n"
+	"github.com/authenticmemory/gami-hash/internal/ui"
 )
 
 func main() {
