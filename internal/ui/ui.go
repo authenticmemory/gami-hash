@@ -111,6 +111,8 @@ func finishRun(t i18n.T, opts engine.Options) int {
 		t.FormatInt(res.FilesResumed))
 	if res.FilesFailed > 0 {
 		msg += t.DoneWithErrors(t.FormatInt(res.FilesFailed), engine.ErrorLogPath(res.Output))
+	} else if res.Warnings > 0 {
+		msg += t.DoneWithWarnings(t.FormatInt(res.Warnings), engine.ErrorLogPath(res.Output))
 	}
 	// "Open folder" saves the inevitable "where is my file now?" question.
 	err := zenity.Question(msg,

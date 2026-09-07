@@ -67,6 +67,7 @@ func TestNoEmDashesInTexts(t *testing.T) {
 		x.ResumeFound("5"), x.ResumeDifferentRoot("old"), x.OverwriteExisting(),
 		x.ConfirmStart("r", "o"), x.CanceledText("o"),
 		x.DoneText("5", "1 GB", "o", 2, "2"), x.DoneWithErrors("1", "log"),
+		x.DoneWithWarnings("1", "log"),
 	}
 	for _, s := range all {
 		if idx := indexOf(s, "—"); idx >= 0 {

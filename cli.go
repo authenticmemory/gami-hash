@@ -29,13 +29,14 @@ func runCLI(args []string) int {
 	output := fs.String("output", "", "CSV file to write (required, must be outside -root)")
 	workers := fs.Int("workers", workersFromEnv(), "parallel hashing workers (1-2 for spinning disks, more for SSDs)")
 	fresh := fs.Bool("fresh", false, "start over instead of resuming an interrupted run")
+	rehashExisting := fs.Bool("rehash-existing", false, "on resume, verify all existing rows again")
 	quiet := fs.Bool("quiet", false, "no progress output")
 	version := fs.Bool("version", false, "print version and exit")
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, `gami-hash %s — hashes every file in a folder and writes one CSV manifest.
 
 Usage:
-  gami-hash -root FOLDER -output FILE.csv [-workers N] [-fresh] [-quiet]
+  gami-hash --root FOLDER --output FILE.csv [--workers N] [--fresh] [--rehash-existing] [--quiet]
 
 Without arguments a graphical wizard starts instead.
 
@@ -59,6 +60,10 @@ Flags:
 	}
 	if *root == "" || *output == "" {
 		fs.Usage()
+		return exitFatal
+	}
+	if *workers < 1 || *workers > 64 {
+		fmt.Fprintln(os.Stderr, "error: -workers must be between 1 and 64")
 		return exitFatal
 	}
 
@@ -110,10 +115,11 @@ Flags:
 	}
 
 	res, err := engine.Run(ctx, engine.Options{
-		Root:    *root,
-		Output:  *output,
-		Workers: *workers,
-		Fresh:   *fresh,
+		Root:           *root,
+		Output:         *output,
+		Workers:        *workers,
+		Fresh:          *fresh,
+		RehashExisting: *rehashExisting,
 	}, progressFn)
 	if !*quiet {
 		fmt.Fprintln(os.Stderr)
