@@ -1,43 +1,36 @@
-# Verifying a release binary (reproducible builds)
-
-Every release binary can be rebuilt bit-for-bit from source. If your build
-hash matches the published hash, the binary provably contains exactly this
-source code — nothing added, nothing removed.
+# Verifying a release binary
 
 ## Requirements
 
-- The Go toolchain version pinned in [go.mod](go.mod) (the `toolchain` line;
-  Go downloads it automatically if your installed Go is newer than 1.21).
-- Any OS — cross-compilation is built in; the result is identical regardless
-  of the machine or directory you build in.
+- The Go toolchain version pinned in `go.mod`.
+- Node.js and npm for compiling the embedded TypeScript frontend.
+- Native Wails/WebView build dependencies for the target operating system.
 
-## Steps
+A GUI release must be built and tested on its target OS. Plain Go
+cross-compilation is not sufficient.
 
-```sh
-git clone https://github.com/authenticmemory/gami-hash.git
-cd gami-hash
-git checkout <release-tag>          # e.g. v1.0.0
-./build.sh v1.0.0                   # or the version you checked out
-cat dist/SHA256SUMS-v1.0.0.txt      # compare against the published file
-```
-
-On Windows, instead of `build.sh` run the equivalent commands:
+## Windows development build
 
 ```powershell
-$env:CGO_ENABLED = "0"; $env:GOFLAGS = "-trimpath -buildvcs=false"
-$env:GOOS = "windows"; $env:GOARCH = "amd64"
-go build -ldflags "-s -w -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=v1.0.0 -H=windowsgui" -o gami-hash-v1.0.0-windows-amd64.exe .
-Get-FileHash .\gami-hash-v1.0.0-windows-amd64.exe -Algorithm SHA256
+git clone https://github.com/authenticmemory/gami-hash.git
+cd gami-hash
+.\build-windows.ps1 -Version v1.0.0
 ```
 
-## Why this works
+The result is written to `build/bin/gami-hash.exe` and its SHA-256 digest is
+printed after a successful build.
 
-- `CGO_ENABLED=0`: pure Go, no C compiler or system libraries involved.
-- `-trimpath`: no build-directory paths embedded.
-- `-buildid=` and `-buildvcs=false`: no per-build or per-checkout metadata.
-- The Go toolchain itself is pinned; Go's builds are deterministic given the
-  same toolchain, source, and flags.
+The script runs `npm ci`, builds the embedded frontend, and compiles with the
+required Wails `desktop,production` tags. A Wails binary built without those
+tags intentionally refuses to start.
 
-The release CI workflow (`.github/workflows/release.yml`) performs a
-double-build from two different directories and fails if the hashes differ,
-so every published release has already proven its reproducibility once.
+`-trimpath`, an empty Go build ID, and disabled VCS stamping remove common
+sources of build-path variation. This is preparation for reproducibility, not
+proof that reproducible signed releases exist.
+
+## Current limitation
+
+The older multi-platform `build.sh` predates the Wails GUI and must not be used
+for a GUI release until the release-engineering phase replaces it with native
+platform jobs. Reproducibility, signing, notarization, package generation, and
+double-build comparison remain release-gate work.

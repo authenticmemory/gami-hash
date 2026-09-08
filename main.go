@@ -7,14 +7,7 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"strconv"
-	"time"
-
-	"github.com/authenticmemory/gami-hash/internal/engine"
-	"github.com/authenticmemory/gami-hash/internal/i18n"
-	"github.com/authenticmemory/gami-hash/internal/ui"
 )
 
 func main() {
@@ -22,18 +15,7 @@ func main() {
 		attachConsole() // no-op except on Windows GUI-subsystem builds
 		os.Exit(runCLI(os.Args[1:]))
 	}
-	os.Exit(ui.Run(i18n.T{}, engine.DefaultWorkers, time.Now().Format("2006-01-02")))
-}
-
-// workersFromEnv allows a manual override of the hashing parallelism without
-// adding anything to the GUI: GAMI_HASH_WORKERS=4 gami-hash
-// (more workers help on SSDs; on spinning disks the default of 2 is safer).
-func workersFromEnv() int {
-	if v := os.Getenv("GAMI_HASH_WORKERS"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= 64 {
-			return n
-		}
-		fmt.Fprintln(os.Stderr, "ignoring invalid GAMI_HASH_WORKERS value:", v)
+	if err := runGUI(); err != nil {
+		os.Exit(1)
 	}
-	return engine.DefaultWorkers
 }

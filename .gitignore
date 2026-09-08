@@ -1,1 +1,6 @@
 dist/
+
+/build/bin/
+/build/windows/*.syso
+/frontend/node_modules/
+/frontend/dist/

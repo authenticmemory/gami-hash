@@ -27,7 +27,7 @@ func runCLI(args []string) int {
 	fs.SetOutput(os.Stderr)
 	root := fs.String("root", "", "folder to scan (required)")
 	output := fs.String("output", "", "CSV file to write (required, must be outside -root)")
-	workers := fs.Int("workers", workersFromEnv(), "parallel hashing workers (1-2 for spinning disks, more for SSDs)")
+	workers := fs.Int("workers", engine.DefaultWorkers, "parallel hashing workers (1-2 for spinning disks, more for SSDs)")
 	fresh := fs.Bool("fresh", false, "start over instead of resuming an interrupted run")
 	rehashExisting := fs.Bool("rehash-existing", false, "on resume, verify all existing rows again")
 	quiet := fs.Bool("quiet", false, "no progress output")
