@@ -68,6 +68,10 @@ const (
 // parallel reads cause seeking and are often slower than sequential reads.
 const DefaultWorkers = 2
 
+// MaxWorkers is enforced by the engine, not merely by its callers. Interfaces
+// may offer a smaller range but cannot force unbounded concurrency.
+const MaxWorkers = 64
+
 // Options configures a run.
 type Options struct {
 	Root    string // folder to scan (must exist)
@@ -147,6 +151,55 @@ type completedRow struct {
 	fields []string
 	size   int64
 	mtime  time.Time
+}
+
+// Validate checks and canonicalizes a proposed run without modifying any
+// filesystem content. Run performs these checks again and remains authoritative
+// if filesystem state changes after validation.
+func Validate(opts Options) (Options, error) {
+	if opts.Root == "" || opts.Output == "" {
+		return Options{}, fmt.Errorf("root folder and output file are required")
+	}
+	if opts.Workers < 1 {
+		opts.Workers = DefaultWorkers
+	}
+	if opts.Workers > MaxWorkers {
+		return Options{}, fmt.Errorf("workers must not exceed %d", MaxWorkers)
+	}
+	var err error
+	opts.Root, err = resolveExisting(opts.Root)
+	if err != nil {
+		return Options{}, fmt.Errorf("invalid root folder: %w", err)
+	}
+	opts.Output, err = resolveOutput(opts.Output)
+	if err != nil {
+		return Options{}, fmt.Errorf("invalid output path: %w", err)
+	}
+	info, err := os.Stat(opts.Root)
+	if err != nil {
+		return Options{}, fmt.Errorf("cannot access root folder: %w", err)
+	}
+	if !info.IsDir() {
+		return Options{}, fmt.Errorf("root is not a folder: %s", opts.Root)
+	}
+	if isWithin(opts.Output, opts.Root) {
+		return Options{}, fmt.Errorf("output file must not be inside the scanned folder")
+	}
+	if di, derr := os.Stat(filepath.Dir(opts.Output)); derr != nil || !di.IsDir() {
+		return Options{}, fmt.Errorf("output folder does not exist: %s", filepath.Dir(opts.Output))
+	}
+	if !opts.Fresh {
+		st := CheckResume(opts.Output)
+		switch {
+		case fileExists(CheckpointPath(opts.Output)) && !st.Resumable:
+			return Options{}, fmt.Errorf("checkpoint or partial manifest is corrupt or incompatible; use --fresh only if you intend to replace it")
+		case st.Resumable && !(SameRoot(st.Root, opts.Root) || opts.AllowRootMismatch):
+			return Options{}, fmt.Errorf("checkpoint belongs to a different source root; confirm the same moved drive or use --fresh")
+		case !st.Resumable && fileExists(opts.Output):
+			return Options{}, fmt.Errorf("output file already exists; use --fresh only if you intend to replace it")
+		}
+	}
+	return opts, nil
 }
 
 // CheckpointPath returns the sidecar checkpoint path for an output CSV.
@@ -274,38 +327,13 @@ type engineRun struct {
 // return an error. Per-file problems never do.
 func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, error) {
 	start := time.Now()
-	if opts.Workers < 1 {
-		opts.Workers = DefaultWorkers
+	var err error
+	opts, err = Validate(opts)
+	if err != nil {
+		return Result{}, err
 	}
 	if progressFn == nil {
 		progressFn = func(Progress) {}
-	}
-
-	var err error
-	opts.Root, err = resolveExisting(opts.Root)
-	if err != nil {
-		return Result{}, fmt.Errorf("invalid root folder: %w", err)
-	}
-	opts.Output, err = resolveOutput(opts.Output)
-	if err != nil {
-		return Result{}, fmt.Errorf("invalid output path: %w", err)
-	}
-
-	info, err := os.Stat(opts.Root)
-	if err != nil {
-		return Result{}, fmt.Errorf("cannot access root folder: %w", err)
-	}
-	if !info.IsDir() {
-		return Result{}, fmt.Errorf("root is not a folder: %s", opts.Root)
-	}
-	// The one hard safety rule: we never write into the scanned tree.
-	if isWithin(opts.Output, opts.Root) {
-		return Result{}, fmt.Errorf("output file must not be inside the scanned folder")
-	}
-	if dir := filepath.Dir(opts.Output); true {
-		if di, derr := os.Stat(dir); derr != nil || !di.IsDir() {
-			return Result{}, fmt.Errorf("output folder does not exist: %s", dir)
-		}
 	}
 
 	r := &engineRun{opts: opts, ctx: ctx, progress: progressFn}
