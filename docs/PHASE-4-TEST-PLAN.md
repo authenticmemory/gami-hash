@@ -32,8 +32,10 @@ These must never run accidentally. Start with 10,000 files, then 100,000,
 
 ```powershell
 $env:GAMI_STRESS_FILE_COUNT = '10000'
+$env:GAMI_RUN_STRESS = 'I_UNDERSTAND'
 go test -run '^TestPhase4OptInFileCountScale$' -count=1 -timeout=24h ./internal/engine
 Remove-Item Env:GAMI_STRESS_FILE_COUNT
+Remove-Item Env:GAMI_RUN_STRESS
 ```
 
 Use an internal NTFS test volume, not the USB drive. Record wall time, peak

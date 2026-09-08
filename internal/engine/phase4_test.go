@@ -107,9 +107,12 @@ func TestPhase4DigestMatchesIndependentTool(t *testing.T) {
 }
 
 func TestPhase4OptInFileCountScale(t *testing.T) {
+	if os.Getenv("GAMI_RUN_STRESS") != "I_UNDERSTAND" {
+		t.Skip("set GAMI_RUN_STRESS=I_UNDERSTAND and GAMI_STRESS_FILE_COUNT to opt in")
+	}
 	raw := os.Getenv("GAMI_STRESS_FILE_COUNT")
 	if raw == "" {
-		t.Skip("set GAMI_STRESS_FILE_COUNT to opt in to the scale test")
+		t.Fatal("GAMI_STRESS_FILE_COUNT is required when stress testing is enabled")
 	}
 	count, err := strconv.Atoi(raw)
 	if err != nil || count < 1 || count > 5_000_000 {
