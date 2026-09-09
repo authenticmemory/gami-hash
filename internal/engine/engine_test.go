@@ -764,6 +764,52 @@ func TestCorruptMiddleRecordIsFatal(t *testing.T) {
 	}
 }
 
+func TestResumeRepairsSemanticallyTornFinalRow(t *testing.T) {
+	root := buildTree(t, map[string]string{"a.txt": "a", "b.txt": "b"})
+	out := filepath.Join(t.TempDir(), "manifest.csv")
+	runFresh(t, root, out)
+	rows := readRows(t, out)
+	rows[len(rows)-1][4] = "2026-09-09T17:58:34."
+	writeManifestRows(t, out, rows)
+	writeCheckpoint(t, out, root)
+
+	res, err := Run(context.Background(), Options{Root: root, Output: out}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesHashed != 1 || res.FilesResumed != 1 {
+		t.Fatalf("damaged final row was not safely rehashed: %+v", res)
+	}
+}
+
+func writeManifestRows(t *testing.T, output string, rows [][]string) {
+	t.Helper()
+	f, err := os.Create(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.Write(utf8BOM); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	w := csv.NewWriter(f)
+	w.UseCRLF = true
+	_ = w.Write(csvHeader)
+	for _, row := range rows {
+		_ = w.Write(row)
+	}
+	w.Flush()
+	if err = w.Error(); err == nil {
+		err = f.Sync()
+	}
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestErrorLogCreationFailureIsFatal(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("creating a symlink warning requires privileges; covered on POSIX CI")
