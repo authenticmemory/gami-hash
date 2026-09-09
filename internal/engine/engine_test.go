@@ -870,6 +870,11 @@ func writeCheckpoint(t *testing.T, output, root string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Match production checkpoint creation, which records the canonical source
+	// path. On macOS, for example, /var is commonly an alias for /private/var.
+	if resolvedRoot, resolveErr := resolveExisting(absRoot); resolveErr == nil {
+		absRoot = resolvedRoot
+	}
 	absOutput, err := resolveOutput(output)
 	if err != nil {
 		t.Fatal(err)
