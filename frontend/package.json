@@ -1,0 +1,15 @@
+{
+  "name": "gami-hash-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2",
+    "vite": "8.2.2"
+  }
+}
