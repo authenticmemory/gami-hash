@@ -665,7 +665,7 @@ func (r *engineRun) walk(fn func(rel, abs string, info fs.FileInfo) error, logIs
 	q := &walkHeap{}
 	heap.Init(q)
 	addDir := func(abs, rel string) error {
-		entries, err := os.ReadDir(abs)
+		dir, err := os.Open(abs)
 		if err != nil {
 			if logIssues {
 				r.filesFailed.Add(1)
@@ -673,38 +673,57 @@ func (r *engineRun) walk(fn func(rel, abs string, info fs.FileInfo) error, logIs
 			}
 			return nil
 		}
-		encodedNames := make(map[string]string, len(entries))
-		for _, e := range entries {
-			name := encodeNameSpecials(e.Name())
-			if prior, exists := encodedNames[name]; exists && prior != e.Name() {
-				if logIssues {
-					r.filesFailed.Add(1)
-					collisionRel := name
-					if rel != "" {
-						collisionRel = rel + "/" + name
+		defer dir.Close()
+		encodedNames := make(map[string]string)
+		for {
+			if r.ctx.Err() != nil {
+				return nil
+			}
+			entries, readErr := dir.ReadDir(1024)
+			for _, e := range entries {
+				if r.ctx.Err() != nil {
+					return nil
+				}
+				name := encodeNameSpecials(e.Name())
+				if prior, exists := encodedNames[name]; exists && prior != e.Name() {
+					if logIssues {
+						r.filesFailed.Add(1)
+						collisionRel := name
+						if rel != "" {
+							collisionRel = rel + "/" + name
+						}
+						if err := r.logIssue("ERROR", "PATH_ENCODING_COLLISION", collisionRel,
+							fmt.Errorf("two source names encode identically: %s and %s", strconv.Quote(prior), strconv.Quote(e.Name()))); err != nil {
+							return err
+						}
 					}
-					if err := r.logIssue("ERROR", "PATH_ENCODING_COLLISION", collisionRel,
-						fmt.Errorf("two source names encode identically: %s and %s", strconv.Quote(prior), strconv.Quote(e.Name()))); err != nil {
+					continue
+				}
+				encodedNames[name] = e.Name()
+				childRel := name
+				if rel != "" {
+					childRel = rel + "/" + name
+				}
+				if containsUnsafeNameBytes(e.Name()) && logIssues {
+					r.warnings.Add(1)
+					if err := r.logIssue("WARNING", "FILENAME_ENCODED", childRel,
+						fmt.Errorf("filename encoded; raw name: %s", strconv.Quote(e.Name()))); err != nil {
 						return err
 					}
 				}
-				continue
+				heap.Push(q, walkItem{abs: filepath.Join(abs, e.Name()), rel: childRel, entry: e})
 			}
-			encodedNames[name] = e.Name()
-			childRel := name
-			if rel != "" {
-				childRel = rel + "/" + name
+			if errors.Is(readErr, io.EOF) {
+				return nil
 			}
-			if containsUnsafeNameBytes(e.Name()) && logIssues {
-				r.warnings.Add(1)
-				if err := r.logIssue("WARNING", "FILENAME_ENCODED", childRel,
-					fmt.Errorf("filename encoded; raw name: %s", strconv.Quote(e.Name()))); err != nil {
-					return err
+			if readErr != nil {
+				if logIssues {
+					r.filesFailed.Add(1)
+					return r.logIssue("ERROR", "FOLDER_READ_FAILED", rel, fmt.Errorf("cannot read folder: %w", readErr))
 				}
+				return nil
 			}
-			heap.Push(q, walkItem{abs: filepath.Join(abs, e.Name()), rel: childRel, entry: e})
 		}
-		return nil
 	}
 	if err := addDir(r.opts.Root, ""); err != nil {
 		return err

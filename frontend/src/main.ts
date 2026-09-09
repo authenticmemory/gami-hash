@@ -8,6 +8,7 @@ let step: Step = "welcome";
 let root = "";
 let output = "";
 let review: PreflightResult | null = null;
+let resumeConflict: { root: string; rows: number } | null = null;
 let finalResult: Result | null = null;
 let fatalError = "";
 let busy = false;
@@ -90,15 +91,39 @@ async function chooseCollection(): Promise<void> {
 
 async function chooseOutput(): Promise<void> {
   try {
-    const date = new Date().toISOString().slice(0, 10);
-    const selected = await api.selectOutput(`gami-hash-${date}.csv`);
+    const now = new Date();
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}`;
+    const selected = await api.selectOutput(`gami-hash-${stamp}.csv`);
     if (!selected) return;
     output = selected.toLowerCase().endsWith(".csv") ? selected : `${selected}.csv`;
     const resume = await api.inspectResume(output);
+    const normalized = (path: string) => path.replaceAll("/", "\\").replace(/[\\]+$/, "").toLocaleLowerCase();
+    if (resume.resumable && resume.root && normalized(resume.root) !== normalized(root)) {
+      resumeConflict = { root: resume.root, rows: resume.rows };
+      renderResumeConflict();
+      return;
+    }
+    resumeConflict = null;
     const mode = resume.resumable ? "resume" : "fresh";
     review = await api.preflight({ root, output, workers: 2, mode });
     renderReview();
   } catch (error) { showInlineError(error); }
+}
+
+function renderResumeConflict(): void {
+  step = "review";
+  shell(`<section class="panel"><span class="eyebrow">Existing checkpoint</span><h1>This output belongs to another collection.</h1><p>The selected manifest contains ${number.format(resumeConflict?.rows ?? 0)} verified rows for the collection below. GAMI will not combine it with a different source.</p><div class="path-card"><span>Checkpoint collection</span><code>${esc(resumeConflict?.root ?? "")}</code></div><div class="path-card"><span>Currently selected collection</span><code>${esc(root)}</code></div><div class="notice warning"><b>Starting over replaces the partial manifest</b><span>Your source files are never changed, but the saved hashing progress for this output will be discarded.</span></div><div class="actions conflict-actions">${button("different", "Choose another output", true)}${button("restart", "Start over", true)}${button("resume-recorded", "Resume recorded collection")}</div></section>`);
+  document.querySelector("#different")?.addEventListener("click", () => chooseOutput());
+  document.querySelector("#restart")?.addEventListener("click", async () => {
+    try { resumeConflict = null; review = await api.preflight({ root, output, workers: 2, mode: "fresh" }); renderReview(); }
+    catch (error) { showInlineError(error); }
+  });
+  document.querySelector("#resume-recorded")?.addEventListener("click", async () => {
+    if (!resumeConflict) return;
+    root = resumeConflict.root;
+    resumeConflict = null;
+    await resumeRun();
+  });
 }
 
 function renderReview(): void {
@@ -144,8 +169,28 @@ function renderProgress(progress: import("./backend").Progress): void {
     lastProgressAt = now;
   }
   const eta = !scanning && bytesPerSecond > 0 ? formatETA((progress.BytesTotal - progress.BytesDone) / bytesPerSecond) : scanning ? "Counting files safely…" : "Estimating…";
-  shell(`<section class="panel progress-panel" aria-live="polite"><span class="eyebrow">${scanning ? "Preparing" : "Hashing collection"}</span><h1>${scanning ? "Counting files and bytes" : `${percent.toFixed(1)}% complete`}</h1><p>${eta}</p><div class="progress-track" role="progressbar" aria-label="Hashing progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent.toFixed(0)}"><span style="width:${scanning ? 100 : percent}%" class="${scanning ? "indeterminate" : ""}"></span></div><div class="metrics"><article><span>Files</span><strong>${number.format(progress.FilesDone)} <small>of ${number.format(progress.FilesTotal)}</small></strong></article><article><span>Data read</span><strong>${formatBytes(progress.BytesDone)} <small>of ${formatBytes(progress.BytesTotal)}</small></strong></article><article><span>Elapsed</span><strong>${formatETAElapsed((performance.now() - startedAt) / 1000)}</strong></article></div><div class="path-card compact"><span>Writing manifest to</span><code>${esc(output)}</code></div><div class="actions">${button("cancel", cancelRequested ? "Canceling safely…" : "Cancel", true, cancelRequested)}</div></section>`);
-  document.querySelector("#cancel")?.addEventListener("click", cancelRun);
+  if (!document.querySelector(".progress-panel")) {
+    shell(`<section class="panel progress-panel" aria-live="polite"><span id="progress-phase" class="eyebrow"></span><h1 id="progress-title"></h1><p id="progress-eta"></p><progress id="progress-bar" class="progress-track" aria-label="Hashing progress" max="100"></progress><div class="metrics"><article><span>Files</span><strong><b id="files-done">0</b> <small>of <b id="files-total">0</b></small></strong></article><article><span>Data read</span><strong><b id="bytes-done">0 B</b> <small>of <b id="bytes-total">0 B</b></small></strong></article><article><span>Elapsed</span><strong id="elapsed">0 sec</strong></article></div><div class="path-card compact"><span>Writing manifest to</span><code>${esc(output)}</code></div><div class="actions">${button("cancel", "Cancel", true)}</div></section>`);
+    document.querySelector("#cancel")?.addEventListener("click", cancelRun);
+  }
+  const setText = (selector: string, value: string) => {
+    const element = document.querySelector(selector);
+    if (element) element.textContent = value;
+  };
+  setText("#progress-phase", cancelRequested ? "Saving checkpoint" : scanning ? "Preparing" : "Hashing collection");
+  setText("#progress-title", cancelRequested ? "Canceling safely…" : scanning ? "Counting files and bytes" : `${percent.toFixed(1)}% complete`);
+  setText("#progress-eta", cancelRequested ? "Finishing current reads and making the partial manifest safe to resume." : eta);
+  setText("#files-done", number.format(progress.FilesDone));
+  setText("#files-total", number.format(progress.FilesTotal));
+  setText("#bytes-done", formatBytes(progress.BytesDone));
+  setText("#bytes-total", formatBytes(progress.BytesTotal));
+  setText("#elapsed", formatETAElapsed((performance.now() - startedAt) / 1000));
+  const bar = document.querySelector<HTMLProgressElement>("#progress-bar");
+  if (bar) {
+    bar.classList.toggle("indeterminate", scanning);
+    if (scanning) bar.removeAttribute("value");
+    else bar.value = percent;
+  }
 }
 
 const formatETAElapsed = (seconds: number) => seconds < 60 ? `${Math.floor(seconds)} sec` : seconds < 3600 ? `${Math.floor(seconds / 60)} min ${Math.floor(seconds % 60)} sec` : `${Math.floor(seconds / 3600)} hr ${Math.floor(seconds % 3600 / 60)} min`;
@@ -155,6 +200,10 @@ async function cancelRun(): Promise<void> {
   cancelRequested = true;
   const button = document.querySelector<HTMLButtonElement>("#cancel");
   if (button) { button.disabled = true; button.textContent = "Canceling safely…"; }
+  const heading = document.querySelector("#progress-title");
+  const explanation = document.querySelector("#progress-eta");
+  if (heading) heading.textContent = "Canceling safely…";
+  if (explanation) explanation.textContent = "Finishing current reads and making the partial manifest safe to resume.";
   try { await api.cancel(); } catch (error) { showInlineError(error); }
 }
 
@@ -170,15 +219,25 @@ function renderResult(): void {
   if (fatalError) {
     shell(`<section class="panel result"><div class="result-icon failure">!</div><span class="eyebrow">Run stopped</span><h1>GAMI could not create the manifest.</h1><p class="error-copy">${esc(fatalError)}</p><p>Your collection was not modified. Resolve the problem and try again.</p><div class="actions">${button("home", "Return to start", true)}</div></section>`);
   } else if (finalResult?.Canceled) {
-    shell(`<section class="panel result"><div class="result-icon canceled">Ⅱ</div><span class="eyebrow">Canceled safely</span><h1>Your progress has been saved.</h1><p>Run GAMI Hash again to continue from the verified checkpoint.</p><div class="path-card"><span>Partial manifest</span><code>${esc(finalResult.Output)}</code></div><div class="actions">${button("home", "Close", true)}${button("resume", "Resume now")}</div></section>`);
+    shell(`<section class="panel result"><div class="result-icon canceled">Ⅱ</div><span class="eyebrow">Canceled safely</span><h1>Your progress has been saved.</h1><p>GAMI saved a partial manifest and a small <code>.part.json</code> checkpoint beside it. Resume validates every saved row before continuing.</p><div class="path-card"><span>Partial manifest</span><code>${esc(finalResult.Output)}</code></div><div class="path-card compact"><span>Resume checkpoint</span><code>${esc(`${finalResult.Output}.part.json`)}</code></div><div class="actions">${button("home", "Close", true)}${button("resume", "Resume now")}</div></section>`);
   } else {
     const issues = (finalResult?.FilesFailed ?? 0) + (finalResult?.Warnings ?? 0);
     const warning = issues > 0;
-    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><span class="eyebrow">${warning ? "Completed with warnings" : "Complete"}</span><h1>${warning ? "Your manifest is ready—review the omissions." : "Your manifest is ready."}</h1><div class="summary"><strong>${number.format((finalResult?.FilesHashed ?? 0) + (finalResult?.FilesResumed ?? 0))}</strong><span>files recorded</span></div>${warning ? `<div class="notice warning"><b>${number.format(issues)} item${issues === 1 ? "" : "s"} need attention</b><span>The details are recorded in the error log.</span></div>` : ""}<div class="path-card"><span>Manifest saved to</span><code>${esc(finalResult?.Output ?? output)}</code></div><div class="actions">${button("home", "Start another", true)}${button("open", "Open output folder")}</div></section>`);
+    const manifest = finalResult?.Output ?? output;
+    const errorLog = finalResult?.ErrorLog ?? "";
+    const hasErrorLog = errorLog.length > 0;
+    const openButtons = hasErrorLog
+      ? `${button("open-manifest", "Open manifest folder", true)}${button("open-errors", "Open error log folder")}`
+      : button("open-manifest", "Open manifest folder");
+    const issueGuidance = hasErrorLog ? "Review the error log before treating the manifest as complete." : "Review the reported omissions before treating the manifest as complete.";
+    const errorLogCard = hasErrorLog ? `<div class="path-card"><span>Error log</span><code>${esc(errorLog)}</code></div>` : "";
+    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><span class="eyebrow">${warning ? "Completed with warnings" : "Complete"}</span><h1>${warning ? "Your manifest is ready—review the omissions." : "Your manifest is ready."}</h1><div class="summary"><strong>${number.format((finalResult?.FilesHashed ?? 0) + (finalResult?.FilesResumed ?? 0))}</strong><span>files recorded</span></div>${warning ? `<div class="notice warning"><b>${number.format(issues)} item${issues === 1 ? "" : "s"} need attention</b><span>${issueGuidance}</span></div>${errorLogCard}` : ""}<div class="path-card"><span>Manifest saved to</span><code>${esc(manifest)}</code></div><div class="actions">${button("home", "Start another", true)}${openButtons}</div></section>`);
   }
   document.querySelector("#home")?.addEventListener("click", () => { fatalError = ""; finalResult = null; renderWelcome(); });
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());
-  document.querySelector("#open")?.addEventListener("click", async () => { try { await api.openOutputFolder(); } catch (error) { showInlineError(error); } });
+  const openFolder = async () => { try { await api.openOutputFolder(); } catch (error) { showInlineError(error); } };
+  document.querySelector("#open-manifest")?.addEventListener("click", openFolder);
+  document.querySelector("#open-errors")?.addEventListener("click", openFolder);
 }
 
 function showInlineError(error: unknown): void {

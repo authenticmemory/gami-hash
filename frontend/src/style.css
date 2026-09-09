@@ -55,10 +55,13 @@ main { display: grid; place-items: center; width: 100%; padding: clamp(28px, 6vh
 .resume-card { margin: 26px 0; border-color: #bcd8ca; background: #f8fbf9; }
 .resume-card div { display: grid; gap: 6px; }
 .resume-card p { max-width: 480px; margin: 0; overflow-wrap: anywhere; color: #607068; font-size: 13px; }
-.progress-track { position: relative; width: 100%; height: 12px; overflow: hidden; margin: 30px 0; border-radius: 99px; background: #dfe6e1; }
-.progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #176344, #4f9a74); transition: width .25s ease; }
-.progress-track .indeterminate { width: 38% !important; animation: indeterminate 1.3s ease-in-out infinite; }
-@keyframes indeterminate { from { transform: translateX(-110%); } to { transform: translateX(300%); } }
+.progress-track { display: block; width: 100%; height: 12px; overflow: hidden; margin: 30px 0; border: 0; border-radius: 99px; appearance: none; background: #dfe6e1; }
+.progress-track::-webkit-progress-bar { border-radius: 99px; background: #dfe6e1; }
+.progress-track::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg, #176344, #55a47c); transition: width .25s ease; }
+.progress-track::-moz-progress-bar { border-radius: 99px; background: linear-gradient(90deg, #176344, #55a47c); }
+.progress-track.indeterminate { animation: pulse 1.25s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: .45; } to { opacity: 1; } }
+.conflict-actions { align-items: stretch; }
 .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .metrics article { display: grid; gap: 7px; padding: 16px; border-radius: 12px; background: #f2f5f2; }
 .metrics span { color: #607068; font-size: 12px; font-weight: 750; text-transform: uppercase; }

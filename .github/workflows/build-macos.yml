@@ -1,0 +1,74 @@
+name: Build macOS test app
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "test-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    name: Build macOS universal app
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend checks
+        working-directory: frontend
+        run: npm run build
+
+      - name: Run Go tests
+        run: go test -count=1 -timeout=5m ./...
+
+      - name: Install pinned Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+
+      - name: Build universal macOS application
+        run: wails build -clean -platform darwin/universal
+
+      - name: Apply ad-hoc signature
+        run: codesign --force --deep --sign - "build/bin/gami-hash.app"
+
+      - name: Package application
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "build/bin/gami-hash.app" \
+            "build/bin/gami-hash-macos-universal.zip"
+
+      - name: Create checksum
+        run: |
+          shasum -a 256 "build/bin/gami-hash-macos-universal.zip" \
+            > "build/bin/gami-hash-macos-universal.zip.sha256"
+
+      - name: Upload test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: gami-hash-macos-universal
+          path: |
+            build/bin/gami-hash-macos-universal.zip
+            build/bin/gami-hash-macos-universal.zip.sha256
+          if-no-files-found: error
+          retention-days: 14

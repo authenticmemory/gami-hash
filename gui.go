@@ -28,6 +28,9 @@ func runGUI() error {
 		OnStartup:  wailsadapter.OnStartup(backend),
 		OnShutdown: wailsadapter.OnShutdown(backend),
 		Bind:       []interface{}{backend},
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId: "a61fc80f-8125-4ca8-b873-c9dde1f503e1",
+		},
 		Windows: &windows.Options{
 			WebviewIsTransparent:              false,
 			WindowIsTranslucent:               false,
