@@ -43,6 +43,13 @@ func TestPhase4UnicodeNormalizationRemainsDistinct(t *testing.T) {
 		"archive-📁.txt":       "emoji",
 	}
 	root := buildTree(t, files)
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != len(files) {
+		t.Skipf("filesystem normalizes canonically equivalent Unicode names; cannot test NFC/NFD coexistence (created %d of %d names)", len(entries), len(files))
+	}
 	out := filepath.Join(t.TempDir(), "manifest.csv")
 	res := runFresh(t, root, out)
 	rows := rowMap(readRows(t, out))

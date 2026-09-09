@@ -216,6 +216,14 @@ func ErrorLogPath(output string) string {
 // resumed. It never modifies anything.
 func CheckResume(output string) ResumeState {
 	var st ResumeState
+	// Callers may supply a lexical alias for an existing directory. This is
+	// common on macOS, where /var resolves to /private/var. Checkpoints record
+	// canonical paths, so normalize the requested output before comparing it.
+	resolvedOutput, err := resolveOutput(output)
+	if err != nil {
+		return st
+	}
+	output = resolvedOutput
 	data, err := os.ReadFile(CheckpointPath(output))
 	if err != nil {
 		return st
