@@ -52,24 +52,35 @@ func (c *completedCursor) advance() error {
 	if err != nil {
 		return err
 	}
-	if c.previous != "" && rec[0] <= c.previous {
-		return fmt.Errorf("existing manifest is not strictly sorted or contains duplicate path %q", rec[0])
-	}
-	size, err := strconv.ParseInt(rec[2], 10, 64)
-	if err != nil || size < 0 {
-		return fmt.Errorf("invalid size for %q", rec[0])
-	}
-	mtime, err := time.Parse(time.RFC3339Nano, rec[4])
+	row, err := parseCompletedRow(rec, c.previous)
 	if err != nil {
-		return fmt.Errorf("invalid modification time for %q", rec[0])
-	}
-	if len(rec[3]) != 64 {
-		return fmt.Errorf("invalid SHA-256 for %q", rec[0])
+		return err
 	}
 	c.previous = rec[0]
 	c.rel = rec[0]
-	c.current = completedRow{fields: append([]string(nil), rec...), size: size, mtime: mtime}
+	c.current = row
 	return nil
+}
+
+func parseCompletedRow(rec []string, previous string) (completedRow, error) {
+	if len(rec) != len(csvHeader) {
+		return completedRow{}, fmt.Errorf("invalid field count")
+	}
+	if previous != "" && rec[0] <= previous {
+		return completedRow{}, fmt.Errorf("existing manifest is not strictly sorted or contains duplicate path %q", rec[0])
+	}
+	size, err := strconv.ParseInt(rec[2], 10, 64)
+	if err != nil || size < 0 {
+		return completedRow{}, fmt.Errorf("invalid size for %q", rec[0])
+	}
+	mtime, err := time.Parse(time.RFC3339Nano, rec[4])
+	if err != nil {
+		return completedRow{}, fmt.Errorf("invalid modification time for %q", rec[0])
+	}
+	if len(rec[3]) != 64 {
+		return completedRow{}, fmt.Errorf("invalid SHA-256 for %q", rec[0])
+	}
+	return completedRow{fields: append([]string(nil), rec...), size: size, mtime: mtime}, nil
 }
 
 // match advances past deleted old rows and returns the row matching rel.
@@ -90,8 +101,8 @@ func (c *completedCursor) match(rel string) (completedRow, bool, error) {
 }
 
 // validateRepairableCSV accepts a valid manifest or one whose only damage is
-// an incomplete final physical record. Corruption before the final record is
-// fatal and is never silently truncated.
+// in its final record. A terminated record can still be torn at the semantic
+// level after sudden power loss. Corruption before the final record is fatal.
 func validateRepairableCSV(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -109,6 +120,7 @@ func validateRepairableCSV(path string) error {
 	if len(lines) == 0 {
 		return errors.New("existing file has no valid header")
 	}
+	previous := ""
 	for i, line := range lines {
 		r := csv.NewReader(bytes.NewReader(line))
 		r.FieldsPerRecord = len(csvHeader)
@@ -124,9 +136,19 @@ func validateRepairableCSV(path string) error {
 			}
 			return fmt.Errorf("manifest is corrupt at record %d: %w", i+1, parseErr)
 		}
-		if i == 0 && !sliceEqual(rec, csvHeader) {
-			return errors.New("unexpected CSV header")
+		if i == 0 {
+			if !sliceEqual(rec, csvHeader) {
+				return errors.New("unexpected CSV header")
+			}
+			continue
 		}
+		if _, semanticErr := parseCompletedRow(rec, previous); semanticErr != nil {
+			if i == len(lines)-1 {
+				return nil
+			}
+			return fmt.Errorf("manifest is corrupt at record %d: %w", i+1, semanticErr)
+		}
+		previous = rec[0]
 	}
 	return nil
 }
@@ -158,6 +180,7 @@ func repairTruncatedTail(path string) error {
 	r.FieldsPerRecord = len(csvHeader)
 	lastGood := start
 	first := true
+	previous := ""
 	for {
 		rec, err := r.Read()
 		if err == io.EOF {
@@ -172,6 +195,11 @@ func repairTruncatedTail(path string) error {
 			if !sliceEqual(rec, csvHeader) {
 				return fmt.Errorf("existing file has an unexpected format (not a manifest written by this tool)")
 			}
+		} else {
+			if _, semanticErr := parseCompletedRow(rec, previous); semanticErr != nil {
+				break
+			}
+			previous = rec[0]
 		}
 		lastGood = start + r.InputOffset()
 	}
@@ -195,6 +223,7 @@ func countValidRows(path string) (int64, error) {
 
 	var n int64
 	first := true
+	previous := ""
 	for {
 		rec, err := r.Read()
 		if err == io.EOF {
@@ -210,6 +239,10 @@ func countValidRows(path string) (int64, error) {
 			}
 			continue
 		}
+		if _, semanticErr := parseCompletedRow(rec, previous); semanticErr != nil {
+			break
+		}
+		previous = rec[0]
 		n++
 	}
 	if first {
