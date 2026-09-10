@@ -963,7 +963,7 @@ func (r *engineRun) writeLoop(f *os.File, results <-chan outcome, window chan st
 			o.rel,
 			o.name,
 			strconv.FormatInt(o.size, 10),
-			o.hash,
+			formatManifestHash(o.hash),
 			o.mtime.UTC().Format(time.RFC3339Nano),
 		})
 		if err != nil {

@@ -51,7 +51,7 @@ foreach ($f in $files) {
   try {
     $hash = (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash.ToLower()
     $mtime = $f.LastWriteTimeUtc.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'")
-    $writer.WriteLine(('{0},{1},{2},{3},{4}' -f (Csv-Field $rel), (Csv-Field (Manifest-Path $f.Name)), $f.Length, $hash, $mtime))
+    $writer.WriteLine(('{0},{1},{2},sha256:{3},{4}' -f (Csv-Field $rel), (Csv-Field (Manifest-Path $f.Name)), $f.Length, $hash, $mtime))
     $done++
   } catch {
     [Console]::Error.WriteLine("SKIPPED (unreadable): $rel - $($_.Exception.Message)")
