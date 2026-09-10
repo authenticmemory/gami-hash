@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -45,6 +46,9 @@ Usage:
   gami-hash --root FOLDER --output FILE.csv [--workers N] [--fresh] [--rehash-existing] [--quiet]
 
 %s
+
+Quote paths that contain spaces, for example:
+  gami-hash --root "D:\Archive Drive\Collection A" --output "C:\Manifests\Collection A.csv"
 
 The scanned folder is only ever read. Output columns:
   %s
@@ -183,6 +187,9 @@ func promptCLI(stdin *os.File, stderr *os.File) (string, string, bool) {
 	output, ok := promptLine(reader, stderr, "Enter output CSV file: ")
 	if !ok {
 		return "", "", false
+	}
+	if filepath.Ext(output) == "" {
+		output += ".csv"
 	}
 	return root, output, true
 }

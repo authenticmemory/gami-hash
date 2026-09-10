@@ -72,6 +72,12 @@ start, progress, done. Step-by-step guide with screenshots:
 gami-hash --root FOLDER --output FILE.csv [--workers N] [--fresh] [--rehash-existing] [--quiet]
 ```
 
+Quote paths that contain spaces:
+
+```powershell
+gami-hash --root "D:\Archive Drive\Collection A" --output "C:\Manifests\Collection A.csv"
+```
+
 Exit codes: `0` done · `1` fatal error · `2` done but some files unreadable
 (see error log) · `130` interrupted (resumable).
 

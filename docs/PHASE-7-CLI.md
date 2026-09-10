@@ -9,6 +9,12 @@ used by the Wails GUI boundary.
 gami-hash --root FOLDER --output FILE.csv [--workers N] [--fresh] [--rehash-existing] [--quiet]
 ```
 
+Paths containing spaces must be quoted by the shell:
+
+```powershell
+gami-hash --root "D:\Archive Drive\Collection A" --output "C:\Manifests\Collection A.csv"
+```
+
 Supported flags:
 
 | Flag | Behavior |

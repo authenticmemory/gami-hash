@@ -59,6 +59,9 @@ func TestCLIHelpExitsSuccessfully(t *testing.T) {
 	if !strings.Contains(stderr, cliNoArgsUsage) {
 		t.Fatalf("help did not include build-specific no-args guidance: %q", stderr)
 	}
+	if !strings.Contains(stderr, `--root "D:\Archive Drive\Collection A"`) {
+		t.Fatalf("help did not explain quoting paths with spaces: %q", stderr)
+	}
 }
 
 func TestCLIInteractiveNoArgsPromptsForPaths(t *testing.T) {
@@ -75,6 +78,19 @@ func TestCLIInteractiveNoArgsPromptsForPaths(t *testing.T) {
 	if len(rows) != 1 {
 		t.Fatalf("rows=%d, want 1", len(rows))
 	}
+}
+
+func TestCLIInteractiveNoArgsAddsCSVExtension(t *testing.T) {
+	root := buildCLITree(t, map[string]string{"a.txt": "abc"})
+	out := filepath.Join(t.TempDir(), "manifest")
+	code, stdout, stderr := captureCLIInteractive(t, root+"\n"+out+"\n")
+	if code != exitOK {
+		t.Fatalf("exit=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	if !strings.Contains(stderr, out+".csv") {
+		t.Fatalf("completion did not use .csv output path: %q", stderr)
+	}
+	readCLIManifest(t, out+".csv")
 }
 
 func TestCLINonInteractiveNoArgsDoesNotHang(t *testing.T) {
@@ -103,6 +119,14 @@ func TestCLIRejectsBadArgumentsWithStableExitCode(t *testing.T) {
 	}
 	if !strings.Contains(stderr, "-workers must be between 1 and 64") {
 		t.Fatalf("worker diagnostic missing: %q", stderr)
+	}
+
+	code, _, stderr = captureCLI(t, "--root", root, "--output", filepath.Join(t.TempDir(), "manifest.xlsx"), "--quiet")
+	if code != exitFatal {
+		t.Fatalf("exit=%d, want %d; stderr=%q", code, exitFatal, stderr)
+	}
+	if !strings.Contains(stderr, "output file must end with .csv") {
+		t.Fatalf("CSV-extension diagnostic missing: %q", stderr)
 	}
 }
 
