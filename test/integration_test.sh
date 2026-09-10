@@ -87,7 +87,7 @@ with open(sys.argv[2], encoding='utf-8', errors='surrogateescape') as f:
         if h.startswith("\\"):  # coreutils escapes \n, \r, \\ in filenames
             h = h[1:]
             p = p.replace("\\n", "\n").replace("\\r", "\r").replace("\\\\", "\\")
-        ref[encode_specials(p[2:])] = h  # strip "./"
+        ref[encode_specials(p[2:])] = "sha256:" + h  # strip "./"
 missing = set(ref) - set(rows)
 extra = set(rows) - set(ref)
 wrong = [p for p in set(ref) & set(rows) if ref[p] != rows[p]]

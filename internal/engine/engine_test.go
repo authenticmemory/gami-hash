@@ -76,7 +76,7 @@ func rowMap(rows [][]string) map[string][]string {
 
 func sha256hex(s string) string {
 	sum := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(sum[:])
+	return formatManifestHash(hex.EncodeToString(sum[:]))
 }
 
 func TestBasicRun(t *testing.T) {
@@ -98,10 +98,10 @@ func TestBasicRun(t *testing.T) {
 	m := rowMap(rows)
 
 	// Known SHA-256 vectors.
-	if m["a.txt"][3] != "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {
+	if m["a.txt"][3] != "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {
 		t.Errorf("wrong hash for a.txt: %s", m["a.txt"][3])
 	}
-	if m["empty.bin"][3] != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+	if m["empty.bin"][3] != "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
 		t.Errorf("wrong hash for empty file: %s", m["empty.bin"][3])
 	}
 	if m["sub/nested/b.dat"][3] != sha256hex("hello world\n") {
@@ -605,7 +605,7 @@ func TestLargeFileStreaming(t *testing.T) {
 	// Reference: hash of 64 MiB of zeros.
 	h := sha256.New()
 	io.CopyN(h, zeroReader{}, size)
-	want := hex.EncodeToString(h.Sum(nil))
+	want := formatManifestHash(hex.EncodeToString(h.Sum(nil)))
 	if rows := readRows(t, out); rows[0][3] != want {
 		t.Fatalf("hash mismatch for sparse file")
 	}

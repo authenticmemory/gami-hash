@@ -156,7 +156,7 @@ relative_path,filename,size_bytes,sha256,mtime_utc
 | `relative_path` | Encoded slash-separated path relative to the selected root |
 | `filename` | Encoded final path component |
 | `size_bytes` | Base-10 unsigned byte count of the stable file that was hashed |
-| `sha256` | 64 lowercase hexadecimal characters representing SHA-256 of the complete file contents |
+| `sha256` | `sha256:` followed by 64 lowercase hexadecimal characters representing SHA-256 of the complete file contents |
 | `mtime_utc` | File modification time in UTC, RFC 3339 format, with available sub-second precision and `Z` suffix |
 
 The manifest contains no absolute paths, usernames, machine identifiers,

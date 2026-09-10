@@ -108,7 +108,7 @@ func TestPhase4DigestMatchesIndependentTool(t *testing.T) {
 	if _, err := hex.DecodeString(got); err != nil || len(got) != 64 {
 		t.Fatalf("invalid independent digest %q", got)
 	}
-	if got != want {
+	if formatManifestHash(got) != want {
 		t.Fatalf("digest mismatch: engine=%s independent=%s", want, got)
 	}
 }

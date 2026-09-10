@@ -3,13 +3,17 @@ package engine
 import (
 	"bytes"
 	"encoding/csv"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
+
+const sha256ManifestPrefix = "sha256:"
 
 type completedCursor struct {
 	file     *os.File
@@ -77,10 +81,36 @@ func parseCompletedRow(rec []string, previous string) (completedRow, error) {
 	if err != nil {
 		return completedRow{}, fmt.Errorf("invalid modification time for %q", rec[0])
 	}
-	if len(rec[3]) != 64 {
+	hash, ok := normalizeManifestHash(rec[3])
+	if !ok {
 		return completedRow{}, fmt.Errorf("invalid SHA-256 for %q", rec[0])
 	}
-	return completedRow{fields: append([]string(nil), rec...), size: size, mtime: mtime}, nil
+	fields := append([]string(nil), rec...)
+	fields[3] = hash
+	return completedRow{fields: fields, size: size, mtime: mtime}, nil
+}
+
+func formatManifestHash(hash string) string {
+	if strings.HasPrefix(hash, sha256ManifestPrefix) {
+		return hash
+	}
+	return sha256ManifestPrefix + hash
+}
+
+func normalizeManifestHash(hash string) (string, bool) {
+	if strings.HasPrefix(hash, sha256ManifestPrefix) {
+		bare := strings.TrimPrefix(hash, sha256ManifestPrefix)
+		return hash, isLowerHexSHA256(bare)
+	}
+	return formatManifestHash(hash), isLowerHexSHA256(hash)
+}
+
+func isLowerHexSHA256(hash string) bool {
+	if len(hash) != 64 || strings.ToLower(hash) != hash {
+		return false
+	}
+	_, err := hex.DecodeString(hash)
+	return err == nil
 }
 
 // match advances past deleted old rows and returns the row matching rel.
