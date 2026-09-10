@@ -13,6 +13,7 @@ IT.
 - You pick a folder and an output location, press start, watch a progress
   bar, and get a done message with an "Open folder" button for the result.
 - Per file it records: `relative_path, filename, size_bytes, sha256, mtime_utc`.
+  The `sha256` value is written as `sha256:<64 lowercase hex characters>`.
   Technical metadata only, no accession numbers, no institution-specific
   logic. The relative path is what GAMI matches against the institution's
   own metadata later.
@@ -25,10 +26,10 @@ IT.
   just policy: choosing an output location inside the scanned folder is
   refused.
 - It never modifies, moves or deletes any file. Files are opened read-only.
-- It makes no network connections. There is no networking code in the
-  program at all; `go list -deps` shows no `net*` packages (see
-  [docs/WHAT-THIS-TOOL-DOES.md](docs/WHAT-THIS-TOOL-DOES.md)).
-- No installation, no admin rights, no configuration, no telemetry.
+- It makes no network connections by design: no upload, telemetry, accounts,
+  remote fonts, remote images, or remote help content.
+- No accounts, no configuration, no telemetry. Windows and macOS releases are
+  packaged as installable/native apps; the CLI artifact remains portable.
 
 ## Robustness (built for the archive reality)
 
@@ -85,20 +86,18 @@ Exit codes: `0` done · `1` fatal error · `2` done but some files unreadable
 
 ## Building / verifying
 
-Binaries are reproducible: the same source and the same Go toolchain produce
-bit-for-bit identical files on any machine. See [VERIFY.md](VERIFY.md).
+Builds are produced from pinned Go, Node, npm lockfiles, and clean CI jobs.
+See [VERIFY.md](VERIFY.md) for the current verification status and limits.
 
 ```
-./build.sh v1.2.0     # builds Windows/macOS/Linux + SHA256SUMS
+.\build-windows.ps1 -Version v1.2.0
+.\build-windows-installer.ps1 -Version v1.2.0
 go test -race ./...   # test suite
 ```
 
-Linux and macOS downloads are packaged as `.tar.gz`/`.zip` because browsers
-strip the executable permission from bare binaries; extracting restores it.
-
-Until a code-signing certificate is in place, Windows SmartScreen will warn
-on first run; institutions verify the published SHA-256 instead
-(instructions in the IT one-pager).
+Until code-signing and notarization are in place, Windows SmartScreen and
+macOS Gatekeeper may warn on first run. Those unsigned/ad-hoc signed builds
+are for internal testing only, not institution-facing distribution.
 
 ## Alternatives for institutions (context)
 

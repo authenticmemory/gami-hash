@@ -1,0 +1,77 @@
+name: Build Windows test installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "test-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install NSIS
+        run: choco install nsis -y --no-progress
+
+      - name: Install pinned Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+
+      - name: Run Go tests
+        run: go test -count=1 -timeout=5m ./...
+
+      - name: Run frontend checks
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build NSIS installer
+        shell: pwsh
+        run: .\build-windows-installer.ps1 -Version "${{ github.ref_name }}" -InstallScope user
+
+      - name: Create checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem build/bin -File |
+            Where-Object { $_.Extension -eq ".exe" } |
+            ForEach-Object {
+              $hash = Get-FileHash $_.FullName -Algorithm SHA256
+              "$($hash.Hash.ToLower())  $($_.Name)"
+            } | Set-Content -Encoding ascii build/bin/SHA256SUMS-windows.txt
+
+      - name: Create dependency inventory
+        shell: pwsh
+        run: .\release-dependency-inventory.ps1
+
+      - name: Upload Windows test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: gami-hash-windows
+          path: |
+            build/bin/*.exe
+            build/bin/SHA256SUMS-windows.txt
+            build/release-metadata/*
+          if-no-files-found: error
+          retention-days: 14

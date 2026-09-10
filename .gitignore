@@ -1,6 +1,14 @@
 dist/
 
 /build/bin/
-/build/windows/*.syso
+/build/edge-profile/
+!/build/appicon.png
+!/build/appicon-source.svg
+!/build/gami-logo.svg
+/build/windows/*
+!/build/windows/
+!/build/windows/installer/
+/build/windows/installer/*
+!/build/windows/installer/project.nsi
 /frontend/node_modules/
 /frontend/dist/

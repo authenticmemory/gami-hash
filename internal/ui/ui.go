@@ -2,6 +2,8 @@
 // output location, confirm, watch a progress bar, read the done message.
 // It uses the operating system's native dialogs (Win32 on Windows, zenity on
 // Linux, osascript on macOS) — no embedded UI toolkit, no admin rights.
+//go:build !cli
+
 package ui
 
 import (

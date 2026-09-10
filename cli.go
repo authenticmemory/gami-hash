@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -23,8 +25,12 @@ const (
 )
 
 func runCLI(args []string) int {
+	return runCLIWithIO(args, os.Stdin, os.Stdout, os.Stderr, isTerminal(os.Stdin))
+}
+
+func runCLIWithIO(args []string, stdin *os.File, stdout, stderr *os.File, interactive bool) int {
 	fs := flag.NewFlagSet("gami-hash", flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
+	fs.SetOutput(stderr)
 	root := fs.String("root", "", "folder to scan (required)")
 	output := fs.String("output", "", "CSV file to write (required, must be outside -root)")
 	workers := fs.Int("workers", engine.DefaultWorkers, "parallel hashing workers (1-2 for spinning disks, more for SSDs)")
@@ -33,12 +39,12 @@ func runCLI(args []string) int {
 	quiet := fs.Bool("quiet", false, "no progress output")
 	version := fs.Bool("version", false, "print version and exit")
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, `gami-hash %s — hashes every file in a folder and writes one CSV manifest.
+		fmt.Fprintf(stderr, `gami-hash %s — hashes every file in a folder and writes one CSV manifest.
 
 Usage:
   gami-hash --root FOLDER --output FILE.csv [--workers N] [--fresh] [--rehash-existing] [--quiet]
 
-Without arguments a graphical wizard starts instead.
+%s
 
 The scanned folder is only ever read. Output columns:
   %s
@@ -48,22 +54,37 @@ called again with the same -root and -output.
 Exit codes: 0 done · 1 fatal error · 2 done but some files unreadable · 130 interrupted
 
 Flags:
-`, engine.Version, "relative_path,filename,size_bytes,sha256,mtime_utc")
+`, engine.Version, cliNoArgsUsage, "relative_path,filename,size_bytes,sha256,mtime_utc")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
+		}
 		return exitFatal
 	}
 	if *version {
-		fmt.Println("gami-hash", engine.Version)
+		fmt.Fprintln(stdout, "gami-hash", engine.Version)
 		return exitOK
+	}
+	if fs.NArg() != 0 {
+		fmt.Fprintf(stderr, "error: unexpected argument %q\n", fs.Arg(0))
+		return exitFatal
+	}
+	if *root == "" && *output == "" && len(args) == 0 && interactive {
+		promptedRoot, promptedOutput, ok := promptCLI(stdin, stderr)
+		if !ok {
+			return exitCanceled
+		}
+		*root = promptedRoot
+		*output = promptedOutput
 	}
 	if *root == "" || *output == "" {
 		fs.Usage()
 		return exitFatal
 	}
 	if *workers < 1 || *workers > 64 {
-		fmt.Fprintln(os.Stderr, "error: -workers must be between 1 and 64")
+		fmt.Fprintln(stderr, "error: -workers must be between 1 and 64")
 		return exitFatal
 	}
 
@@ -101,7 +122,7 @@ Flags:
 			line += strings.Repeat(" ", pad)
 		}
 		lastLine = len(line)
-		fmt.Fprintf(os.Stderr, "\r%s", line)
+		fmt.Fprintf(stderr, "\r%s", line)
 	}
 
 	// Throttle terminal updates to 2/s.
@@ -122,32 +143,56 @@ Flags:
 		RehashExisting: *rehashExisting,
 	}, progressFn)
 	if !*quiet {
-		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(stderr)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
+		fmt.Fprintln(stderr, "error:", err)
 		return exitFatal
 	}
 
 	if res.Canceled {
-		fmt.Fprintf(os.Stderr, "interrupted — progress saved (%s files hashed this run).\n", t.FormatInt(res.FilesHashed))
-		fmt.Fprintf(os.Stderr, "run the same command again to resume.\n")
+		fmt.Fprintf(stderr, "interrupted — progress saved (%s files hashed this run).\n", t.FormatInt(res.FilesHashed))
+		fmt.Fprintf(stderr, "run the same command again to resume.\n")
 		return exitCanceled
 	}
 
-	fmt.Fprintf(os.Stderr, "done: %s files (%s) recorded in %s\n",
+	fmt.Fprintf(stderr, "done: %s files (%s) recorded in %s\n",
 		t.FormatInt(res.FilesHashed+res.FilesResumed), t.FormatSize(res.BytesTotal), res.Output)
 	if res.FilesResumed > 0 {
-		fmt.Fprintf(os.Stderr, "      %s of these were already recorded by a previous run\n", t.FormatInt(res.FilesResumed))
+		fmt.Fprintf(stderr, "      %s of these were already recorded by a previous run\n", t.FormatInt(res.FilesResumed))
 	}
 	if res.Skipped > 0 {
-		fmt.Fprintf(os.Stderr, "      %s non-regular entries skipped (symlinks etc.), see %s\n",
+		fmt.Fprintf(stderr, "      %s non-regular entries skipped (symlinks etc.), see %s\n",
 			t.FormatInt(res.Skipped), engine.ErrorLogPath(res.Output))
 	}
 	if res.FilesFailed > 0 {
-		fmt.Fprintf(os.Stderr, "warning: %s files could not be read, see %s\n",
+		fmt.Fprintf(stderr, "warning: %s files could not be read, see %s\n",
 			t.FormatInt(res.FilesFailed), engine.ErrorLogPath(res.Output))
 		return exitFileError
 	}
 	return exitOK
+}
+
+func promptCLI(stdin *os.File, stderr *os.File) (string, string, bool) {
+	reader := bufio.NewReader(stdin)
+	fmt.Fprintln(stderr, "GAMI Hash interactive CLI")
+	root, ok := promptLine(reader, stderr, "Enter root folder: ")
+	if !ok {
+		return "", "", false
+	}
+	output, ok := promptLine(reader, stderr, "Enter output CSV file: ")
+	if !ok {
+		return "", "", false
+	}
+	return root, output, true
+}
+
+func promptLine(reader *bufio.Reader, stderr *os.File, label string) (string, bool) {
+	fmt.Fprint(stderr, label)
+	value, err := reader.ReadString('\n')
+	if err != nil && len(value) == 0 {
+		fmt.Fprintln(stderr)
+		return "", false
+	}
+	return strings.TrimSpace(value), true
 }
