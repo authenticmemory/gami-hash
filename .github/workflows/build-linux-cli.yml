@@ -1,0 +1,81 @@
+name: Build Linux CLI
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "test-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-cli:
+    name: Build Linux CLI tarball
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies for inventory
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run CLI package tests
+        run: go test -count=1 -tags cli .
+
+      - name: Build CLI-only binary
+        run: |
+          version="${GITHUB_REF_NAME:-dev}"
+          mkdir -p build/bin
+          go build \
+            -trimpath \
+            -buildvcs=false \
+            -tags cli \
+            -ldflags "-w -s -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=$version" \
+            -o build/bin/gami-hash-linux-amd64 \
+            .
+
+      - name: Check CLI build has no Wails GUI dependency
+        run: |
+          deps="$(go list -deps -tags cli .)"
+          if printf '%s\n' "$deps" | grep -E 'github.com/wailsapp/wails|github.com/ncruces/zenity|webkit|gtk' ; then
+            echo "CLI-only build unexpectedly depends on GUI/WebKit packages"
+            exit 1
+          fi
+
+      - name: Package CLI
+        run: |
+          chmod 0755 build/bin/gami-hash-linux-amd64
+          tar -C build/bin -czf build/bin/gami-hash-linux-amd64.tar.gz gami-hash-linux-amd64
+          sha256sum build/bin/gami-hash-linux-amd64.tar.gz > build/bin/gami-hash-linux-amd64.tar.gz.sha256
+
+      - name: Create dependency inventory
+        shell: pwsh
+        run: ./release-dependency-inventory.ps1
+
+      - name: Upload Linux CLI
+        uses: actions/upload-artifact@v4
+        with:
+          name: gami-hash-linux-cli
+          path: |
+            build/bin/gami-hash-linux-amd64.tar.gz
+            build/bin/gami-hash-linux-amd64.tar.gz.sha256
+            build/release-metadata/*
+          if-no-files-found: error
+          retention-days: 14

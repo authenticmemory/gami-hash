@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img">
+  <title>GAMI Hash app icon</title>
+  <rect x="110" y="110" width="804" height="804" rx="150" fill="#f7f8f5"/>
+  <clipPath id="symbol-crop">
+    <rect x="187" y="187" width="650" height="650"/>
+  </clipPath>
+  <image href="gami-logo.svg" x="187" y="187" width="1732" height="650" clip-path="url(#symbol-crop)"/>
+</svg>

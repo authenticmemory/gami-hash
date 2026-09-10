@@ -75,6 +75,10 @@ jobs:
           shasum -a 256 "build/bin/gami-hash-macos-universal.zip" \
             > "build/bin/gami-hash-macos-universal.zip.sha256"
 
+      - name: Create dependency inventory
+        shell: pwsh
+        run: ./release-dependency-inventory.ps1
+
       - name: Upload test build
         uses: actions/upload-artifact@v4
         with:
@@ -82,5 +86,6 @@ jobs:
           path: |
             build/bin/gami-hash-macos-universal.zip
             build/bin/gami-hash-macos-universal.zip.sha256
+            build/release-metadata/*
           if-no-files-found: error
           retention-days: 14

@@ -351,6 +351,24 @@ func TestOutputInsideRootRejected(t *testing.T) {
 	}
 }
 
+func TestOutputMustBeCSV(t *testing.T) {
+	root := buildTree(t, map[string]string{"a.txt": "x"})
+	for _, name := range []string{"manifest", "manifest.txt", "manifest.xlsx"} {
+		out := filepath.Join(t.TempDir(), name)
+		if _, err := Run(context.Background(), Options{Root: root, Output: out}, nil); err == nil {
+			t.Fatalf("output %q was accepted; only .csv should be valid", name)
+		}
+		if fileExists(out) {
+			t.Fatalf("invalid output %q was created", out)
+		}
+	}
+
+	out := filepath.Join(t.TempDir(), "manifest.CSV")
+	if _, err := Run(context.Background(), Options{Root: root, Output: out}, nil); err != nil {
+		t.Fatalf("uppercase .CSV should be accepted: %v", err)
+	}
+}
+
 func TestScannedTreeNeverModified(t *testing.T) {
 	root := buildTree(t, map[string]string{"a/x.txt": "1", "b/y.txt": "22"})
 	// Read-only tree: hashing must still work, and nothing may be created.

@@ -175,6 +175,9 @@ func Validate(opts Options) (Options, error) {
 	if err != nil {
 		return Options{}, fmt.Errorf("invalid output path: %w", err)
 	}
+	if !strings.EqualFold(filepath.Ext(opts.Output), ".csv") {
+		return Options{}, fmt.Errorf("output file must end with .csv")
+	}
 	info, err := os.Stat(opts.Root)
 	if err != nil {
 		return Options{}, fmt.Errorf("cannot access root folder: %w", err)

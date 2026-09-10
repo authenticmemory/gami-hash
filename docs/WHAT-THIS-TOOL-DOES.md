@@ -23,25 +23,25 @@ the files themselves.
 
 ## What it does not do
 
-- No network activity. The program contains no networking code at all. This
-  is stronger than "doesn't phone home": the network stack is not linked
-  into the binary. Verify it with any firewall or Process Monitor, or build
-  from source and run `go list -deps .` (no `net*` packages appear).
+- No network activity by design: no upload, telemetry, accounts, remote fonts,
+  remote images, or remote help content. Runtime firewall or Process Monitor
+  verification remains part of the production release gate.
 - No writes into the scanned folder. Enforced in code, and every file is
   opened with read-only flags. You can run it against a read-only share or a
   write-protected drive.
 - Output paths are resolved before use, including Windows junctions. Output
   files are built separately and then published without truncating an existing
   symlink or hard-link target in place.
-- No installation, no admin rights, no services, no registry changes, no
-  drivers. Delete the file and it is gone.
+- No accounts, services, drivers, or registry changes for hashing. Windows and
+  macOS releases are packaged as installable/native apps; the CLI artifact
+  remains portable.
 - No file contents leave the machine. The output CSV contains only: relative
   path, file name, size, SHA-256, modification time.
 
 ## Verifying the binary
 
 Until code signing is in place, Windows SmartScreen may warn on first run
-("unknown publisher"). Verify the download instead:
+("unknown publisher"). Internal testers can verify the download:
 
 ```powershell
 Get-FileHash .\GAMI-Hashing-Tool-1.2.0.exe -Algorithm SHA256
@@ -49,8 +49,8 @@ Get-FileHash .\GAMI-Hashing-Tool-1.2.0.exe -Algorithm SHA256
 
 Compare the result with the checksum published by GAMI (delivered
 separately: by mail from your GAMI contact and on the release page). The
-build is reproducible: anyone can build the same binary from the public
-source and get the identical hash (see `VERIFY.md` in the repository).
+release reproducibility is not yet claimed; see `VERIFY.md` in the repository
+for current build limits.
 
 ## Resource use
 

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 1 {
+	if len(os.Args) > 1 || cliHandlesNoArgs() {
 		attachConsole() // no-op except on Windows GUI-subsystem builds
 		os.Exit(runCLI(os.Args[1:]))
 	}

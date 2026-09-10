@@ -9,5 +9,12 @@
   "author": {
     "name": "Authentic Memory",
     "email": ""
+  },
+  "info": {
+    "companyName": "Authentic Memory",
+    "productName": "GAMI Hash",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright (c) 2026 Authentic Memory",
+    "comments": "Preservation checksum tool for creating GAMI CSV manifests"
   }
 }
