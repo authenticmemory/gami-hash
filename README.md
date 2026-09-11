@@ -101,6 +101,29 @@ See [VERIFY.md](VERIFY.md) for the current verification status and limits.
 go test -race ./...   # test suite
 ```
 
+## Linux test packages
+
+The Linux GUI workflow produces:
+
+- `gami-hash-linux-amd64-gui.tar.gz` for manual testing
+- `gami-hash_<version>_amd64.deb` for Debian/Ubuntu
+- `gami-hash-<version>-1.x86_64.rpm` for Fedora-style systems
+
+Install on Debian/Ubuntu:
+
+```bash
+sudo apt install ./gami-hash_<version>_amd64.deb
+```
+
+Install on Fedora:
+
+```bash
+sudo dnf install ./gami-hash-<version>-1.x86_64.rpm
+```
+
+These packages declare the required GTK/WebKitGTK runtime dependencies. The
+current RPM targets Fedora-style WebKitGTK 4.1 packages, not RHEL 8/9.
+
 Until code-signing and notarization are in place, Windows SmartScreen and
 macOS Gatekeeper may warn on first run. Those unsigned/ad-hoc signed builds
 are for internal testing only, not institution-facing distribution.
