@@ -1,0 +1,30 @@
+name: gami-hash
+arch: amd64
+platform: linux
+version: __VERSION__
+section: utils
+priority: optional
+maintainer: Authentic Memory <info@authenticmemory.org>
+description: |
+  GAMI Hash creates SHA-256 CSV manifests for preservation collections.
+  It runs locally, reads source folders without modifying them, and writes
+  one CSV manifest plus safety sidecars for resumable runs.
+vendor: Authentic Memory
+homepage: https://authenticmemory.org
+license: MIT
+contents:
+  - src: ./dist/gami-hash-linux-amd64-gui
+    dst: /usr/bin/gami-hash
+    file_info:
+      mode: 0755
+  - src: ./packaging/linux/org.authenticmemory.gamihash.desktop
+    dst: /usr/share/applications/org.authenticmemory.gamihash.desktop
+    file_info:
+      mode: 0644
+  - src: ./build/appicon.png
+    dst: /usr/share/icons/hicolor/256x256/apps/org.authenticmemory.gamihash.png
+    file_info:
+      mode: 0644
+depends:
+  - gtk3
+  - webkit2gtk4.1

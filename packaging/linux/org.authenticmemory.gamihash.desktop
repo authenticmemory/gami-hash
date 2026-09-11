@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GAMI Hash
+Comment=Create SHA-256 CSV manifests for preservation collections
+Exec=gami-hash
+Icon=org.authenticmemory.gamihash
+Terminal=false
+Categories=Utility;Archiving;
+StartupNotify=true

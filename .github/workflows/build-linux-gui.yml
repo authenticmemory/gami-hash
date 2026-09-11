@@ -44,6 +44,9 @@ jobs:
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
+      - name: Install nfpm
+        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.1
+
       - name: Run tests
         run: go test -count=1 -timeout=5m ./...
 
@@ -61,7 +64,28 @@ jobs:
           cp build/bin/gami-hash dist/gami-hash-linux-amd64-gui
           chmod 0755 dist/gami-hash-linux-amd64-gui
           tar -C dist -czf dist/gami-hash-linux-amd64-gui.tar.gz gami-hash-linux-amd64-gui
-          sha256sum dist/gami-hash-linux-amd64-gui.tar.gz > dist/gami-hash-linux-amd64-gui.tar.gz.sha256
+
+      - name: Build Linux packages
+        run: |
+          version="${GITHUB_REF_NAME:-0.0.0-dev}"
+          version="${version#v}"
+          version="${version#test-v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+(\.[0-9]+){1,3}([~+.-][0-9A-Za-z.~+-]+)?$'; then
+            version="0.0.0-dev"
+          fi
+          sed "s/__VERSION__/$version/g" packaging/linux/nfpm.deb.yaml > dist/nfpm.deb.yaml
+          sed "s/__VERSION__/$version/g" packaging/linux/nfpm.rpm-fedora.yaml > dist/nfpm.rpm-fedora.yaml
+          "$HOME/go/bin/nfpm" package --config dist/nfpm.deb.yaml --packager deb --target dist/
+          "$HOME/go/bin/nfpm" package --config dist/nfpm.rpm-fedora.yaml --packager rpm --target dist/
+
+      - name: Write checksums
+        run: |
+          cd dist
+          sha256sum \
+            gami-hash-linux-amd64-gui.tar.gz \
+            gami-hash_*_amd64.deb \
+            gami-hash-*.x86_64.rpm \
+            > SHA256SUMS-linux-gui.txt
 
       - name: Upload Linux GUI
         uses: actions/upload-artifact@v4
@@ -69,6 +93,8 @@ jobs:
           name: gami-hash-linux-gui
           path: |
             dist/gami-hash-linux-amd64-gui.tar.gz
-            dist/gami-hash-linux-amd64-gui.tar.gz.sha256
+            dist/gami-hash_*_amd64.deb
+            dist/gami-hash-*.x86_64.rpm
+            dist/SHA256SUMS-linux-gui.txt
           if-no-files-found: error
           retention-days: 14
