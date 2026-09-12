@@ -46,11 +46,16 @@ function shell(content: string): void {
       <header class="brandbar">
         <div class="brand">
           <img src="${logoUrl}" alt="" class="logo">
-          <div><strong>GAMI</strong><span>· Hashing Tool</span></div>
+          <div><strong>Authentic Memory</strong><span>· Hashing Tool</span></div>
         </div>
       </header>
       <main>${content}</main>
     </div>`;
+  // Keyboard flow: Enter moves through the wizard. Never auto-focus during
+  // a run, where the only button is Cancel.
+  if (step !== "progress") {
+    app.querySelector<HTMLButtonElement>(".button.primary")?.focus();
+  }
 }
 
 function button(id: string, label: string, secondary = false, disabled = false): string {
@@ -72,7 +77,7 @@ async function renderWelcome(): Promise<void> {
       } else localStorage.removeItem("gami:last-run");
     } catch { localStorage.removeItem("gami:last-run"); }
   }
-  shell(`<section class="hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to GAMI. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${resume}<div class="actions">${button("begin", "Choose folder")}</div></section>`);
+  shell(`<section class="hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${resume}<div class="actions">${button("begin", "Choose folder", resume !== "")}</div></section>`);
   document.querySelector("#begin")?.addEventListener("click", () => chooseCollection());
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());
 }
@@ -234,7 +239,7 @@ function renderResult(): void {
     const warnBlock = warning
       ? `<div class="notice warning"><b>${number.format(issues)} file${issues === 1 ? "" : "s"} could not be read and are missing from the list.</b><span>Details are in the report next to the result file${errorLog ? `: <code>${esc(errorLog.split(/[\\/]/).pop() ?? "")}</code>` : "."} Please send it along.</span></div>`
       : "";
-    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><h1>Done</h1><p>${files} files (${size}) were recorded.</p>${warnBlock}<div class="path-card"><span>Result file</span><code>${esc(manifest)}</code></div><p>Please send the result file to GAMI as agreed.</p><div class="actions">${button("home", "Close", true)}${button("open-manifest", "Open folder")}</div></section>`);
+    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><h1>Done</h1><p>${files} files (${size}) were recorded.</p>${warnBlock}<div class="path-card"><span>Result file</span><code>${esc(manifest)}</code></div><p>Please send the result file to Authentic Memory as agreed.</p><div class="actions">${button("home", "Close", true)}${button("open-manifest", "Open folder")}</div></section>`);
   }
   document.querySelector("#home")?.addEventListener("click", () => { fatalError = ""; finalResult = null; renderWelcome(); });
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());

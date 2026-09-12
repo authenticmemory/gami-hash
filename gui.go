@@ -19,7 +19,7 @@ var frontendAssets embed.FS
 func runGUI() error {
 	backend := wailsadapter.New()
 	return wails.Run(&options.App{
-		Title:     "GAMI Hash",
+		Title:     "Authentic Memory Hashing Tool",
 		Width:     980,
 		Height:    720,
 		MinWidth:  760,

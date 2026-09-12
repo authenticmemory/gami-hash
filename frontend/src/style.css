@@ -62,7 +62,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--green); outline
 .brand { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; }
 .brand .logo { width: 27px; height: 27px; }
 .brand div { display: flex; align-items: baseline; gap: 7px; line-height: 1; }
-.brand strong { font-size: 15.5px; font-weight: 650; letter-spacing: 0.01em; color: var(--ink); }
+.brand strong { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; }
 .brand span { color: var(--ink-faint); font-size: 13.5px; font-weight: 450; }
 
 main { display: grid; place-items: start center; width: 100%; padding: clamp(28px, 6vh, 56px) clamp(20px, 5vw, 48px); }
@@ -90,18 +90,20 @@ main { display: grid; place-items: start center; width: 100%; padding: clamp(28p
 
 .actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
 
-/* Portal buttons: pills, ink border, hover inverts. */
+/* Portal pill buttons. The primary action is filled ink so it reads as THE
+   button; secondary actions keep a clearly visible outline so they never
+   look like loose text. */
 .button {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 42px; padding: 0 24px;
+  min-height: 42px; min-width: 120px; padding: 0 26px;
   border-radius: 99px; cursor: pointer;
   font-size: 14px; font-weight: 550;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
-.button.primary { color: var(--ink); background: var(--bg); border: 1.5px solid var(--ink); }
-.button.primary:hover:not(:disabled) { color: #fff; background: var(--ink); box-shadow: 0 4px 12px rgba(15, 27, 45, 0.12); }
-.button.secondary { color: var(--ink-soft); background: var(--bg); border: 1px solid var(--rule); }
-.button.secondary:hover:not(:disabled) { color: var(--ink); background: var(--surface-2); border-color: var(--ink-faintest); }
+.button.primary { color: #fff; background: var(--ink); border: 1.5px solid var(--ink); }
+.button.primary:hover:not(:disabled) { background: #24324d; border-color: #24324d; box-shadow: 0 4px 12px rgba(15, 27, 45, 0.18); }
+.button.secondary { color: var(--ink); background: var(--bg); border: 1.5px solid var(--ink-faintest); }
+.button.secondary:hover:not(:disabled) { background: var(--surface-2); border-color: var(--ink); }
 .button:disabled { cursor: wait; opacity: 0.55; }
 
 /* Paths: mono on a whisper of surface, hairline border. No amber here;
@@ -140,6 +142,7 @@ main { display: grid; place-items: start center; width: 100%; padding: clamp(28p
 .resume-card p { max-width: 420px; margin: 0; overflow-wrap: anywhere; color: var(--ink-soft); font-family: var(--mono); font-size: 12px; }
 
 /* Progress */
+.progress-panel h1 { font-variant-numeric: tabular-nums; }
 .progress-track {
   display: block; width: 100%; height: 8px; overflow: hidden;
   margin: 26px 0; border: 0; border-radius: 99px;

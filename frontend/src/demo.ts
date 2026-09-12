@@ -106,5 +106,5 @@ export function installDemoBackendIfNeeded(): void {
     },
     EventsOff: (name) => void listeners.delete(name),
   };
-  document.title = "GAMI Hash (design preview, simulated data)";
+  document.title = "Authentic Memory Hashing Tool (design preview, simulated data)";
 }
