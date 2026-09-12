@@ -47,7 +47,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 button, input { font: inherit; }
-button:focus-visible, a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+/* The focus ring appears only once the keyboard is actually in use (first
+   Tab press sets .kbd). The wizard auto-focuses the primary action so Enter
+   walks through it; without this gate that would paint a permanent ring. */
+button:focus-visible, a:focus-visible { outline: none; }
+html.kbd button:focus-visible, html.kbd a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 
 .app-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
 

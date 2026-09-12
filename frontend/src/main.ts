@@ -77,7 +77,7 @@ async function renderWelcome(): Promise<void> {
       } else localStorage.removeItem("gami:last-run");
     } catch { localStorage.removeItem("gami:last-run"); }
   }
-  shell(`<section class="hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${resume}<div class="actions">${button("begin", "Choose folder", resume !== "")}</div></section>`);
+  shell(`<section class="panel hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${resume}<div class="actions">${button("begin", "Choose folder", resume !== "")}</div></section>`);
   document.querySelector("#begin")?.addEventListener("click", () => chooseCollection());
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());
 }
@@ -271,8 +271,10 @@ function onEvent(event: EngineEvent): void {
 }
 
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Tab") document.documentElement.classList.add("kbd");
   if (event.key === "Escape" && busy && !cancelRequested) cancelRun();
 });
+window.addEventListener("pointerdown", () => document.documentElement.classList.remove("kbd"));
 
 api.onEngineEvent(onEvent);
 renderWelcome();
