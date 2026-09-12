@@ -53,7 +53,11 @@ button, input { font: inherit; }
 button:focus-visible, a:focus-visible { outline: none; }
 html.kbd button:focus-visible, html.kbd a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 
-.app-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+/* App layout: the title bar stays fixed, only the content area scrolls.
+   Panels center themselves via margin auto; when the window gets too small
+   the centering yields automatically and the content scrolls from the top
+   instead of being clipped. */
+.app-shell { height: 100vh; display: grid; grid-template-rows: auto 1fr; }
 
 /* Header: the portal's quiet white strip with a hairline. In the frameless
    window it doubles as the title bar: the whole strip drags the window,
@@ -93,8 +97,13 @@ html.kbd button:focus-visible, html.kbd a:focus-visible { outline: 2px solid var
    inside either text span it would sit on that font's baseline and look low. */
 .brand .sep { align-self: center; color: var(--ink-faintest); font-size: 13px; line-height: 1; }
 
-main { display: grid; place-items: start center; width: 100%; padding: clamp(28px, 6vh, 56px) clamp(20px, 5vw, 48px); }
-.hero, .panel { width: min(100%, 640px); }
+main {
+  display: flex; flex-direction: column;
+  min-height: 0; overflow-y: auto;
+  width: 100%;
+  padding: clamp(24px, 5vh, 48px) clamp(20px, 5vw, 48px);
+}
+.hero, .panel { width: min(100%, 640px); margin: auto; }
 
 .eyebrow {
   display: block;
@@ -208,6 +217,7 @@ main { display: grid; place-items: start center; width: 100%; padding: clamp(28p
 
 .error-copy { color: var(--red) !important; }
 .inline-error {
+  flex: none;
   width: min(100%, 640px); margin: 0 auto 16px; padding: 13px 16px;
   border: 1px solid var(--red-border); border-radius: 10px;
   background: var(--red-bg); color: var(--red); font-size: 14px; font-weight: 500;
@@ -215,7 +225,6 @@ main { display: grid; place-items: start center; width: 100%; padding: clamp(28p
 
 @media (max-width: 700px) {
   .metrics { grid-template-columns: 1fr; }
-  main { place-items: start center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
