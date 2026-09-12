@@ -66,6 +66,7 @@ declare global {
       EventsOff(name: string): void;
       WindowMinimise?(): void;
       WindowToggleMaximise?(): void;
+      WindowIsMaximised?(): Promise<boolean>;
       Quit?(): void;
     };
   }

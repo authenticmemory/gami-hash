@@ -42,11 +42,26 @@ const formatETA = (seconds: number): string => {
 
 // Window controls for the frameless window. In a plain-browser preview the
 // Wails runtime is absent; the buttons are still drawn but do nothing.
+// Icons follow the Windows caption-glyph vocabulary; straight lines sit on
+// half-pixel positions so 1px strokes render crisp.
 const winIcon = {
-  min: '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor" stroke-width="1"/></svg>',
+  min: '<svg viewBox="0 0 10 10" aria-hidden="true"><rect x="0" y="4.5" width="10" height="1" fill="currentColor"/></svg>',
   max: '<svg viewBox="0 0 10 10" aria-hidden="true"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+  restore:
+    '<svg viewBox="0 0 10 10" aria-hidden="true"><rect x="0.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1"/><path d="M2.5 2.5V0.5H9.5V7.5H7.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
   close: '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1"/></svg>',
 };
+
+// The maximize button mirrors the real window state (maximize vs. restore),
+// like every native Windows title bar.
+async function updateMaxButton(): Promise<void> {
+  const btn = document.querySelector<HTMLButtonElement>("#win-max");
+  const isMax = await window.runtime?.WindowIsMaximised?.().catch(() => false);
+  if (!btn) return;
+  btn.innerHTML = isMax ? winIcon.restore : winIcon.max;
+  btn.setAttribute("aria-label", isMax ? "Restore" : "Maximize");
+}
+window.addEventListener("resize", () => void updateMaxButton());
 
 function shell(content: string): void {
   app.innerHTML = `
@@ -65,13 +80,18 @@ function shell(content: string): void {
       <main>${content}</main>
     </div>`;
   const rt = window.runtime;
+  const toggleMax = () => {
+    rt?.WindowToggleMaximise?.();
+    setTimeout(() => void updateMaxButton(), 50);
+  };
   document.querySelector("#win-min")?.addEventListener("click", () => rt?.WindowMinimise?.());
-  document.querySelector("#win-max")?.addEventListener("click", () => rt?.WindowToggleMaximise?.());
+  document.querySelector("#win-max")?.addEventListener("click", toggleMax);
   document.querySelector("#win-close")?.addEventListener("click", () => rt?.Quit?.());
   document.querySelector(".brandbar")?.addEventListener("dblclick", (event) => {
     if ((event.target as HTMLElement).closest(".winctl")) return;
-    rt?.WindowToggleMaximise?.();
+    toggleMax();
   });
+  void updateMaxButton();
   // Keyboard flow: Enter moves through the wizard. Never auto-focus during
   // a run, where the only button is Cancel.
   if (step !== "progress") {

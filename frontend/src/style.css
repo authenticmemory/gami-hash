@@ -67,18 +67,25 @@ html.kbd button:focus-visible, html.kbd a:focus-visible { outline: 2px solid var
   border-bottom: 1px solid var(--rule);
   user-select: none;
 }
+/* Window controls, following Windows 11 caption-button conventions:
+   full-height quiet targets, subtle hover, a distinct pressed state, and
+   the red close hover. Cursor stays default, as on native caption buttons. */
 .winctl { --wails-draggable: no-drag; display: flex; align-items: stretch; }
 .wbtn {
   display: grid; place-items: center;
   width: 46px; border: 0; border-radius: 0;
-  background: transparent; color: var(--ink-faint);
+  background: transparent; color: var(--ink-soft);
   transition: background 0.1s, color 0.1s;
 }
-.wbtn svg { width: 10px; height: 10px; }
-.wbtn:hover { background: var(--surface-3); color: var(--ink); }
+.wbtn svg { width: 10px; height: 10px; display: block; }
+.wbtn:hover { background: rgba(21, 32, 53, 0.06); color: var(--ink); }
+.wbtn:active { background: rgba(21, 32, 53, 0.11); }
 .wbtn.close:hover { background: #C42B1C; color: #fff; }
+.wbtn.close:active { background: #B12A1B; color: #fff; }
 .brand { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; align-self: center; }
-.brand .logo { width: 27px; height: 27px; }
+/* Optical correction: the mixed-case wordmark's visual mass sits slightly
+   below the geometric line-box center, so the icon comes down 1px to match. */
+.brand .logo { width: 26px; height: 26px; display: block; transform: translateY(1px); }
 .brand div { display: flex; align-items: baseline; gap: 7px; line-height: 1; }
 .brand strong { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; }
 .brand span { color: var(--ink-faint); font-size: 13.5px; font-weight: 450; }
