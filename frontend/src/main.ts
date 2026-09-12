@@ -46,7 +46,7 @@ function shell(content: string): void {
       <header class="brandbar">
         <div class="brand">
           <img src="${logoUrl}" alt="" class="logo">
-          <div><strong>Authentic Memory</strong><span>· Hashing Tool</span></div>
+          <div><strong>Authentic Memory</strong><span class="sep" aria-hidden="true">·</span><span>Hashing Tool</span></div>
         </div>
       </header>
       <main>${content}</main>
