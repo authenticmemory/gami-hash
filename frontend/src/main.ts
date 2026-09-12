@@ -1,9 +1,6 @@
 import "./style.css";
 import { api, type EngineEvent, type PreflightResult, type Result, type RunRequest } from "./backend";
-import { installDemoBackendIfNeeded } from "./demo";
 import logoUrl from "./assets/gami-logo-icon.svg";
-
-installDemoBackendIfNeeded();
 
 type Step = "welcome" | "collection" | "output" | "review" | "progress" | "result";
 
@@ -341,5 +338,17 @@ window.addEventListener("keydown", (event) => {
 });
 window.addEventListener("pointerdown", () => document.documentElement.classList.remove("kbd"));
 
-api.onEngineEvent(onEvent);
-renderWelcome();
+async function init(): Promise<void> {
+  // Development only: without the Wails runtime (plain browser via
+  // `npm run dev`), load a simulated backend so the flow can be reviewed
+  // visually. The condition is compile-time false in production builds, so
+  // the bundler drops demo.ts entirely; the shipped app never contains it.
+  if (import.meta.env.DEV && !window.go?.wailsadapter?.Backend) {
+    const demo = await import("./demo");
+    demo.installDemoBackendIfNeeded();
+  }
+  api.onEngineEvent(onEvent);
+  await renderWelcome();
+}
+
+void init();
