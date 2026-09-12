@@ -1,5 +1,8 @@
 import "./style.css";
 import { api, type EngineEvent, type PreflightResult, type Result, type RunRequest } from "./backend";
+import { installDemoBackendIfNeeded } from "./demo";
+
+installDemoBackendIfNeeded();
 
 type Step = "welcome" | "collection" | "output" | "review" | "progress" | "result";
 
@@ -44,7 +47,7 @@ function shell(content: string): void {
       <header class="brandbar">
         <div class="brand">
           <svg viewBox="17 33 52 53" class="logo" aria-hidden="true"><path fill="currentColor" d="m 30.959389,86.102479 c -2.703723,-0.452592 -5.237354,-2.571928 -5.960414,-4.985778 -0.237967,-0.794436 -0.251098,-0.80888 -0.984816,-1.083007 -3.23777,-1.209679 -5.388309,-5.019052 -4.545932,-8.052497 0.13729,-0.494383 0.124372,-0.525571 -0.502196,-1.212247 -2.664851,-2.920517 -2.41993,-7.347697 0.571984,-10.338719 l 1.093756,-1.093433 -.318011-.644921 c -1.372133,-2.782717 -.09261,-6.400474 2.807917,-7.939202 .577627-.306426 .616874-.36164 .616874-.867693 0,-3.465179 2.988798,-6.49038 7.079778,-7.165988 .851778-.140667 1.047703-.226114 1.376104-.600142 1.185007,-1.349654 3.954787,-2.19938 5.390196,-1.653639 .413874,.157355 .410424,.235024-.08594,1.9366-.311686,1.068487-.312114,1.080864-.356803,10.463527 l-.04474,9.393776 h-2.512745 c-4.061936,0-4.889604-.478751-5.432611-3.142403-.435229-2.135008-2.376217-4.23112-3.392364-3.66347-.676993,.378192-.560845,1.033635 .315886,1.782651 .872397,.745311 1.069353,1.083269 1.346271,2.310117 .803305,3.558854 2.208481,4.451306 7.009175,4.451635 l2.61286,.000136 v10.33499 c0,11.456953 .05163,10.78414-.8638,11.257524-.95779,.495292-3.708809,.765173-5.220425,.512137 z m8.220737-.767776-.336999-.337012 .04034-20.763134 c.04442-22.858867-.01667-21.17686 .84893-23.370661 3.840617-9.733753 18.699286-9.391963 22.780987,.524024 .821237,1.995095 .833407,2.092004 .903222,7.197535 .03684,2.693738 .115332,4.681433 .183206,4.639485 1.065768-.658682 3.815519,.954667 4.645793,2.725806 l.355748,.758876 .04018,6.886544 c.07746,13.26966-.581175,15.910165-4.819336,19.321276-3.195706,2.572074-3.669525,2.657825-14.978017,2.710679 l-9.327063,.04362 z m15.540196-8.719841 c.04635-.120724-.266929-1.906569-.696131-3.968538 l-.780372-3.749029 .324217-.203851 c4.665078-2.933248 .612236-10.168103-4.422833-7.895329-3.157297,1.42517-3.373535,6.365918-.349112,7.976865 .243035,.129452 .226508,.268531-.43515,3.662389-.681299,3.494653-.770157,4.135201-.597499,4.307855 .221722,.221717 6.869573,.09715 6.95688-.130362 z"/></svg>
-          <div><strong>GAMI</strong><span>Hash</span></div>
+          <div><strong>GAMI</strong><span>· Hashing Tool</span></div>
         </div>
         ${step === "welcome" ? "" : `<ol class="stepper" aria-label="Progress through setup">${steps.map((item, index) => `<li class="${index <= active ? "active" : ""}" aria-current="${item === step ? "step" : "false"}"><span>${index + 1}</span><b>${["Collection", "Output", "Review", "Progress", "Results"][index]}</b></li>`).join("")}</ol>`}
       </header>
@@ -91,9 +94,13 @@ async function chooseCollection(): Promise<void> {
 
 async function chooseOutput(): Promise<void> {
   try {
+    // Same naming convention as the CLI and the archivist guide:
+    // checksums_<folder>_<date>.csv
     const now = new Date();
-    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}`;
-    const selected = await api.selectOutput(`gami-hash-${stamp}.csv`);
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const base = (root.split(/[\\/]/).filter(Boolean).pop() ?? "folder")
+      .replace(/[/\\:*?"<>| ]/g, "_").slice(0, 60);
+    const selected = await api.selectOutput(`checksums_${base}_${stamp}.csv`);
     if (!selected) return;
     output = selected.toLowerCase().endsWith(".csv") ? selected : `${selected}.csv`;
     const resume = await api.inspectResume(output);
