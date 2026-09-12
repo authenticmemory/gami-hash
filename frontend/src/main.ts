@@ -1,6 +1,7 @@
 import "./style.css";
 import { api, type EngineEvent, type PreflightResult, type Result, type RunRequest } from "./backend";
 import { installDemoBackendIfNeeded } from "./demo";
+import logoUrl from "./assets/gami-logo-icon.svg";
 
 installDemoBackendIfNeeded();
 
@@ -40,19 +41,15 @@ const formatETA = (seconds: number): string => {
 };
 
 function shell(content: string): void {
-  const steps: Step[] = ["collection", "output", "review", "progress", "result"];
-  const active = Math.max(0, steps.indexOf(step));
   app.innerHTML = `
     <div class="app-shell">
       <header class="brandbar">
         <div class="brand">
-          <svg viewBox="17 33 52 53" class="logo" aria-hidden="true"><path fill="currentColor" d="m 30.959389,86.102479 c -2.703723,-0.452592 -5.237354,-2.571928 -5.960414,-4.985778 -0.237967,-0.794436 -0.251098,-0.80888 -0.984816,-1.083007 -3.23777,-1.209679 -5.388309,-5.019052 -4.545932,-8.052497 0.13729,-0.494383 0.124372,-0.525571 -0.502196,-1.212247 -2.664851,-2.920517 -2.41993,-7.347697 0.571984,-10.338719 l 1.093756,-1.093433 -.318011-.644921 c -1.372133,-2.782717 -.09261,-6.400474 2.807917,-7.939202 .577627-.306426 .616874-.36164 .616874-.867693 0,-3.465179 2.988798,-6.49038 7.079778,-7.165988 .851778-.140667 1.047703-.226114 1.376104-.600142 1.185007,-1.349654 3.954787,-2.19938 5.390196,-1.653639 .413874,.157355 .410424,.235024-.08594,1.9366-.311686,1.068487-.312114,1.080864-.356803,10.463527 l-.04474,9.393776 h-2.512745 c-4.061936,0-4.889604-.478751-5.432611-3.142403-.435229-2.135008-2.376217-4.23112-3.392364-3.66347-.676993,.378192-.560845,1.033635 .315886,1.782651 .872397,.745311 1.069353,1.083269 1.346271,2.310117 .803305,3.558854 2.208481,4.451306 7.009175,4.451635 l2.61286,.000136 v10.33499 c0,11.456953 .05163,10.78414-.8638,11.257524-.95779,.495292-3.708809,.765173-5.220425,.512137 z m8.220737-.767776-.336999-.337012 .04034-20.763134 c.04442-22.858867-.01667-21.17686 .84893-23.370661 3.840617-9.733753 18.699286-9.391963 22.780987,.524024 .821237,1.995095 .833407,2.092004 .903222,7.197535 .03684,2.693738 .115332,4.681433 .183206,4.639485 1.065768-.658682 3.815519,.954667 4.645793,2.725806 l.355748,.758876 .04018,6.886544 c.07746,13.26966-.581175,15.910165-4.819336,19.321276-3.195706,2.572074-3.669525,2.657825-14.978017,2.710679 l-9.327063,.04362 z m15.540196-8.719841 c.04635-.120724-.266929-1.906569-.696131-3.968538 l-.780372-3.749029 .324217-.203851 c4.665078-2.933248 .612236-10.168103-4.422833-7.895329-3.157297,1.42517-3.373535,6.365918-.349112,7.976865 .243035,.129452 .226508,.268531-.43515,3.662389-.681299,3.494653-.770157,4.135201-.597499,4.307855 .221722,.221717 6.869573,.09715 6.95688-.130362 z"/></svg>
+          <img src="${logoUrl}" alt="" class="logo">
           <div><strong>GAMI</strong><span>· Hashing Tool</span></div>
         </div>
-        ${step === "welcome" ? "" : `<ol class="stepper" aria-label="Progress through setup">${steps.map((item, index) => `<li class="${index <= active ? "active" : ""}" aria-current="${item === step ? "step" : "false"}"><span>${index + 1}</span><b>${["Collection", "Output", "Review", "Progress", "Results"][index]}</b></li>`).join("")}</ol>`}
       </header>
       <main>${content}</main>
-      <footer><span>Runs entirely on this computer</span><span aria-hidden="true">•</span><span>No upload, accounts, or analytics</span></footer>
     </div>`;
 }
 
@@ -69,13 +66,13 @@ async function renderWelcome(): Promise<void> {
       const run = JSON.parse(saved) as { root: string; output: string };
       const state = await api.inspectResume(run.output);
       if (state.resumable) {
-        resume = `<section class="resume-card"><div><span class="eyebrow">Interrupted run found</span><strong>${number.format(state.rows)} files are safely recorded</strong><p>${esc(run.root)}</p></div>${button("resume", "Resume run")}</section>`;
+        resume = `<section class="resume-card"><div><span class="eyebrow">Interrupted run</span><strong>${number.format(state.rows)} files recorded so far</strong><p>${esc(run.root)}</p></div>${button("resume", "Continue")}</section>`;
         root = run.root;
         output = run.output;
       } else localStorage.removeItem("gami:last-run");
     } catch { localStorage.removeItem("gami:last-run"); }
   }
-  shell(`<section class="hero"><span class="eyebrow">Preservation checksum tool</span><h1>Create a trustworthy record of your collection.</h1><p class="lede">GAMI Hash reads every file and records its SHA-256 fingerprint in a CSV manifest. Your originals are never edited, moved, or uploaded.</p><div class="trust-grid"><article><b>Read-only source</b><span>Your collection is opened only for reading.</span></article><article><b>Works offline</b><span>No accounts, cloud services, or tracking.</span></article><article><b>Safe to resume</b><span>Interrupted work continues from a verified checkpoint.</span></article></div>${resume}<div class="actions">${button("begin", "Choose a collection")}</div></section>`);
+  shell(`<section class="hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to GAMI. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${resume}<div class="actions">${button("begin", "Choose folder")}</div></section>`);
   document.querySelector("#begin")?.addEventListener("click", () => chooseCollection());
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());
 }
@@ -86,7 +83,7 @@ async function chooseCollection(): Promise<void> {
     if (!selected) return;
     root = selected;
     step = "collection";
-    shell(`<section class="panel"><span class="eyebrow">Step 1</span><h1>Collection selected</h1><p>GAMI will include regular files in this folder and its subfolders. Links and special files are reported but never followed.</p><div class="path-card"><span>Collection folder</span><code>${esc(root)}</code></div><div class="actions">${button("back", "Back", true)}${button("next", "Choose output")}</div></section>`);
+    shell(`<section class="panel"><span class="eyebrow">Step 1 of 3</span><h1>Folder selected</h1><p>All files in this folder and its subfolders will be recorded. Links and special files are skipped and noted in the report.</p><div class="path-card"><span>Folder</span><code>${esc(root)}</code></div><div class="actions">${button("back", "Back", true)}${button("next", "Choose where to save")}</div></section>`);
     document.querySelector("#back")?.addEventListener("click", () => renderWelcome());
     document.querySelector("#next")?.addEventListener("click", () => chooseOutput());
   } catch (error) { showInlineError(error); }
@@ -119,7 +116,7 @@ async function chooseOutput(): Promise<void> {
 
 function renderResumeConflict(): void {
   step = "review";
-  shell(`<section class="panel"><span class="eyebrow">Existing checkpoint</span><h1>This output belongs to another collection.</h1><p>The selected manifest contains ${number.format(resumeConflict?.rows ?? 0)} verified rows for the collection below. GAMI will not combine it with a different source.</p><div class="path-card"><span>Checkpoint collection</span><code>${esc(resumeConflict?.root ?? "")}</code></div><div class="path-card"><span>Currently selected collection</span><code>${esc(root)}</code></div><div class="notice warning"><b>Starting over replaces the partial manifest</b><span>Your source files are never changed, but the saved hashing progress for this output will be discarded.</span></div><div class="actions conflict-actions">${button("different", "Choose another output", true)}${button("restart", "Start over", true)}${button("resume-recorded", "Resume recorded collection")}</div></section>`);
+  shell(`<section class="panel"><span class="eyebrow">Interrupted run</span><h1>This file belongs to a different folder</h1><p>The chosen file already contains ${number.format(resumeConflict?.rows ?? 0)} recorded files from an earlier, interrupted run of the folder below. It will not be mixed with a different folder.</p><div class="path-card"><span>Recorded back then</span><code>${esc(resumeConflict?.root ?? "")}</code></div><div class="path-card"><span>Selected now</span><code>${esc(root)}</code></div><p>Continuing records the earlier folder. Starting over clears the file and records the newly selected folder instead.</p><div class="actions conflict-actions">${button("different", "Choose another file", true)}${button("restart", "Start over", true)}${button("resume-recorded", "Continue earlier run")}</div></section>`);
   document.querySelector("#different")?.addEventListener("click", () => chooseOutput());
   document.querySelector("#restart")?.addEventListener("click", async () => {
     try { resumeConflict = null; review = await api.preflight({ root, output, workers: 2, mode: "fresh" }); renderReview(); }
@@ -136,9 +133,9 @@ function renderResumeConflict(): void {
 function renderReview(): void {
   step = "review";
   const resumeText = review?.willResume
-    ? `<div class="notice info"><b>Verified checkpoint found</b><span>${number.format(review.resume.rows)} existing rows will be validated and reused.</span></div>`
-    : `<div class="notice"><b>New manifest</b><span>The selected output will be safely created when you start.</span></div>`;
-  shell(`<section class="panel"><span class="eyebrow">Step 3</span><h1>Review before starting</h1><p>Confirm these locations. The output is outside the collection and has passed the engine's safety checks.</p><dl class="review-list"><div><dt>Read from</dt><dd>${esc(review?.root ?? root)}</dd></div><div><dt>Write manifest to</dt><dd>${esc(review?.output ?? output)}</dd></div></dl>${resumeText}<div class="actions">${button("back", "Change output", true)}${button("start", review?.willResume ? "Resume hashing" : "Start hashing")}</div></section>`);
+    ? `<div class="notice info"><b>Continuing an interrupted run</b><span>${number.format(review.resume.rows)} files are already recorded and will be kept.</span></div>`
+    : "";
+  shell(`<section class="panel"><span class="eyebrow">Step 3 of 3</span><h1>Ready to start</h1><p>Depending on the amount of data this can take several hours. You can keep using the computer, and you can stop and continue later at any time.</p><dl class="review-list"><div><dt>Folder</dt><dd>${esc(review?.root ?? root)}</dd></div><div><dt>Result file</dt><dd>${esc(review?.output ?? output)}</dd></div></dl>${resumeText}<div class="actions">${button("back", "Change", true)}${button("start", review?.willResume ? "Continue" : "Start")}</div></section>`);
   document.querySelector("#back")?.addEventListener("click", () => chooseOutput());
   document.querySelector("#start")?.addEventListener("click", () => startRun(review?.willResume ? "resume" : "fresh"));
 }
@@ -175,18 +172,18 @@ function renderProgress(progress: import("./backend").Progress): void {
     lastBytes = progress.BytesDone;
     lastProgressAt = now;
   }
-  const eta = !scanning && bytesPerSecond > 0 ? formatETA((progress.BytesTotal - progress.BytesDone) / bytesPerSecond) : scanning ? "Counting files safely…" : "Estimating…";
+  const eta = !scanning && bytesPerSecond > 0 ? formatETA((progress.BytesTotal - progress.BytesDone) / bytesPerSecond) : scanning ? "Counting files…" : "Estimating…";
   if (!document.querySelector(".progress-panel")) {
-    shell(`<section class="panel progress-panel" aria-live="polite"><span id="progress-phase" class="eyebrow"></span><h1 id="progress-title"></h1><p id="progress-eta"></p><progress id="progress-bar" class="progress-track" aria-label="Hashing progress" max="100"></progress><div class="metrics"><article><span>Files</span><strong><b id="files-done">0</b> <small>of <b id="files-total">0</b></small></strong></article><article><span>Data read</span><strong><b id="bytes-done">0 B</b> <small>of <b id="bytes-total">0 B</b></small></strong></article><article><span>Elapsed</span><strong id="elapsed">0 sec</strong></article></div><div class="path-card compact"><span>Writing manifest to</span><code>${esc(output)}</code></div><div class="actions">${button("cancel", "Cancel", true)}</div></section>`);
+    shell(`<section class="panel progress-panel" aria-live="polite"><span id="progress-phase" class="eyebrow"></span><h1 id="progress-title"></h1><p id="progress-eta"></p><progress id="progress-bar" class="progress-track" aria-label="Hashing progress" max="100"></progress><div class="metrics"><article><span>Files</span><strong><b id="files-done">0</b> <small>of <b id="files-total">0</b></small></strong></article><article><span>Data read</span><strong><b id="bytes-done">0 B</b> <small>of <b id="bytes-total">0 B</b></small></strong></article><article><span>Elapsed</span><strong id="elapsed">0 sec</strong></article></div><div class="path-card compact"><span>Result file</span><code>${esc(output)}</code></div><div class="actions">${button("cancel", "Cancel", true)}</div></section>`);
     document.querySelector("#cancel")?.addEventListener("click", cancelRun);
   }
   const setText = (selector: string, value: string) => {
     const element = document.querySelector(selector);
     if (element) element.textContent = value;
   };
-  setText("#progress-phase", cancelRequested ? "Saving checkpoint" : scanning ? "Preparing" : "Hashing collection");
-  setText("#progress-title", cancelRequested ? "Canceling safely…" : scanning ? "Counting files and bytes" : `${percent.toFixed(1)}% complete`);
-  setText("#progress-eta", cancelRequested ? "Finishing current reads and making the partial manifest safe to resume." : eta);
+  setText("#progress-phase", cancelRequested ? "Stopping" : scanning ? "Preparing" : "Hashing");
+  setText("#progress-title", cancelRequested ? "Stopping…" : scanning ? "Counting files" : `${percent.toFixed(1)}%`);
+  setText("#progress-eta", cancelRequested ? "Finishing the current file. Progress is kept." : eta);
   setText("#files-done", number.format(progress.FilesDone));
   setText("#files-total", number.format(progress.FilesTotal));
   setText("#bytes-done", formatBytes(progress.BytesDone));
@@ -206,11 +203,11 @@ async function cancelRun(): Promise<void> {
   if (cancelRequested) return;
   cancelRequested = true;
   const button = document.querySelector<HTMLButtonElement>("#cancel");
-  if (button) { button.disabled = true; button.textContent = "Canceling safely…"; }
+  if (button) { button.disabled = true; button.textContent = "Stopping…"; }
   const heading = document.querySelector("#progress-title");
   const explanation = document.querySelector("#progress-eta");
-  if (heading) heading.textContent = "Canceling safely…";
-  if (explanation) explanation.textContent = "Finishing current reads and making the partial manifest safe to resume.";
+  if (heading) heading.textContent = "Stopping…";
+  if (explanation) explanation.textContent = "Finishing the current file. Progress is kept.";
   try { await api.cancel(); } catch (error) { showInlineError(error); }
 }
 
@@ -224,21 +221,20 @@ function finishFatal(error: unknown): void {
 function renderResult(): void {
   step = "result";
   if (fatalError) {
-    shell(`<section class="panel result"><div class="result-icon failure">!</div><span class="eyebrow">Run stopped</span><h1>GAMI could not create the manifest.</h1><p class="error-copy">${esc(fatalError)}</p><p>Your collection was not modified. Resolve the problem and try again.</p><div class="actions">${button("home", "Return to start", true)}</div></section>`);
+    shell(`<section class="panel result"><div class="result-icon failure">!</div><h1>The run could not continue</h1><p class="error-copy">${esc(fatalError)}</p><p>Your files were not changed. You can simply try again.</p><div class="actions">${button("home", "Back to start", true)}</div></section>`);
   } else if (finalResult?.Canceled) {
-    shell(`<section class="panel result"><div class="result-icon canceled">Ⅱ</div><span class="eyebrow">Canceled safely</span><h1>Your progress has been saved.</h1><p>GAMI saved a partial manifest and a small <code>.part.json</code> checkpoint beside it. Resume validates every saved row before continuing.</p><div class="path-card"><span>Partial manifest</span><code>${esc(finalResult.Output)}</code></div><div class="path-card compact"><span>Resume checkpoint</span><code>${esc(`${finalResult.Output}.part.json`)}</code></div><div class="actions">${button("home", "Close", true)}${button("resume", "Resume now")}</div></section>`);
+    shell(`<section class="panel result"><div class="result-icon canceled">❚❚</div><h1>Stopped. Nothing is lost.</h1><p>Your progress is saved. Continue now, or close the program and continue another day: the next start will offer to pick up where you stopped.</p><div class="actions">${button("home", "Close", true)}${button("resume", "Continue now")}</div></section>`);
   } else {
     const issues = (finalResult?.FilesFailed ?? 0) + (finalResult?.Warnings ?? 0);
     const warning = issues > 0;
     const manifest = finalResult?.Output ?? output;
     const errorLog = finalResult?.ErrorLog ?? "";
-    const hasErrorLog = errorLog.length > 0;
-    const openButtons = hasErrorLog
-      ? `${button("open-manifest", "Open manifest folder", true)}${button("open-errors", "Open error log folder")}`
-      : button("open-manifest", "Open manifest folder");
-    const issueGuidance = hasErrorLog ? "Review the error log before treating the manifest as complete." : "Review the reported omissions before treating the manifest as complete.";
-    const errorLogCard = hasErrorLog ? `<div class="path-card"><span>Error log</span><code>${esc(errorLog)}</code></div>` : "";
-    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><span class="eyebrow">${warning ? "Completed with warnings" : "Complete"}</span><h1>${warning ? "Your manifest is ready—review the omissions." : "Your manifest is ready."}</h1><div class="summary"><strong>${number.format((finalResult?.FilesHashed ?? 0) + (finalResult?.FilesResumed ?? 0))}</strong><span>files recorded</span></div>${warning ? `<div class="notice warning"><b>${number.format(issues)} item${issues === 1 ? "" : "s"} need attention</b><span>${issueGuidance}</span></div>${errorLogCard}` : ""}<div class="path-card"><span>Manifest saved to</span><code>${esc(manifest)}</code></div><div class="actions">${button("home", "Start another", true)}${openButtons}</div></section>`);
+    const files = number.format((finalResult?.FilesHashed ?? 0) + (finalResult?.FilesResumed ?? 0));
+    const size = formatBytes(finalResult?.BytesTotal ?? 0);
+    const warnBlock = warning
+      ? `<div class="notice warning"><b>${number.format(issues)} file${issues === 1 ? "" : "s"} could not be read and are missing from the list.</b><span>Details are in the report next to the result file${errorLog ? `: <code>${esc(errorLog.split(/[\\/]/).pop() ?? "")}</code>` : "."} Please send it along.</span></div>`
+      : "";
+    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><h1>Done</h1><p>${files} files (${size}) were recorded.</p>${warnBlock}<div class="path-card"><span>Result file</span><code>${esc(manifest)}</code></div><p>Please send the result file to GAMI as agreed.</p><div class="actions">${button("home", "Close", true)}${button("open-manifest", "Open folder")}</div></section>`);
   }
   document.querySelector("#home")?.addEventListener("click", () => { fatalError = ""; finalResult = null; renderWelcome(); });
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());

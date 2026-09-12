@@ -49,7 +49,7 @@ body {
 button, input { font: inherit; }
 button:focus-visible, a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 
-.app-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+.app-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
 
 /* Header: the portal's quiet white strip with a hairline. */
 .brandbar {
@@ -60,23 +60,10 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--green); outline
   border-bottom: 1px solid var(--rule);
 }
 .brand { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; }
-.brand .logo { width: 27px; height: 27px; color: var(--green); }
+.brand .logo { width: 27px; height: 27px; }
 .brand div { display: flex; align-items: baseline; gap: 7px; line-height: 1; }
 .brand strong { font-size: 15.5px; font-weight: 650; letter-spacing: 0.01em; color: var(--ink); }
 .brand span { color: var(--ink-faint); font-size: 13.5px; font-weight: 450; }
-
-/* Stepper: numbered like the download page's step markers. */
-.stepper { display: flex; align-items: center; gap: clamp(10px, 2vw, 22px); margin: 0; padding: 0; list-style: none; }
-.stepper li { display: flex; align-items: center; gap: 7px; color: var(--ink-faintest); font-size: 12px; font-weight: 500; }
-.stepper li span {
-  display: grid; place-items: center; width: 21px; height: 21px;
-  border: 1px solid var(--rule); border-radius: 50%;
-  font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums;
-  color: var(--ink-faintest); background: var(--bg);
-}
-.stepper li.active { color: var(--ink-soft); }
-.stepper li.active span { color: var(--green-deep); background: var(--green-bg); border-color: var(--green-bg); }
-.stepper li[aria-current="step"] { color: var(--ink); font-weight: 600; }
 
 main { display: grid; place-items: start center; width: 100%; padding: clamp(28px, 6vh, 56px) clamp(20px, 5vw, 48px); }
 .hero, .panel { width: min(100%, 640px); }
@@ -97,13 +84,6 @@ main { display: grid; place-items: start center; width: 100%; padding: clamp(28p
   text-wrap: balance;
 }
 .lede, .panel > p { max-width: 58ch; margin: 0 0 8px; color: var(--ink-soft); font-size: 15px; line-height: 1.65; }
-
-/* Trust facts: the download page's quiet tick list, not cards. */
-.trust-grid { display: grid; gap: 10px; margin: 26px 0 6px; padding: 20px 22px; border: 1px solid var(--rule); border-radius: 14px; }
-.trust-grid article { display: grid; grid-template-columns: 18px 1fr; column-gap: 10px; align-items: baseline; }
-.trust-grid article::before { content: "✓"; color: var(--green); font-weight: 650; }
-.trust-grid b { color: var(--ink); font-size: 14px; font-weight: 600; }
-.trust-grid span { grid-column: 2; color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; }
 
 .panel { padding: clamp(24px, 4vw, 34px); border: 1px solid var(--rule); border-radius: 14px; background: var(--bg); }
 .panel h1 { font-size: clamp(22px, 3vw, 26px); }
@@ -190,10 +170,9 @@ main { display: grid; place-items: start center; width: 100%; padding: clamp(28p
 .result-icon.success { color: var(--green-deep); background: var(--green-bg); }
 .result-icon.warning { color: var(--amber-strong); background: var(--amber-bg); border: 1px solid var(--amber-border); }
 .result-icon.failure { color: var(--red); background: var(--red-bg); border: 1px solid var(--red-border); }
-.result-icon.canceled { color: var(--ink-soft); background: var(--surface-3); }
-.summary { display: grid; margin: 24px 0; }
-.summary strong { color: var(--ink); font-size: 40px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.summary span { margin-top: 6px; color: var(--ink-faint); font-size: 13.5px; }
+.result-icon.canceled { color: var(--ink-soft); background: var(--surface-3); font-size: 15px; letter-spacing: 2px; }
+.result h1 { margin-top: 0; }
+.result > p { margin: 6px auto 10px; max-width: 46ch; }
 
 .error-copy { color: var(--red) !important; }
 .inline-error {
@@ -202,15 +181,7 @@ main { display: grid; place-items: start center; width: 100%; padding: clamp(28p
   background: var(--red-bg); color: var(--red); font-size: 14px; font-weight: 500;
 }
 
-footer {
-  display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;
-  padding: 14px 24px;
-  border-top: 1px solid var(--rule);
-  color: var(--ink-faintest); font-size: 12px;
-}
-
 @media (max-width: 700px) {
-  .stepper b { display: none; }
   .metrics { grid-template-columns: 1fr; }
   main { place-items: start center; }
 }
