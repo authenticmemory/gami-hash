@@ -103,20 +103,44 @@ function button(id: string, label: string, secondary = false, disabled = false):
   return `<button id="${id}" class="button ${secondary ? "secondary" : "primary"}" ${disabled ? "disabled" : ""}>${label}</button>`;
 }
 
+// The one-click resume offer remembers the last run in localStorage. Storage
+// can be unavailable or stale in a webview, so every access is defensive:
+// losing this state only costs the convenience, never a run.
+const lastRunStore = {
+  key: "gami:last-run",
+  read(): { root: string; output: string } | null {
+    try {
+      const raw = localStorage.getItem(this.key);
+      if (!raw) return null;
+      const run = JSON.parse(raw) as { root?: unknown; output?: unknown };
+      if (typeof run.root === "string" && typeof run.output === "string") {
+        return { root: run.root, output: run.output };
+      }
+    } catch { /* fall through */ }
+    this.clear();
+    return null;
+  },
+  write(rememberRoot: string, rememberOutput: string): void {
+    try { localStorage.setItem(this.key, JSON.stringify({ root: rememberRoot, output: rememberOutput })); } catch { /* resume offer only */ }
+  },
+  clear(): void {
+    try { localStorage.removeItem(this.key); } catch { /* nothing to clear */ }
+  },
+};
+
 async function renderWelcome(): Promise<void> {
   step = "welcome";
-  const saved = localStorage.getItem("gami:last-run");
+  const run = lastRunStore.read();
   let resume = "";
-  if (saved) {
+  if (run) {
     try {
-      const run = JSON.parse(saved) as { root: string; output: string };
       const state = await api.inspectResume(run.output);
       if (state.resumable) {
         resume = `<section class="resume-card"><div><span class="eyebrow">Interrupted run</span><strong>${number.format(state.rows)} files recorded so far</strong><p>${esc(run.root)}</p></div>${button("resume", "Continue")}</section>`;
         root = run.root;
         output = run.output;
-      } else localStorage.removeItem("gami:last-run");
-    } catch { localStorage.removeItem("gami:last-run"); }
+      } else lastRunStore.clear();
+    } catch { lastRunStore.clear(); }
   }
   shell(`<section class="panel hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${resume}<div class="actions">${button("begin", "Choose folder", resume !== "")}</div></section>`);
   document.querySelector("#begin")?.addEventListener("click", () => chooseCollection());
@@ -190,7 +214,7 @@ async function resumeRun(): Promise<void> {
   try {
     review = await api.preflight({ root, output, workers: 2, mode: "resume" });
     renderReview();
-  } catch (error) { localStorage.removeItem("gami:last-run"); showInlineError(error); }
+  } catch (error) { lastRunStore.clear(); showInlineError(error); }
 }
 
 async function startRun(mode: RunRequest["mode"]): Promise<void> {
@@ -202,7 +226,7 @@ async function startRun(mode: RunRequest["mode"]): Promise<void> {
   bytesPerSecond = 0;
   step = "progress";
   renderProgress({ Phase: 0, FilesDone: 0, FilesTotal: 0, BytesDone: 0, BytesTotal: 0 });
-  localStorage.setItem("gami:last-run", JSON.stringify({ root, output }));
+  lastRunStore.write(root, output);
   try { await api.start({ root, output, workers: 2, mode }); }
   catch (error) { finishFatal(error); }
 }
@@ -306,7 +330,7 @@ function onEvent(event: EngineEvent): void {
     busy = false;
     finalResult = event.result;
     fatalError = "";
-    if (!event.result.Canceled) localStorage.removeItem("gami:last-run");
+    if (!event.result.Canceled) lastRunStore.clear();
     renderResult();
   }
 }
