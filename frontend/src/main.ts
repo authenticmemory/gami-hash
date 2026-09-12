@@ -40,6 +40,14 @@ const formatETA = (seconds: number): string => {
   return `About ${Math.ceil(seconds / 3600)} hours remaining`;
 };
 
+// Window controls for the frameless window. In a plain-browser preview the
+// Wails runtime is absent; the buttons are still drawn but do nothing.
+const winIcon = {
+  min: '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor" stroke-width="1"/></svg>',
+  max: '<svg viewBox="0 0 10 10" aria-hidden="true"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+  close: '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1"/></svg>',
+};
+
 function shell(content: string): void {
   app.innerHTML = `
     <div class="app-shell">
@@ -48,9 +56,22 @@ function shell(content: string): void {
           <img src="${logoUrl}" alt="" class="logo">
           <div><strong>Authentic Memory</strong><span class="sep" aria-hidden="true">·</span><span>Hashing Tool</span></div>
         </div>
+        <div class="winctl">
+          <button class="wbtn" id="win-min" aria-label="Minimize" tabindex="-1">${winIcon.min}</button>
+          <button class="wbtn" id="win-max" aria-label="Maximize" tabindex="-1">${winIcon.max}</button>
+          <button class="wbtn close" id="win-close" aria-label="Close" tabindex="-1">${winIcon.close}</button>
+        </div>
       </header>
       <main>${content}</main>
     </div>`;
+  const rt = window.runtime;
+  document.querySelector("#win-min")?.addEventListener("click", () => rt?.WindowMinimise?.());
+  document.querySelector("#win-max")?.addEventListener("click", () => rt?.WindowToggleMaximise?.());
+  document.querySelector("#win-close")?.addEventListener("click", () => rt?.Quit?.());
+  document.querySelector(".brandbar")?.addEventListener("dblclick", (event) => {
+    if ((event.target as HTMLElement).closest(".winctl")) return;
+    rt?.WindowToggleMaximise?.();
+  });
   // Keyboard flow: Enter moves through the wizard. Never auto-focus during
   // a run, where the only button is Cancel.
   if (step !== "progress") {

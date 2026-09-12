@@ -55,15 +55,29 @@ html.kbd button:focus-visible, html.kbd a:focus-visible { outline: 2px solid var
 
 .app-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
 
-/* Header: the portal's quiet white strip with a hairline. */
+/* Header: the portal's quiet white strip with a hairline. In the frameless
+   window it doubles as the title bar: the whole strip drags the window,
+   except the window controls on the right. */
 .brandbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 32px;
-  min-height: 60px;
-  padding: 12px clamp(20px, 4vw, 40px);
+  --wails-draggable: drag;
+  display: flex; align-items: stretch; justify-content: space-between; gap: 32px;
+  height: 52px;
+  padding: 0 0 0 clamp(20px, 4vw, 40px);
   background: var(--bg);
   border-bottom: 1px solid var(--rule);
+  user-select: none;
 }
-.brand { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; }
+.winctl { --wails-draggable: no-drag; display: flex; align-items: stretch; }
+.wbtn {
+  display: grid; place-items: center;
+  width: 46px; border: 0; border-radius: 0;
+  background: transparent; color: var(--ink-faint);
+  transition: background 0.1s, color 0.1s;
+}
+.wbtn svg { width: 10px; height: 10px; }
+.wbtn:hover { background: var(--surface-3); color: var(--ink); }
+.wbtn.close:hover { background: #C42B1C; color: #fff; }
+.brand { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; align-self: center; }
 .brand .logo { width: 27px; height: 27px; }
 .brand div { display: flex; align-items: baseline; gap: 7px; line-height: 1; }
 .brand strong { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; }
