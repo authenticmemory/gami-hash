@@ -3,7 +3,7 @@
   GAMI reference hashing script - one page, for institutions with IT staff.
 
   Produces the same CSV as the GAMI Hashing Tool:
-    relative_path,filename,size_bytes,sha256,mtime_utc
+    relative_path,size_bytes,sha256,mtime_utc
   (UTF-8 with BOM, CRLF, RFC 4180). It can therefore also be used to
   independently cross-check the tool's output on a sample.
 
@@ -39,7 +39,7 @@ function Manifest-Path([string]$s) {
 
 $writer = New-Object IO.StreamWriter($OutFull, $false, (New-Object Text.UTF8Encoding($true)))
 $writer.NewLine = "`r`n"
-$writer.WriteLine('relative_path,filename,size_bytes,sha256,mtime_utc')
+$writer.WriteLine('relative_path,size_bytes,sha256,mtime_utc')
 
 $files = Get-ChildItem -LiteralPath $Root -Recurse -File -Force |
   Where-Object { -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } |
@@ -51,7 +51,7 @@ foreach ($f in $files) {
   try {
     $hash = (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash.ToLower()
     $mtime = $f.LastWriteTimeUtc.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'")
-    $writer.WriteLine(('{0},{1},{2},sha256:{3},{4}' -f (Csv-Field $rel), (Csv-Field (Manifest-Path $f.Name)), $f.Length, $hash, $mtime))
+    $writer.WriteLine(('{0},{1},sha256:{2},{3}' -f (Csv-Field $rel), $f.Length, $hash, $mtime))
     $done++
   } catch {
     [Console]::Error.WriteLine("SKIPPED (unreadable): $rel - $($_.Exception.Message)")

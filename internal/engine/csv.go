@@ -73,20 +73,20 @@ func parseCompletedRow(rec []string, previous string) (completedRow, error) {
 	if previous != "" && rec[0] <= previous {
 		return completedRow{}, fmt.Errorf("existing manifest is not strictly sorted or contains duplicate path %q", rec[0])
 	}
-	size, err := strconv.ParseInt(rec[2], 10, 64)
+	size, err := strconv.ParseInt(rec[1], 10, 64)
 	if err != nil || size < 0 {
 		return completedRow{}, fmt.Errorf("invalid size for %q", rec[0])
 	}
-	mtime, err := time.Parse(time.RFC3339Nano, rec[4])
+	mtime, err := time.Parse(time.RFC3339Nano, rec[3])
 	if err != nil {
 		return completedRow{}, fmt.Errorf("invalid modification time for %q", rec[0])
 	}
-	hash, ok := normalizeManifestHash(rec[3])
+	hash, ok := normalizeManifestHash(rec[2])
 	if !ok {
 		return completedRow{}, fmt.Errorf("invalid SHA-256 for %q", rec[0])
 	}
 	fields := append([]string(nil), rec...)
-	fields[3] = hash
+	fields[2] = hash
 	return completedRow{fields: fields, size: size, mtime: mtime}, nil
 }
 

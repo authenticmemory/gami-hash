@@ -45,6 +45,8 @@ Exit codes:
 - CLI and GUI service boundary produce equivalent manifests for identical
   inputs.
 - Manifest hashes are emitted as `sha256:<hash>` through the shared engine.
+- Manifest rows contain `relative_path,size_bytes,sha256,mtime_utc`; the
+  redundant `filename` column is intentionally omitted.
 - The Windows installer exposes a separate console CLI. When run without
   arguments in an interactive terminal, it prompts for the root folder and
   output CSV path. Non-interactive invocation still fails fast instead of

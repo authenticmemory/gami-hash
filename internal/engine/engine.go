@@ -53,7 +53,7 @@ var Version = "dev"
 
 // CSV layout. The header is fixed; a resume run refuses to append to a file
 // with a different header.
-var csvHeader = []string{"relative_path", "filename", "size_bytes", "sha256", "mtime_utc"}
+var csvHeader = []string{"relative_path", "size_bytes", "sha256", "mtime_utc"}
 
 const (
 	checkpointSuffix = ".part.json"
@@ -145,7 +145,7 @@ type checkpoint struct {
 	FormatNote string `json:"note"`
 }
 
-const manifestFormatVersion = 1
+const manifestFormatVersion = 2
 
 type completedRow struct {
 	fields []string
@@ -301,7 +301,6 @@ type job struct {
 type outcome struct {
 	index   int64
 	rel     string
-	name    string
 	size    int64
 	mtime   time.Time
 	hash    string
@@ -554,7 +553,7 @@ func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, 
 				return nil
 			}
 			select {
-			case results <- outcome{index: index, rel: rel, name: relBase(rel), size: old.size, mtime: old.mtime, hash: old.fields[3], resumed: true}:
+			case results <- outcome{index: index, rel: rel, size: old.size, mtime: old.mtime, hash: old.fields[2], resumed: true}:
 				index++
 				r.filesDone.Add(1)
 				r.bytesDone.Add(info.Size())
@@ -827,7 +826,7 @@ func (r *engineRun) worker(jobs <-chan job, results chan<- outcome) {
 			// will be picked up on resume.
 			continue
 		}
-		out := outcome{index: j.index, rel: j.rel, name: relBase(j.rel), size: j.size, mtime: j.mtime}
+		out := outcome{index: j.index, rel: j.rel, size: j.size, mtime: j.mtime}
 		hashed, err := r.hashFile(j.abs, buf)
 		if err != nil {
 			out.err = err
@@ -964,7 +963,6 @@ func (r *engineRun) writeLoop(f *os.File, results <-chan outcome, window chan st
 		}
 		err := w.Write([]string{
 			o.rel,
-			o.name,
 			strconv.FormatInt(o.size, 10),
 			formatManifestHash(o.hash),
 			o.mtime.UTC().Format(time.RFC3339Nano),

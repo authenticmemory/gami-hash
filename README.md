@@ -12,7 +12,7 @@ IT.
 
 - You pick a folder and an output location, press start, watch a progress
   bar, and get a done message with an "Open folder" button for the result.
-- Per file it records: `relative_path, filename, size_bytes, sha256, mtime_utc`.
+- Per file it records: `relative_path, size_bytes, sha256, mtime_utc`.
   The `sha256` value is written as `sha256:<64 lowercase hex characters>`.
   Technical metadata only, no accession numbers, no institution-specific
   logic. The relative path is what GAMI matches against the institution's
@@ -80,6 +80,10 @@ gami-hash --root "D:\Archive Drive\Collection A" --output "C:\Manifests\Collecti
 
 Exit codes: `0` done · `1` fatal error · `2` done but some files unreadable
 (see error log) · `130` interrupted (resumable).
+
+The Wails completion screen says where to send the result file. By default it
+uses `tech@authenticmemory.org`; release builds can override this with
+`VITE_GAMI_RESULT_EMAIL`.
 
 ## Files it writes
 

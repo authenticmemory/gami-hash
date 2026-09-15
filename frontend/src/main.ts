@@ -5,6 +5,7 @@ import logoUrl from "./assets/gami-logo-icon.svg";
 type Step = "welcome" | "collection" | "output" | "review" | "progress" | "result";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
+const resultRecipientEmail = import.meta.env.VITE_GAMI_RESULT_EMAIL || "tech@authenticmemory.org";
 let step: Step = "welcome";
 let root = "";
 let output = "";
@@ -301,7 +302,7 @@ function renderResult(): void {
     const warnBlock = warning
       ? `<div class="notice warning"><b>${number.format(issues)} file${issues === 1 ? "" : "s"} could not be read and are missing from the list.</b><span>Details are in the report next to the result file${errorLog ? `: <code>${esc(errorLog.split(/[\\/]/).pop() ?? "")}</code>` : "."} Please send it along.</span></div>`
       : "";
-    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><h1>Done</h1><p>${files} files (${size}) were recorded.</p>${warnBlock}<div class="path-card"><span>Result file</span><code>${esc(manifest)}</code></div><p>Please send the result file to Authentic Memory as agreed.</p><div class="actions">${button("home", "Close", true)}${button("open-manifest", "Open folder")}</div></section>`);
+    shell(`<section class="panel result"><div class="result-icon ${warning ? "warning" : "success"}">${warning ? "!" : "✓"}</div><h1>Done</h1><p>${files} files (${size}) were recorded.</p>${warnBlock}<div class="path-card"><span>Result file</span><code>${esc(manifest)}</code></div><p>Please send the result file to ${esc(resultRecipientEmail)}.</p><div class="actions">${button("home", "Close", true)}${button("open-manifest", "Open folder")}</div></section>`);
   }
   document.querySelector("#home")?.addEventListener("click", () => { fatalError = ""; finalResult = null; renderWelcome(); });
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());
