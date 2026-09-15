@@ -36,7 +36,7 @@ the files themselves.
   macOS releases are packaged as installable/native apps; the CLI artifact
   remains portable.
 - No file contents leave the machine. The output CSV contains only: relative
-  path, file name, size, SHA-256, modification time.
+  path, size, SHA-256, modification time.
 
 ## Verifying the binary
 

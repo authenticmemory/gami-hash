@@ -7,8 +7,18 @@ package i18n
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
+
+const DefaultResultRecipientEmail = "tech@authenticmemory.org"
+
+func ResultRecipientEmail() string {
+	if email := strings.TrimSpace(os.Getenv("GAMI_RESULT_EMAIL")); email != "" {
+		return email
+	}
+	return DefaultResultRecipientEmail
+}
 
 // T is the text catalogue. It stays a struct so a translation could return
 // one day without touching the call sites.
@@ -115,7 +125,7 @@ func (t T) DoneText(files, size, output string, resumed int64, resumedStr string
 	if resumed > 0 {
 		msg += "\n\nOf these, " + resumedStr + " files had already been recorded in the previous run."
 	}
-	msg += "\n\nPlease send the result file to Authentic Memory as agreed."
+	msg += "\n\nPlease send the result file to " + ResultRecipientEmail() + "."
 	return msg
 }
 

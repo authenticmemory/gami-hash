@@ -98,20 +98,20 @@ func TestBasicRun(t *testing.T) {
 	m := rowMap(rows)
 
 	// Known SHA-256 vectors.
-	if m["a.txt"][3] != "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {
-		t.Errorf("wrong hash for a.txt: %s", m["a.txt"][3])
+	if m["a.txt"][2] != "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {
+		t.Errorf("wrong hash for a.txt: %s", m["a.txt"][2])
 	}
-	if m["empty.bin"][3] != "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
-		t.Errorf("wrong hash for empty file: %s", m["empty.bin"][3])
+	if m["empty.bin"][2] != "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+		t.Errorf("wrong hash for empty file: %s", m["empty.bin"][2])
 	}
-	if m["sub/nested/b.dat"][3] != sha256hex("hello world\n") {
+	if m["sub/nested/b.dat"][2] != sha256hex("hello world\n") {
 		t.Errorf("wrong hash for nested file")
 	}
-	// Columns: relative path uses forward slashes; filename; size; mtime UTC.
-	if m["sub/nested/b.dat"][1] != "b.dat" || m["sub/nested/b.dat"][2] != "12" {
+	// Columns: relative path uses forward slashes; size; hash; mtime UTC.
+	if m["sub/nested/b.dat"][1] != "12" {
 		t.Errorf("bad row: %v", m["sub/nested/b.dat"])
 	}
-	if ts := m["a.txt"][4]; !strings.HasSuffix(ts, "Z") {
+	if ts := m["a.txt"][3]; !strings.HasSuffix(ts, "Z") {
 		t.Errorf("mtime not UTC RFC3339: %s", ts)
 	} else if _, err := time.Parse(time.RFC3339, ts); err != nil {
 		t.Errorf("mtime unparsable: %s", ts)
@@ -163,7 +163,7 @@ func TestSpecialFilenames(t *testing.T) {
 			t.Errorf("missing row for %q", rel)
 			continue
 		}
-		if row[3] != sha256hex(content) {
+		if row[2] != sha256hex(content) {
 			t.Errorf("wrong hash for %q", rel)
 		}
 	}
@@ -195,7 +195,7 @@ func TestInvalidUTF8Filename(t *testing.T) {
 	if rows[0][0] != "%E4bc.txt" || rows[0][1] != "%E4bc.txt" {
 		t.Errorf("invalid byte not percent-encoded: %v", rows[0])
 	}
-	if rows[0][3] != sha256hex("x") {
+	if rows[0][2] != sha256hex("x") {
 		t.Error("wrong hash for invalid-UTF-8 name")
 	}
 	log, err := os.ReadFile(ErrorLogPath(out))
@@ -562,7 +562,7 @@ func TestCancelKeepsCheckpointAndResumes(t *testing.T) {
 			t.Fatalf("duplicate row for %q", r[0])
 		}
 		seen[r[0]] = true
-		if r[3] != sha256hex(blob) {
+		if r[2] != sha256hex(blob) {
 			t.Fatalf("wrong hash for %q", r[0])
 		}
 	}
@@ -597,7 +597,7 @@ func TestFilesAddedBetweenRunsAreAppendedOnResume(t *testing.T) {
 		t.Fatalf("unexpected: %+v", res)
 	}
 	m := rowMap(readRows(t, out))
-	if m["new.txt"][3] != sha256hex("fresh") {
+	if m["new.txt"][2] != sha256hex("fresh") {
 		t.Fatal("new file missing or wrong")
 	}
 }
@@ -624,7 +624,7 @@ func TestLargeFileStreaming(t *testing.T) {
 	h := sha256.New()
 	io.CopyN(h, zeroReader{}, size)
 	want := formatManifestHash(hex.EncodeToString(h.Sum(nil)))
-	if rows := readRows(t, out); rows[0][3] != want {
+	if rows := readRows(t, out); rows[0][2] != want {
 		t.Fatalf("hash mismatch for sparse file")
 	}
 }
@@ -680,7 +680,7 @@ func TestChangedResumeRowIsRehashed(t *testing.T) {
 	if res.FilesResumed != 0 || res.FilesHashed != 1 {
 		t.Fatalf("changed row was reused: %+v", res)
 	}
-	if got := readRows(t, out)[0][3]; got != sha256hex("new-and-different") {
+	if got := readRows(t, out)[0][2]; got != sha256hex("new-and-different") {
 		t.Fatalf("stale hash: %s", got)
 	}
 }
@@ -787,7 +787,7 @@ func TestResumeRepairsSemanticallyTornFinalRow(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "manifest.csv")
 	runFresh(t, root, out)
 	rows := readRows(t, out)
-	rows[len(rows)-1][4] = "2026-09-09T17:58:34."
+	rows[len(rows)-1][3] = "2026-09-09T17:58:34."
 	writeManifestRows(t, out, rows)
 	writeCheckpoint(t, out, root)
 

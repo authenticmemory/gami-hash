@@ -112,7 +112,7 @@ safely distinguish them from link-like entries.
 
 `relative_path` is relative to the selected root and uses `/` as its separator
 on every operating system. It never begins with `/` and never contains the
-selected root itself. `filename` is the final component of `relative_path`.
+selected root itself.
 
 Paths are recorded as UTF-8. To keep every CSV record on one physical line and
 preserve unusual Unix filenames reversibly, the path encoder applies these
@@ -141,20 +141,19 @@ The manifest is RFC 4180 CSV with:
 - a UTF-8 byte-order mark (`EF BB BF`) for spreadsheet compatibility;
 - CRLF record endings;
 - exactly one header row;
-- exactly five fields per data row;
+- exactly four fields per data row;
 - standard CSV quoting: fields containing commas, quotes, CR, or LF are quoted,
   and embedded quotes are doubled.
 
 The fixed header is:
 
 ```text
-relative_path,filename,size_bytes,sha256,mtime_utc
+relative_path,size_bytes,sha256,mtime_utc
 ```
 
 | Column | Contract |
 |---|---|
 | `relative_path` | Encoded slash-separated path relative to the selected root |
-| `filename` | Encoded final path component |
 | `size_bytes` | Base-10 unsigned byte count of the stable file that was hashed |
 | `sha256` | `sha256:` followed by 64 lowercase hexadecimal characters representing SHA-256 of the complete file contents |
 | `mtime_utc` | File modification time in UTC, RFC 3339 format, with available sub-second precision and `Z` suffix |

@@ -62,8 +62,7 @@ exactly where it stopped. The same is true after a crash or a power cut.
 
 At the end the program tells you how many files were recorded and offers to
 open the folder with the result file. Send that file (a CSV table with file
-names and checksums, no file contents!) to your GAMI contact as agreed,
-usually by email.
+paths and checksums, no file contents!) to tech@authenticmemory.org.
 
 📷 *Screenshot: done message with "Open folder"*
 

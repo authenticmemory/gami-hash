@@ -65,9 +65,9 @@ rows = {}
 with open(sys.argv[1], encoding='utf-8-sig', newline='') as f:
     r = csv.reader(f)
     header = next(r)
-    assert header == ["relative_path","filename","size_bytes","sha256","mtime_utc"], header
+    assert header == ["relative_path","size_bytes","sha256","mtime_utc"], header
     for rec in r:
-        rows[rec[0]] = rec[3]
+        rows[rec[0]] = rec[2]
 def encode_specials(p):
     # Mirror the tool's rule: invalid bytes (surrogateescape'd) and control chars -> %XX
     out = []
@@ -131,7 +131,7 @@ import csv, sys
 def load(p):
     with open(p, encoding='utf-8-sig', newline='') as f:
         r = csv.reader(f); next(r)
-        return {rec[0]: (rec[2], rec[3]) for rec in r}
+        return {rec[0]: (rec[1], rec[2]) for rec in r}
 a, b = load(sys.argv[1]), load(sys.argv[2])
 assert a == b, f"resumed manifest differs: {len(a)} vs {len(b)} rows"
 # also check for duplicates

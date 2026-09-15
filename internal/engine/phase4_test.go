@@ -30,7 +30,7 @@ func TestPhase4EmptyFoldersAndZeroByteFiles(t *testing.T) {
 	if res.FilesHashed != 1 || len(rows) != 1 {
 		t.Fatalf("empty directories affected manifest: result=%+v rows=%v", res, rows)
 	}
-	if rows[0][0] != "zero.bin" || rows[0][2] != "0" || rows[0][3] != sha256hex("") {
+	if rows[0][0] != "zero.bin" || rows[0][1] != "0" || rows[0][2] != sha256hex("") {
 		t.Fatalf("incorrect zero-byte row: %v", rows[0])
 	}
 }
@@ -57,7 +57,7 @@ func TestPhase4UnicodeNormalizationRemainsDistinct(t *testing.T) {
 		t.Fatalf("distinct Unicode names collapsed: result=%+v rows=%v", res, rows)
 	}
 	for name, content := range files {
-		if row := rows[name]; row == nil || row[3] != sha256hex(content) {
+		if row := rows[name]; row == nil || row[2] != sha256hex(content) {
 			t.Errorf("missing or incorrect Unicode row %q: %v", name, row)
 		}
 	}
@@ -87,7 +87,7 @@ func TestPhase4DigestMatchesIndependentTool(t *testing.T) {
 	path := filepath.Join(root, "sample.bin")
 	out := filepath.Join(t.TempDir(), "manifest.csv")
 	runFresh(t, root, out)
-	want := rowMap(readRows(t, out))["sample.bin"][3]
+	want := rowMap(readRows(t, out))["sample.bin"][2]
 
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
