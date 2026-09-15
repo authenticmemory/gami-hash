@@ -64,6 +64,10 @@ declare global {
     runtime?: {
       EventsOn(name: string, callback: (event: EngineEvent) => void): () => void;
       EventsOff(name: string): void;
+      WindowMinimise?(): void;
+      WindowToggleMaximise?(): void;
+      WindowIsMaximised?(): Promise<boolean>;
+      Quit?(): void;
     };
   }
 }

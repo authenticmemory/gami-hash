@@ -14,10 +14,10 @@ import (
 // one day without touching the call sites.
 type T struct{}
 
-func (t T) AppTitle() string { return "GAMI Hashing Tool" }
+func (t T) AppTitle() string { return "Authentic Memory Hashing Tool" }
 
 func (t T) WelcomeText(version string) string {
-	return "Welcome! This program creates a checksum list of your files for handover to GAMI.\n\n" +
+	return "Welcome! This program creates a checksum list of your files for handover to Authentic Memory.\n\n" +
 		"You cannot break anything:\n" +
 		"•  Your files are only read. Nothing is changed, moved or deleted.\n" +
 		"•  The program does not use the internet. Nothing leaves your computer.\n" +
@@ -115,7 +115,7 @@ func (t T) DoneText(files, size, output string, resumed int64, resumedStr string
 	if resumed > 0 {
 		msg += "\n\nOf these, " + resumedStr + " files had already been recorded in the previous run."
 	}
-	msg += "\n\nPlease send the result file to GAMI as agreed."
+	msg += "\n\nPlease send the result file to Authentic Memory as agreed."
 	return msg
 }
 

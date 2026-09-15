@@ -19,7 +19,11 @@ var frontendAssets embed.FS
 func runGUI() error {
 	backend := wailsadapter.New()
 	return wails.Run(&options.App{
-		Title:     "GAMI Hash",
+		Title: "Authentic Memory Hashing Tool",
+		// The window is frameless: the frontend draws its own title bar in
+		// the corporate design (drag region plus window controls), so the
+		// look does not depend on OS titlebar themes or accent colors.
+		Frameless: true,
 		Width:     980,
 		Height:    720,
 		MinWidth:  760,

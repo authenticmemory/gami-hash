@@ -1,6 +1,6 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "GAMI Hash",
+  "name": "Authentic Memory Hashing Tool",
   "outputfilename": "gami-hash",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
@@ -12,9 +12,9 @@
   },
   "info": {
     "companyName": "Authentic Memory",
-    "productName": "GAMI Hash",
+    "productName": "Authentic Memory Hashing Tool",
     "productVersion": "0.1.0",
     "copyright": "Copyright (c) 2026 Authentic Memory",
-    "comments": "Preservation checksum tool for creating GAMI CSV manifests"
+    "comments": "Preservation checksum tool for creating Authentic Memory CSV manifests"
   }
 }
