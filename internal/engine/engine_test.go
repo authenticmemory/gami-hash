@@ -96,6 +96,11 @@ func TestBasicRun(t *testing.T) {
 		t.Fatalf("want 3 rows, got %d", len(rows))
 	}
 	m := rowMap(rows)
+	for path, row := range m {
+		if row[4] != path {
+			t.Errorf("source_record_id must equal relative_path: %v", row)
+		}
+	}
 
 	// Known SHA-256 vectors.
 	if m["a.txt"][2] != "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {

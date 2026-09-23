@@ -53,7 +53,7 @@ var Version = "dev"
 
 // CSV layout. The header is fixed; a resume run refuses to append to a file
 // with a different header.
-var csvHeader = []string{"relative_path", "size_bytes", "sha256", "mtime_utc"}
+var csvHeader = []string{"relative_path", "size_bytes", "sha256", "mtime_utc", "source_record_id"}
 
 const (
 	checkpointSuffix = ".part.json"
@@ -145,7 +145,7 @@ type checkpoint struct {
 	FormatNote string `json:"note"`
 }
 
-const manifestFormatVersion = 2
+const manifestFormatVersion = 3
 
 type completedRow struct {
 	fields []string
@@ -966,6 +966,7 @@ func (r *engineRun) writeLoop(f *os.File, results <-chan outcome, window chan st
 			strconv.FormatInt(o.size, 10),
 			formatManifestHash(o.hash),
 			o.mtime.UTC().Format(time.RFC3339Nano),
+			o.rel,
 		})
 		if err != nil {
 			return err

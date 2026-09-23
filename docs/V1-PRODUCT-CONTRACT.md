@@ -141,14 +141,14 @@ The manifest is RFC 4180 CSV with:
 - a UTF-8 byte-order mark (`EF BB BF`) for spreadsheet compatibility;
 - CRLF record endings;
 - exactly one header row;
-- exactly four fields per data row;
+- exactly five fields per data row;
 - standard CSV quoting: fields containing commas, quotes, CR, or LF are quoted,
   and embedded quotes are doubled.
 
 The fixed header is:
 
 ```text
-relative_path,size_bytes,sha256,mtime_utc
+relative_path,size_bytes,sha256,mtime_utc,source_record_id
 ```
 
 | Column | Contract |
@@ -157,10 +157,13 @@ relative_path,size_bytes,sha256,mtime_utc
 | `size_bytes` | Base-10 unsigned byte count of the stable file that was hashed |
 | `sha256` | `sha256:` followed by 64 lowercase hexadecimal characters representing SHA-256 of the complete file contents |
 | `mtime_utc` | File modification time in UTC, RFC 3339 format, with available sub-second precision and `Z` suffix |
+| `source_record_id` | Stable identifier required by GAMI Local; exactly equal to the encoded `relative_path` |
 
 The manifest contains no absolute paths, usernames, machine identifiers,
 accession numbers, descriptive metadata, file contents, or network
-information.
+information. `source_record_id` deliberately repeats `relative_path`; GAMI
+Hash cannot infer an institution's catalogue identifier, and a deterministic
+path-derived identifier is preferable to an invented random value.
 
 The schema and encoding are versioned product interfaces. They may not change
 within version 1 without a documented compatibility decision and updated

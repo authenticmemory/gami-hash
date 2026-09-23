@@ -73,6 +73,9 @@ func parseCompletedRow(rec []string, previous string) (completedRow, error) {
 	if previous != "" && rec[0] <= previous {
 		return completedRow{}, fmt.Errorf("existing manifest is not strictly sorted or contains duplicate path %q", rec[0])
 	}
+	if rec[4] != rec[0] {
+		return completedRow{}, fmt.Errorf("source_record_id does not match relative_path for %q", rec[0])
+	}
 	size, err := strconv.ParseInt(rec[1], 10, 64)
 	if err != nil || size < 0 {
 		return completedRow{}, fmt.Errorf("invalid size for %q", rec[0])
