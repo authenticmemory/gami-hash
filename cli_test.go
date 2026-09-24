@@ -87,8 +87,23 @@ func TestCLIInteractiveNoArgsAddsCSVExtension(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("exit=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
-	if !strings.Contains(stderr, out+".csv") {
+	_, reported, found := strings.Cut(stderr, " recorded in ")
+	reported = strings.TrimSpace(reported)
+	if !found || filepath.Ext(reported) != ".csv" {
 		t.Fatalf("completion did not use .csv output path: %q", stderr)
+	}
+	// Windows canonicalization can expand short names or change path casing.
+	// Verify file identity rather than requiring the original spelling.
+	expectedInfo, err := os.Stat(out + ".csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportedInfo, err := os.Stat(reported)
+	if err != nil {
+		t.Fatalf("cannot stat reported output %q: %v", reported, err)
+	}
+	if !os.SameFile(expectedInfo, reportedInfo) {
+		t.Fatalf("reported output %q is not the requested manifest %q", reported, out+".csv")
 	}
 	readCLIManifest(t, out+".csv")
 }
