@@ -1,10 +1,11 @@
-name: Build Windows test installer
+name: Build signed Windows installer
 
 on:
   workflow_dispatch:
   push:
     tags:
       - "test-v*"
+      - "v*"
 
 permissions:
   contents: read
@@ -14,10 +15,27 @@ jobs:
     name: Build Windows installer
     runs-on: windows-latest
     timeout-minutes: 30
+    environment: windows-signing
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Check signing configuration
+        shell: pwsh
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          foreach ($name in @('AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_SUBSCRIPTION_ID')) {
+            if (-not [Environment]::GetEnvironmentVariable($name)) {
+              throw "Set $name in the windows-signing GitHub environment. See docs/windows-signing.md."
+            }
+          }
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -49,7 +67,45 @@ jobs:
 
       - name: Build NSIS installer
         shell: pwsh
-        run: .\build-windows-installer.ps1 -Version "${{ github.ref_name }}" -InstallScope user
+        env:
+          BUILD_VERSION: ${{ github.ref_name }}
+        run: .\build-windows-installer.ps1 -Version $env:BUILD_VERSION -InstallScope user
+
+      - name: Authenticate to Azure using GitHub OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign GUI and CLI payloads
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://neu.codesigning.azure.net
+          signing-account-name: authenticmemorysigning
+          certificate-profile-name: gami-public-signing
+          files: |
+            ${{ github.workspace }}\build\bin\gami-hash.exe
+            ${{ github.workspace }}\build\windows\installer\gami-hash-cli.exe
+          exclude-environment-credential: true
+
+      - name: Package verified signed payloads
+        shell: pwsh
+        run: .\package-signed-windows-installer.ps1
+
+      - name: Sign finished installer
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://neu.codesigning.azure.net
+          signing-account-name: authenticmemorysigning
+          certificate-profile-name: gami-public-signing
+          files-folder: ${{ github.workspace }}\build\bin
+          files-folder-filter: '*-installer.exe'
+          exclude-environment-credential: true
+
+      - name: Verify release signatures and timestamps
+        shell: pwsh
+        run: .\verify-windows-signatures.ps1 -Stage All
 
       - name: Create checksums
         shell: pwsh
@@ -65,7 +121,7 @@ jobs:
         shell: pwsh
         run: .\release-dependency-inventory.ps1
 
-      - name: Upload Windows test build
+      - name: Upload signed Windows build
         uses: actions/upload-artifact@v4
         with:
           name: gami-hash-windows
