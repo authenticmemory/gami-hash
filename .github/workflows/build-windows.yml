@@ -56,14 +56,16 @@ jobs:
       - name: Install pinned Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
-      - name: Run Go tests
-        run: go test -count=1 -timeout=5m ./...
-
-      - name: Run frontend checks
+      # gui.go embeds frontend/dist, so clean checkouts need this before Go tests.
+      - name: Build frontend assets
         working-directory: frontend
         run: |
           npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build
+
+      - name: Run Go tests
+        run: go test -count=1 -timeout=5m ./...
 
       - name: Build NSIS installer
         shell: pwsh
