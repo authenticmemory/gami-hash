@@ -48,3 +48,8 @@ sudo dnf install ./gami-hash-<version>-1.x86_64.rpm
 RHEL, AlmaLinux, Rocky Linux, and older Debian/Ubuntu versions may require
 WebKitGTK 4.0 package names and a separate Wails build tag. Do not advertise
 the Fedora RPM as RHEL-compatible until that package has been tested.
+
+## Download signatures
+
+See [LINUX-SIGNING.md](LINUX-SIGNING.md) for OpenPGP CI setup and verification.
+Detached signatures must be checked before installation; they do not configure APT or DNF trust.

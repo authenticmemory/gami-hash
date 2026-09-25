@@ -5,12 +5,18 @@ on:
   push:
     tags:
       - "test-v*"
+      - "v*"
 
 permissions:
   contents: read
 
 jobs:
+  security:
+    uses: ./.github/workflows/security-checks.yml
+
   build-linux-gui:
+    needs: security
+    environment: linux-signing
     name: Build Linux GUI tarball
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -54,7 +60,7 @@ jobs:
         run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.1
 
       - name: Run tests
-        run: go test -count=1 -timeout=5m ./...
+        run: go test -count=1 -timeout=5m -tags webkit2_41 ./...
 
       - name: Build Linux GUI
         run: |
@@ -93,11 +99,21 @@ jobs:
             gami-hash-*.x86_64.rpm \
             > SHA256SUMS-linux-gui.txt
 
+      - name: Sign and independently verify Linux downloads
+        shell: bash
+        env:
+          LINUX_SIGNING_PRIVATE_KEY: ${{ secrets.LINUX_SIGNING_PRIVATE_KEY }}
+          LINUX_SIGNING_PASSPHRASE: ${{ secrets.LINUX_SIGNING_PASSPHRASE }}
+          LINUX_SIGNING_FINGERPRINT: ${{ vars.LINUX_SIGNING_FINGERPRINT }}
+        run: bash scripts/sign-linux.sh dist dist/gami-hash-linux-amd64-gui.tar.gz dist/gami-hash_*_amd64.deb dist/gami-hash-*.x86_64.rpm dist/SHA256SUMS-linux-gui.txt
+
       - name: Upload Linux GUI
         uses: actions/upload-artifact@v4
         with:
           name: gami-hash-linux-gui
           path: |
+            dist/*.asc
+            dist/gami-linux-signing-fingerprint.txt
             dist/gami-hash-linux-amd64-gui.tar.gz
             dist/gami-hash_*_amd64.deb
             dist/gami-hash-*.x86_64.rpm

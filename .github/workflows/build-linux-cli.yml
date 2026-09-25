@@ -5,12 +5,18 @@ on:
   push:
     tags:
       - "test-v*"
+      - "v*"
 
 permissions:
   contents: read
 
 jobs:
+  security:
+    uses: ./.github/workflows/security-checks.yml
+
   build-linux-cli:
+    needs: security
+    environment: linux-signing
     name: Build Linux CLI tarball
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -63,17 +69,27 @@ jobs:
         run: |
           chmod 0755 build/bin/gami-hash-linux-amd64
           tar -C build/bin -czf build/bin/gami-hash-linux-amd64.tar.gz gami-hash-linux-amd64
-          sha256sum build/bin/gami-hash-linux-amd64.tar.gz > build/bin/gami-hash-linux-amd64.tar.gz.sha256
+          (cd build/bin && sha256sum gami-hash-linux-amd64.tar.gz > gami-hash-linux-amd64.tar.gz.sha256)
 
       - name: Create dependency inventory
         shell: pwsh
         run: ./release-dependency-inventory.ps1
+
+      - name: Sign and independently verify Linux downloads
+        shell: bash
+        env:
+          LINUX_SIGNING_PRIVATE_KEY: ${{ secrets.LINUX_SIGNING_PRIVATE_KEY }}
+          LINUX_SIGNING_PASSPHRASE: ${{ secrets.LINUX_SIGNING_PASSPHRASE }}
+          LINUX_SIGNING_FINGERPRINT: ${{ vars.LINUX_SIGNING_FINGERPRINT }}
+        run: bash scripts/sign-linux.sh build/bin build/bin/gami-hash-linux-amd64.tar.gz build/bin/gami-hash-linux-amd64.tar.gz.sha256
 
       - name: Upload Linux CLI
         uses: actions/upload-artifact@v4
         with:
           name: gami-hash-linux-cli
           path: |
+            build/bin/*.asc
+            build/bin/gami-linux-signing-fingerprint.txt
             build/bin/gami-hash-linux-amd64.tar.gz
             build/bin/gami-hash-linux-amd64.tar.gz.sha256
             build/release-metadata/*
