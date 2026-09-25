@@ -130,9 +130,11 @@ sudo dnf install ./gami-hash-<version>-1.x86_64.rpm
 These packages declare the required GTK/WebKitGTK runtime dependencies. The
 current RPM targets Fedora-style WebKitGTK 4.1 packages, not RHEL 8/9.
 
-Until code-signing and notarization are in place, Windows SmartScreen and
-macOS Gatekeeper may warn on first run. Those unsigned/ad-hoc signed builds
-are for internal testing only, not institution-facing distribution.
+Windows CI signs the GUI, CLI, and installer with Azure Artifact Signing.
+Signing does not guarantee the absence of SmartScreen prompts. Windows releases
+remain candidates until the [independent acceptance checklist](docs/WINDOWS-ACCEPTANCE.md)
+is completed. macOS and Linux remain test builds; macOS signing/notarization
+is not established by Windows CI.
 
 ## Alternatives for institutions (context)
 
@@ -140,5 +142,6 @@ This tool is option 4 of 4: (1) shipping drives to GAMI is being phased out;
 (2) institutions with existing checksums (BagIt, fixity reports) just send
 those; (3) institutions with IT staff can use the one-page PowerShell script
 in [reference/Get-FileHashes.ps1](reference/Get-FileHashes.ps1), which
-produces the identical CSV format and doubles as an independent cross-check
-of this tool.
+is a legacy four-column hash cross-check only. It does not emit the current
+GAMI Local-compatible manifest or provide the engine's filesystem safety
+guarantees. Use GAMI Hash for institutional manifests.

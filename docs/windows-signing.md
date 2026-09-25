@@ -1,8 +1,9 @@
 # Automatic Windows signing
 
 The `Build signed Windows installer` workflow runs manually or on `test-v*` and
-`v*` tag pushes. It uploads signed GitHub Actions artifacts; it does not publish
-a GitHub Release. Signing is mandatory: missing configuration or an invalid
+`v*` tag pushes. It uploads signed GitHub Actions artifacts. Tag runs also create or update a
+draft GitHub Release with those files; publication remains a separate review step.
+Published releases are never overwritten by reruns. Signing is mandatory: missing configuration or an invalid
 signature fails the job before upload.
 
 ## One-time Azure and GitHub setup
@@ -47,7 +48,8 @@ Azure Login. It does not use the developer's Azure CLI session or local
 
 ## Build and verification order
 
-1. Run tests and the existing Wails/NSIS build. This produces a temporary unsigned
+1. Pass the reusable dependency security workflow for the same commit, build the
+   frontend before Go tests, and run the existing Wails/NSIS build. This produces a temporary unsigned
    installer and generates Wails' NSIS support files.
 2. Sign and timestamp both `build/bin/gami-hash.exe` (GUI) and
    `build/windows/installer/gami-hash-cli.exe` (CLI).
@@ -65,7 +67,8 @@ not separately signed by this workflow.
 ## First run
 
 After merging/pushing the workflow and configuring the environment, run it from
-**Actions > Build signed Windows installer > Run workflow** on the allowed branch.
+**Actions > Build signed Windows installer > Run workflow** on the allowed branch and enter a version such as `test-v0.1.4`.
+Alternatively push a new matching tag; that starts the workflow automatically.
 Download `gami-hash-windows`. Check the installer signature, install on a test
 machine, and check signatures on both installed executables. Compare the download
 against `SHA256SUMS-windows.txt`.
@@ -80,3 +83,12 @@ around by uploading unsigned artifacts.
 - [Microsoft signing action](https://github.com/Azure/artifact-signing-action)
 - [GitHub OIDC with Azure](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure)
 - [Artifact Signing roles](https://learn.microsoft.com/en-us/azure/artifact-signing/tutorial-assign-roles)
+
+## Release acceptance and retention
+
+CI artifacts expire after 14 days; tag-run draft release assets are the durable
+candidate archive. Complete [Windows acceptance](WINDOWS-ACCEPTANCE.md), edit the
+generated release notes to describe changes and limitations, then publish the
+reviewed draft. Keep earlier published installers and checksums for rollback.
+Do not move a published tag. A rollback uses an earlier signed installer and must
+preserve user manifests; manifest/checkpoint version compatibility still applies.

@@ -2,7 +2,9 @@
 .SYNOPSIS
   GAMI reference hashing script - one page, for institutions with IT staff.
 
-  Produces the same CSV as the GAMI Hashing Tool:
+  LEGACY SAMPLE ONLY: not a GAMI Local manifest producer and not equivalent
+  to GAMI Hash safety guarantees. Use only on disposable test copies.
+  Produces the older four-column CSV:
     relative_path,size_bytes,sha256,mtime_utc
   (UTF-8 with BOM, CRLF, RFC 4180). It can therefore also be used to
   independently cross-check the tool's output on a sample.

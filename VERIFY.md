@@ -28,9 +28,21 @@ tags intentionally refuses to start.
 sources of build-path variation. This is preparation for reproducibility, not
 proof that reproducible signed releases exist.
 
-## Current limitation
+## Release status
 
-The older multi-platform `build.sh` predates the Wails GUI and must not be used
-for a GUI release until the release-engineering phase replaces it with native
-platform jobs. Reproducibility, signing, notarization, package generation, and
-double-build comparison remain release-gate work.
+Windows CI builds and tests the frontend and Go code, requires dependency checks,
+signs the GUI/CLI and final installer, and verifies signatures and timestamps.
+Tag runs store the signed artifacts in a draft GitHub Release for review.
+See [Windows signing](docs/windows-signing.md) for configuration.
+
+Windows product metadata uses the numeric release version (for example,
+`test-v1.2.3` becomes `1.2.3`); the engine retains the full version string.
+
+A successful workflow does not establish clean-machine behavior or source safety
+under all storage failures. Complete [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md)
+on the exact signed candidate before publishing its draft release.
+The generated uninstaller is not separately signed. User files and WebView data
+are preserved during uninstall. Reproducible unsigned builds, a formal SBOM,
+independent code review, and runtime network verification remain separate work.
+macOS/Linux artifacts are not covered by Windows acceptance. Do not use the
+legacy `build.sh` for Wails GUI releases.

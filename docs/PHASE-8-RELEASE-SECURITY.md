@@ -1,7 +1,8 @@
 # Phase 8 Release Security
 
-Phase 8 is partially scaffolded. Signing and notarization still require
-organization-owned credentials.
+Windows signing is implemented using organization-owned Azure Artifact Signing
+and GitHub OIDC. Production acceptance remains pending; macOS notarization is
+not implemented by the Windows workflow.
 
 ## Implemented scaffolding
 
@@ -9,8 +10,9 @@ organization-owned credentials.
   version define the current dependency set.
 - `.github/workflows/build-macos.yml` builds a clean macOS universal test app
   and publishes a SHA-256 checksum.
-- `.github/workflows/build-windows.yml` builds a clean Windows NSIS test
-  installer and publishes SHA-256 checksums.
+- `.github/workflows/build-windows.yml` requires the reusable security checks,
+  builds and signs Windows GUI/CLI payloads and the installer, verifies their
+  signatures, and stores tag-run checksums/artifacts in a draft release.
 - `.github/workflows/build-linux-cli.yml` builds a Linux CLI-only tarball
   without linking Wails, GTK, or WebKitGTK.
 - `.github/workflows/security-checks.yml` runs `npm audit` and `govulncheck`.
@@ -25,11 +27,12 @@ organization-owned credentials.
 
 ## Still required before production
 
-- Windows Authenticode signing with an organization-owned certificate.
+- Windows independent acceptance on the final signed release candidate; see
+  [WINDOWS-ACCEPTANCE.md](WINDOWS-ACCEPTANCE.md).
 - macOS Developer ID Application signing, hardened runtime, notarization, and
   stapling.
-- Linux GUI release artifacts: `.deb` first if partner institutions need GUI
-  Linux.
+- Linux GUI package acceptance: packaging workflows exist, but their passing
+  status and installation compatibility must be established separately.
 - Formal CycloneDX or SPDX software bill of materials for Go and frontend
   dependencies. The current dependency inventory is an interim artifact, not a
   standards-complete SBOM.

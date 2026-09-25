@@ -7,6 +7,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if ($Version -notmatch '^(?:test-)?v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+  throw "Version must be a numeric release version, such as v1.2.3 or test-v1.2.3."
+}
+$numericVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
+foreach ($part in $numericVersion.Split('.')) {
+  if ([long]$part -gt 65535) { throw "Windows version components must be at most 65535." }
+}
+
 $project = $PSScriptRoot
 $frontend = Join-Path $project "frontend"
 $dist = Join-Path $project "build/bin"
@@ -46,8 +54,13 @@ try {
   Pop-Location
 }
 
+$configPath = Join-Path $project "wails.json"
+$configBytes = [IO.File]::ReadAllBytes($configPath)
+$config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+$config.info.productVersion = $numericVersion
 Push-Location $project
 try {
+  [IO.File]::WriteAllText($configPath, ($config | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding($false)))
   New-Item -ItemType Directory -Force $dist | Out-Null
   New-Item -ItemType Directory -Force $installerBuild | Out-Null
   Remove-Item -LiteralPath (Join-Path $windowsBuild "icon.ico") -Force -ErrorAction SilentlyContinue
@@ -79,10 +92,22 @@ try {
     throw "Wails completed but did not produce an NSIS installer in $dist"
   }
 
+  # Check the actual PE resources, not just the configuration used to build them.
+  $versionedFiles = @((Join-Path $dist "gami-hash.exe")) + @($installers.FullName)
+  foreach ($file in $versionedFiles) {
+    $info = (Get-Item -LiteralPath $file).VersionInfo
+    $actualFile = "$($info.FileMajorPart).$($info.FileMinorPart).$($info.FileBuildPart)"
+    $actualProduct = "$($info.ProductMajorPart).$($info.ProductMinorPart).$($info.ProductBuildPart)"
+    if ($actualFile -ne $numericVersion -or $actualProduct -ne $numericVersion) {
+      throw "Version metadata mismatch in ${file}: file=$actualFile product=$actualProduct expected=$numericVersion"
+    }
+  }
+
   $installers | ForEach-Object {
     Get-Item $_.FullName | Select-Object FullName, Length, LastWriteTime
     Get-FileHash $_.FullName -Algorithm SHA256
   }
 } finally {
+  [IO.File]::WriteAllBytes($configPath, $configBytes)
   Pop-Location
 }

@@ -225,9 +225,10 @@ FunctionEnd
 Section "uninstall"
     !insertmacro wails.setShellContext
 
-    RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
-
-    RMDir /r $INSTDIR
+    # Preserve user files, manifests, and WebView data. Never recursively delete
+    # a user-selected installation directory.
+    Delete "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    Delete "$INSTDIR\${PRODUCT_CLI_EXECUTABLE}"
 
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
@@ -246,4 +247,5 @@ Section "uninstall"
     !insertmacro wails.unassociateCustomProtocols
 
     !insertmacro wails.deleteUninstaller
+    RMDir "$INSTDIR" # Only succeeds when empty.
 SectionEnd

@@ -1,6 +1,7 @@
 name: Security checks
 
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
   push:
@@ -40,7 +41,9 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: |
+          npm ci
+          npm run build
 
       - name: Run npm audit
         working-directory: frontend
