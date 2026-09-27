@@ -1,11 +1,11 @@
 name: Build Linux CLI
 
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     tags:
       - "test-v*"
-      - "v*"
 
 permissions:
   contents: read

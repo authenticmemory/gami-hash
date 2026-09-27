@@ -1,0 +1,74 @@
+name: Publish signed downloads
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-hash-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a stable version tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: '[[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]'
+  windows:
+    needs: validate
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/build-windows.yml
+    secrets: inherit
+  linux:
+    needs: validate
+    uses: ./.github/workflows/build-linux-cli.yml
+    secrets: inherit
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: gami-hash-windows
+          path: release/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: gami-hash-linux-cli
+          path: release/linux
+      - name: Assemble checked release manifest
+        run: |
+          node --test scripts/create-download-manifest.test.mjs
+          node scripts/create-download-manifest.mjs
+          tar -czf release/downloads/windows-release-metadata.tar.gz -C release/windows release-metadata
+          tar -czf release/downloads/linux-release-metadata.tar.gz -C release/linux release-metadata
+      - name: Publish signed release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --draft --verify-tag --generate-notes
+          fi
+          test "$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft)" = true || { echo 'Refusing to replace a published release'; exit 1; }
+          gh release upload "$GITHUB_REF_NAME" release/downloads/* --clobber
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+      - name: Request website deployment
+        env:
+          GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$GH_TOKEN" || { echo 'Set WEBSITE_DISPATCH_TOKEN in repository secrets'; exit 1; }
+          gh api --method POST repos/authenticmemory/AuthenticMemory_Website/dispatches -f event_type=tool-release

@@ -136,6 +136,11 @@ remain candidates until the [independent acceptance checklist](docs/WINDOWS-ACCE
 is completed. macOS and Linux remain test builds; macOS signing/notarization
 is not established by Windows CI.
 
+An unsigned Windows MSIX prototype can be built with `.\build-msix.ps1` or the
+manual **Build MSIX prototype** workflow. See the [Microsoft Store assessment
+and VM acceptance guide](docs/MICROSOFT-STORE.md). This is not yet a certified
+Store release; WebView2 provisioning and installed-package testing remain open.
+
 ## Alternatives for institutions (context)
 
 This tool is option 4 of 4: (1) shipping drives to GAMI is being phased out;

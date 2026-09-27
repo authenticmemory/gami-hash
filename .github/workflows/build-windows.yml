@@ -1,6 +1,7 @@
 name: Build signed Windows installer
 
 on:
+  workflow_call:
   workflow_dispatch:
     inputs:
       version:
@@ -11,7 +12,6 @@ on:
   push:
     tags:
       - "test-v*"
-      - "v*"
 
 permissions:
   contents: read
@@ -145,7 +145,7 @@ jobs:
           retention-days: 14
 
   draft-release:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/test-v')
     needs: build-windows
     runs-on: ubuntu-latest
     permissions:

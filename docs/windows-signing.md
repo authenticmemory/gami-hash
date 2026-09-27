@@ -1,8 +1,9 @@
 # Automatic Windows signing
 
-The `Build signed Windows installer` workflow runs manually or on `test-v*` and
-`v*` tag pushes. It uploads signed GitHub Actions artifacts. Tag runs also create or update a
-draft GitHub Release with those files; publication remains a separate review step.
+The `Build signed Windows installer` workflow runs manually or on `test-v*` tags.
+Stable `vX.Y.Z` tags invoke it through `Publish signed downloads`, which waits for
+both Windows and Linux signing before publishing and triggering Netlify. See
+[release deployment](RELEASE-DOWNLOADS.md). Windows test tags create draft releases.
 Published releases are never overwritten by reruns. Signing is mandatory: missing configuration or an invalid
 signature fails the job before upload.
 
@@ -86,9 +87,10 @@ around by uploading unsigned artifacts.
 
 ## Release acceptance and retention
 
-CI artifacts expire after 14 days; tag-run draft release assets are the durable
-candidate archive. Complete [Windows acceptance](WINDOWS-ACCEPTANCE.md), edit the
-generated release notes to describe changes and limitations, then publish the
-reviewed draft. Keep earlier published installers and checksums for rollback.
+CI artifacts expire after 14 days; test-tag draft release assets are the durable
+candidate archive. Complete [Windows acceptance](WINDOWS-ACCEPTANCE.md) on the test
+build before pushing a stable version tag. The stable release workflow publishes
+both signed platforms automatically. Review its generated release notes before
+announcing the release. Keep earlier installers and checksums for rollback.
 Do not move a published tag. A rollback uses an earlier signed installer and must
 preserve user manifests; manifest/checkpoint version compatibility still applies.

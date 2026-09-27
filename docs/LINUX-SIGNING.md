@@ -68,9 +68,9 @@ Do not create keys on an ephemeral GitHub runner or paste them into a chat.
 
 6. Push the workflow changes and a fresh test tag. Download the resulting Linux
    artifacts, verify them, and test installation on the target distributions.
-   The existing uploads expire after 14 days; copy the verified artifacts and
-   signatures into the reviewed release for durable distribution. The website's
-   Linux download remains unavailable until approved packages are provided.
+   Test uploads expire after 14 days. After acceptance, push a new stable `vX.Y.Z`
+   tag: [Publish signed downloads](RELEASE-DOWNLOADS.md) builds both platforms,
+   publishes their verified files, and triggers the website's Netlify build.
 
 ## Verify a direct download before installation
 
