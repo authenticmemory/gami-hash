@@ -53,7 +53,7 @@ var Version = "dev"
 
 // CSV layout. The header is fixed; a resume run refuses to append to a file
 // with a different header.
-var csvHeader = []string{"relative_path", "size_bytes", "sha256", "mtime_utc", "source_record_id"}
+var csvHeader = []string{"relative_path", "size_bytes", "file_hash", "mtime_utc", "source_record_id"}
 
 const (
 	checkpointSuffix = ".part.json"

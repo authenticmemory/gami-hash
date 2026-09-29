@@ -171,15 +171,15 @@ Do not edit/resave the CSV in Excel before checking it.
 
 ```powershell
 $rows = @(Import-Csv -LiteralPath (Join-Path $output 'gui.csv'))
-$rows | Format-Table relative_path,size_bytes,sha256,source_record_id
+$rows | Format-Table relative_path,size_bytes,file_hash,source_record_id
 $columns = $rows[0].PSObject.Properties.Name -join ','
 "Columns: $columns"
-if ($columns -ne 'relative_path,size_bytes,sha256,mtime_utc,source_record_id') { throw 'Unexpected columns' }
+if ($columns -ne 'relative_path,size_bytes,file_hash,mtime_utc,source_record_id') { throw 'Unexpected columns' }
 if ($rows.Count -ne 4) { throw 'Expected four manifest rows' }
 foreach ($row in $rows) {
   $file = Join-Path $source $row.relative_path
   $hash = 'sha256:' + (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
-  if ($row.sha256 -ne $hash) { throw "Hash mismatch: $file" }
+  if ($row.file_hash -ne $hash) { throw "Hash mismatch: $file" }
   if ($row.source_record_id -cne $row.relative_path) { throw "Record ID mismatch: $file" }
 }
 $after = @(Get-SourceSnapshot)
@@ -198,7 +198,7 @@ manifest paths require decoding before mapping them to files.
 "CLI exit code: $LASTEXITCODE"
 $guiRows = Import-Csv -LiteralPath (Join-Path $output 'gui.csv')
 $cliRows = Import-Csv -LiteralPath (Join-Path $output 'cli.csv')
-Compare-Object $guiRows $cliRows -Property relative_path,size_bytes,sha256,mtime_utc,source_record_id
+Compare-Object $guiRows $cliRows -Property relative_path,size_bytes,file_hash,mtime_utc,source_record_id
 ```
 
 **Pass:** exit code `0` and no lines from `Compare-Object`.

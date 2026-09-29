@@ -285,7 +285,7 @@ func readCLIManifest(t *testing.T, output string) [][]string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) == 0 || strings.Join(rows[0], ",") != "relative_path,size_bytes,sha256,mtime_utc,source_record_id" {
+	if len(rows) == 0 || strings.Join(rows[0], ",") != "relative_path,size_bytes,file_hash,mtime_utc,source_record_id" {
 		t.Fatalf("bad manifest header: %v", rows)
 	}
 	return rows[1:]

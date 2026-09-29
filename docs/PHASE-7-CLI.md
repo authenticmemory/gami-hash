@@ -45,7 +45,7 @@ Exit codes:
 - CLI and GUI service boundary produce equivalent manifests for identical
   inputs.
 - Manifest hashes are emitted as `sha256:<hash>` through the shared engine.
-- Manifest rows contain `relative_path,size_bytes,sha256,mtime_utc,source_record_id`; the
+- Manifest rows contain `relative_path,size_bytes,file_hash,mtime_utc,source_record_id`; the
   redundant `filename` column is intentionally omitted.
 - The Windows installer exposes a separate console CLI. When run without
   arguments in an interactive terminal, it prompts for the root folder and

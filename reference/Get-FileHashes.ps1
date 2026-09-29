@@ -5,7 +5,7 @@
   LEGACY SAMPLE ONLY: not a GAMI Local manifest producer and not equivalent
   to GAMI Hash safety guarantees. Use only on disposable test copies.
   Produces the older four-column CSV:
-    relative_path,size_bytes,sha256,mtime_utc
+    relative_path,size_bytes,file_hash,mtime_utc
   (UTF-8 with BOM, CRLF, RFC 4180). It can therefore also be used to
   independently cross-check the tool's output on a sample.
 
@@ -41,7 +41,7 @@ function Manifest-Path([string]$s) {
 
 $writer = New-Object IO.StreamWriter($OutFull, $false, (New-Object Text.UTF8Encoding($true)))
 $writer.NewLine = "`r`n"
-$writer.WriteLine('relative_path,size_bytes,sha256,mtime_utc')
+$writer.WriteLine('relative_path,size_bytes,file_hash,mtime_utc')
 
 $files = Get-ChildItem -LiteralPath $Root -Recurse -File -Force |
   Where-Object { -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } |

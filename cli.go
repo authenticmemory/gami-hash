@@ -58,7 +58,7 @@ called again with the same -root and -output.
 Exit codes: 0 done · 1 fatal error · 2 done but some files unreadable · 130 interrupted
 
 Flags:
-`, engine.Version, cliNoArgsUsage, "relative_path,size_bytes,sha256,mtime_utc,source_record_id")
+`, engine.Version, cliNoArgsUsage, "relative_path,size_bytes,file_hash,mtime_utc,source_record_id")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {

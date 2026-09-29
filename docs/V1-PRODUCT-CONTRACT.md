@@ -148,14 +148,14 @@ The manifest is RFC 4180 CSV with:
 The fixed header is:
 
 ```text
-relative_path,size_bytes,sha256,mtime_utc,source_record_id
+relative_path,size_bytes,file_hash,mtime_utc,source_record_id
 ```
 
 | Column | Contract |
 |---|---|
 | `relative_path` | Encoded slash-separated path relative to the selected root |
 | `size_bytes` | Base-10 unsigned byte count of the stable file that was hashed |
-| `sha256` | `sha256:` followed by 64 lowercase hexadecimal characters representing SHA-256 of the complete file contents |
+| `file_hash` | `sha256:` followed by 64 lowercase hexadecimal characters representing SHA-256 of the complete file contents |
 | `mtime_utc` | File modification time in UTC, RFC 3339 format, with available sub-second precision and `Z` suffix |
 | `source_record_id` | Stable identifier required by GAMI Local; exactly equal to the encoded `relative_path` |
 

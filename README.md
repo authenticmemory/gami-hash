@@ -12,8 +12,8 @@ IT.
 
 - You pick a folder and an output location, press start, watch a progress
   bar, and get a done message with an "Open folder" button for the result.
-- Per file it records: `relative_path, size_bytes, sha256, mtime_utc, source_record_id`.
-  The `sha256` value is written as `sha256:<64 lowercase hex characters>`.
+- Per file it records: `relative_path, size_bytes, file_hash, mtime_utc, source_record_id`.
+  The `file_hash` value is written as `sha256:<64 lowercase hex characters>`.
 - `source_record_id` equals the encoded `relative_path`, providing the stable unique row identifier
   required by GAMI Local without inventing or collecting institutional metadata.
   Technical metadata only, no accession numbers, no institution-specific

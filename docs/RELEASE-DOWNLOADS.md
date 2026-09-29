@@ -15,8 +15,8 @@ Draft uploads can be retried before publication.
 Test tags continue to run individual builds; Windows test runs retain draft
 releases. Manual builds do not automatically publish production downloads.
 
-The repository is private. The website's GitHub Actions repository secret
-`GAMI_RELEASE_READ_TOKEN` needs read-only Contents access to this repository.
+The repository is public. The website downloads published release assets without
+`GAMI_RELEASE_READ_TOKEN`; a separate read credential is no longer needed.
 GitHub Actions builds the website and uploads it with `netlify deploy`; Netlify
 build hooks and Git integration are not used. The website downloads only the release's
 approved distributables, validates them, and serves them publicly from its own
