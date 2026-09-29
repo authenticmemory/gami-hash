@@ -33,8 +33,12 @@ jobs:
     needs: validate
     uses: ./.github/workflows/build-linux-cli.yml
     secrets: inherit
+  linux-gui:
+    needs: validate
+    uses: ./.github/workflows/build-linux-gui.yml
+    secrets: inherit
   publish:
-    needs: [windows, linux]
+    needs: [windows, linux, linux-gui]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -51,6 +55,10 @@ jobs:
         with:
           name: gami-hash-linux-cli
           path: release/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: gami-hash-linux-gui
+          path: release/linux-gui
       - name: Assemble checked release manifest
         run: |
           node --test scripts/create-download-manifest.test.mjs
