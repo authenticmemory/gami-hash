@@ -197,7 +197,7 @@ func TestInvalidUTF8Filename(t *testing.T) {
 	rows := readRows(t, out)
 	// The invalid byte must be recorded percent-encoded so the CSV stays
 	// valid UTF-8, and the raw name must be documented in the error log.
-	if rows[0][0] != "%E4bc.txt" || rows[0][1] != "%E4bc.txt" {
+	if rows[0][0] != "%E4bc.txt" || rows[0][4] != "%E4bc.txt" {
 		t.Errorf("invalid byte not percent-encoded: %v", rows[0])
 	}
 	if rows[0][2] != sha256hex("x") {
