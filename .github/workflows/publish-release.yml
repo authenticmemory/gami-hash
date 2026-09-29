@@ -22,7 +22,10 @@ jobs:
   windows:
     needs: validate
     permissions:
-      contents: read
+      # The reusable workflow declares a write-enabled test draft-release job.
+      # GitHub validates its permission ceiling even when that job is skipped.
+      # The Windows build job itself still explicitly uses contents: read.
+      contents: write
       id-token: write
     uses: ./.github/workflows/build-windows.yml
     secrets: inherit
