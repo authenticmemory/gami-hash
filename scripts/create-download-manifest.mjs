@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const [root = 'release'] = process.argv.slice(2);
@@ -19,10 +19,16 @@ for (const platform of ['windows-x64', 'linux-x64', 'linux-x64-gui']) {
   const checksum = gui ? 'SHA256SUMS-linux-gui.txt' : linux ? `${archive}.sha256` : 'SHA256SUMS-windows.txt';
   const signature = linux ? `${archive}.asc` : null;
   const names = linux ? [archive, checksum, signature, `${checksum}.asc`] : [archive, 'gami-hash.exe', checksum];
-  if (gui) names.push('gami-hash-linux-amd64-gui.tar.gz', 'gami-hash-linux-amd64-gui.tar.gz.asc');
+  let sourceRpm;
+  if (gui) {
+    sourceRpm = readdirSync(source).find(name => /^gami-hash-.*\.x86_64\.rpm$/.test(name));
+    if (!sourceRpm) throw new Error('Missing Linux GUI RPM');
+    names.push('gami-hash-linux-amd64-gui.tar.gz', 'gami-hash-linux-amd64-gui.tar.gz.asc', 'gami-hash-linux-amd64-gui.rpm', `${sourceRpm}.asc`);
+    writeFileSync(join(output, 'gami-hash-linux-amd64-gui.rpm'), readFileSync(join(source, sourceRpm)));
+  }
   const checksums = readFileSync(join(source, checksum), 'utf8').split(/\r?\n/);
   const files = names.map(name => {
-    const sourceName = !linux && name === archive ? originalInstaller : name;
+    const sourceName = !linux && name === archive ? originalInstaller : gui && name === 'gami-hash-linux-amd64-gui.rpm' ? sourceRpm : gui && name === 'gami-hash-linux-amd64-gui.rpm.asc' ? `${sourceRpm}.asc` : name;
     let data = readFileSync(join(source, sourceName));
     if (!linux && name === checksum) data = Buffer.from(data.toString('utf8').replace(originalInstaller, archive));
     if (!data.length) throw new Error(`Empty release file: ${name}`);

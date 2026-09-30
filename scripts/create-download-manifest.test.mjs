@@ -13,7 +13,7 @@ test('release assembly checks both Windows executables and requires Linux signat
     for (const platform of ['windows', 'linux', 'linux-gui']) {
       const dir = platform === 'linux-gui' ? join(root, platform) : join(root, platform, 'bin');
       mkdirSync(dir, { recursive: true });
-      const names = platform === 'windows' ? ['Authentic Memory Hashing Tool-amd64-installer.exe', 'gami-hash.exe'] : platform === 'linux-gui' ? ['gami-hash-linux-amd64-gui.deb', 'gami-hash-linux-amd64-gui.tar.gz'] : ['gami-hash-linux-amd64.tar.gz'];
+      const names = platform === 'windows' ? ['Authentic Memory Hashing Tool-amd64-installer.exe', 'gami-hash.exe'] : platform === 'linux-gui' ? ['gami-hash-linux-amd64-gui.deb', 'gami-hash-linux-amd64-gui.tar.gz', 'gami-hash-0.2.0-1.x86_64.rpm'] : ['gami-hash-linux-amd64.tar.gz'];
       const lines = names.map(name => {
         writeFileSync(join(dir, name), name);
         return `${createHash('sha256').update(name).digest('hex')}  ${name}`;
