@@ -23,7 +23,7 @@ for (const platform of ['windows-x64', 'linux-x64', 'linux-x64-gui']) {
   if (gui) {
     sourceRpm = readdirSync(source).find(name => /^gami-hash-.*\.x86_64\.rpm$/.test(name));
     if (!sourceRpm) throw new Error('Missing Linux GUI RPM');
-    names.push('gami-hash-linux-amd64-gui.tar.gz', 'gami-hash-linux-amd64-gui.tar.gz.asc', 'gami-hash-linux-amd64-gui.rpm', `${sourceRpm}.asc`);
+    names.push('gami-hash-linux-amd64-gui.tar.gz', 'gami-hash-linux-amd64-gui.tar.gz.asc', 'gami-hash-linux-amd64-gui.rpm', 'gami-hash-linux-amd64-gui.rpm.asc');
     writeFileSync(join(output, 'gami-hash-linux-amd64-gui.rpm'), readFileSync(join(source, sourceRpm)));
   }
   const checksums = readFileSync(join(source, checksum), 'utf8').split(/\r?\n/);
