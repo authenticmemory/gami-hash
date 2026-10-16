@@ -1,9 +1,12 @@
 # Windows AppContainer GUI implementation plan
 
-Status: **Phase 1 stop/go decision reached: direct-path migration stopped**.
+Status: **Phase 2 engineering gate passed on the tested Windows 11 VM;
+release acceptance remains open**.
 The [architecture decision](decisions/0001-windows-appcontainer-storage-adapter.md)
-directs Phase 2 toward a contained storage adapter. No product implementation has
-started under this plan, and no released Windows GUI meets its assurance gates.
+directed Phase 2 toward a contained storage adapter. The production integration
+host, contained worker, and brokered engine adapter now pass the Phase 2 matrix
+recorded below. The native product wizard and release acceptance work remain,
+and no released Windows GUI yet meets the assurance gates.
 The signed v1.5.0 GUI still uses WebView2 and [failed the no-independent-network
 claim](evidence/2026-10-16-windows-v1.5.0/README.md). This plan is for its
 successor, not a retroactive certification of v1.5.0.
@@ -182,6 +185,90 @@ provider, and network routes remain explicit gates on that adapter and the
 release; the Phase 1 probe does not certify them.
 
 ## Phase 2 — adapt storage and preserve the engine
+
+Production implementation outcome (2026-10-16): the repository now contains a
+versioned, length-bounded Go/native protocol, a contained Go worker that calls
+the product engine, brokered source and destination engine adapters, and native
+Windows identity, broker-session, and worker-launcher components under
+`packaging/windows-appcontainer`. The native components compile into
+`GamiHashStorageBroker.lib`; the focused Go suite passes. Brokered cancellation,
+checkpointing, restart/resume, stable source identity, hard-link rejection, and
+race-aware destination publication are integrated. Providers that cannot
+expose the required identity or link capability fail closed.
+
+Current investigation: the [Phase 2 local handle probe](evidence/2026-10-16-windows-appcontainer-phase2/README.md)
+shows that a contained Go child can enumerate a picker-selected local folder,
+stream a file and create/remove a temporary file in the separate selected
+output through Windows' AppContainer-aware `*FromApp` APIs. The same APIs
+returned network-access-denied on a picker-selected same-VM SMB share where
+WinRT streaming succeeded. A later probe passed one SMB source read handle
+and one separate SMB output write handle from WinRT to a contained Go child;
+the child's hash matched the fixture. A follow-up probe duplicated both
+handles into an already-running contained Go child on local, same-VM SMB,
+and Google Drive fixtures and matched the tested files' hashes. A local
+`*FromApp` backend alone cannot
+cover SMB, but brokered handles are feasible for this test share. The full
+engine and Phase 2 gate remain open.
+
+A disposable follow-up streamed complete five-column Go manifests through
+picker-granted handles: five-file local and same-VM SMB CSVs matched the
+compact fixture, and a cached 500-file Google Drive CSV matched the earlier
+source-verified inventory. A fresh, user-observed online-only Drive file was
+then read successfully and produced an exact pre-upload SHA-256 in a 501-row
+manifest. A later acknowledged per-file protocol using the engine's shared
+hash/row functions reproduced the local, same-VM SMB, and 501-file Drive
+CSVs. The acknowledged probe also wrote an oracle-matching five-row CSV to
+a temporary share on a genuinely separate host, with the host source file
+hashes unchanged. These probes have no product resume/error pipeline,
+provider identity enforcement, or source-write attempt trace.
+The next signed probe fixed one global CSV sorting defect, but a disposable
+junction fixture proved that the current WinRT walker follows a folder link
+outside the selected source and hashes the outside file. Phase 2 source
+containment therefore **fails** until a raw reparse/identity guard is
+implemented and retested. See the Phase 2 evidence before using this broker
+on any untrusted collection.
+The first raw-directory-handle diagnostic was denied by AppContainer, so it
+did not expose the junction tag. A shell-attribute query reported the reparse
+bit on the fixture's junction, and a subsequent signed probe refused that
+junction before hashing beyond it. The guarded probe preserved the verified
+five-row local and same-VM SMB manifests and the 501-row Google Drive
+manifest. This passes one local escape fixture and three known-good
+regressions; provider identity and first-open cloud behavior remain open.
+An output-alias fixture exposed a separate failure: an output junction whose
+target is inside the selected source passed the probe's lexical path check.
+The probe wrote both CSVs into the source and included its in-progress CSV in
+the manifest. A signed folder-identity experiment using WinRT `IsEqual` also
+failed: Windows reported no equality between the output junction and its
+source-tree target, and another CSV landed inside the source. A signed
+0.1.16.0 follow-up conservatively refused any selected output folder reported
+as a reparse point. It rejected the known output junction before enumeration
+or output creation, then preserved the byte-identical local, same-VM SMB, and
+Google Drive manifests. This closes that tested junction shape only. Hard
+links, other reparse types, provider and DFS aliases, publication races, and
+stable resume identity remain open. No probe result should be treated as Phase
+2 completion; the product still needs a verified identity and publication
+design.
+
+The production adapter subsequently replaced those probe-only checks with
+opened-handle identity validation and fail-closed publication. Development-
+signed production integration package `0.2.5.0` completed local, same-VM SMB,
+and Google Drive fresh runs. Local and SMB output matched the frozen five-row
+oracle byte for byte; Google Drive produced the verified 501-row,
+1,988,627-byte oracle, including the exact pre-upload hash of the previously
+online-only control file. A 1,024-file, 256 MiB run cancelled, survived a full
+host restart, and resumed without missing, duplicate, size, or hash mismatches.
+The product refused both a source junction escape and an output junction that
+resolved inside the source before creating output.
+
+A bounded WPR FileIO trace covering all three successful storage classes found
+source reads but zero product-tree source Write, SetInfo, Delete, Rename, or
+creating-open events. Focused Go tests cover unreadable files/error logs,
+changed and missing resume entries, hard links, cancellation, and protocol
+failure paths. Gate result: **PASS for the tested Phase 2 matrix.** This is an
+engineering gate, not release certification. Separate-host/DFS variants,
+additional cloud providers, Windows 10, final-artifact network attribution, the
+native wizard, signing, and independent acceptance remain later-phase gates.
+See the [Phase 2 evidence](evidence/2026-10-16-windows-appcontainer-phase2/README.md).
 
 Tasks:
 

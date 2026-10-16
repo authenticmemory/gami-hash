@@ -1,0 +1,46 @@
+﻿{
+    "schema":  1,
+    "etl_sha256":  "11e012f202532dc0eaf12f37bc6cde3df403f8c6e5a76db667ac2bd0fc6d934f",
+    "etl_bytes":  199229440,
+    "host_pid":  4324,
+    "worker_pids":  [
+                        7860,
+                        5584,
+                        12988
+                    ],
+    "processed":  true,
+    "sources":  {
+                    "local":  {
+                                  "opens":  11,
+                                  "reads":  9,
+                                  "read_bytes":  9437184,
+                                  "writes":  0,
+                                  "write_bytes":  0,
+                                  "mutations":  0,
+                                  "creating_opens":  0
+                              },
+                    "smb":  {
+                                "opens":  11,
+                                "reads":  23,
+                                "read_bytes":  24117248,
+                                "writes":  0,
+                                "write_bytes":  0,
+                                "mutations":  0,
+                                "creating_opens":  0
+                            },
+                    "cloud":  {
+                                  "opens":  0,
+                                  "reads":  1002,
+                                  "read_bytes":  1050673152,
+                                  "writes":  0,
+                                  "write_bytes":  0,
+                                  "mutations":  0,
+                                  "creating_opens":  0
+                              }
+                },
+    "violations":  [
+
+                   ],
+    "passed":  true,
+    "interpretation":  "Pass means no FileIO Write, SetInfo, Delete, Rename, or creating-open event from the product host/worker PIDs targeted a tested source path. OPEN_EXISTING and Read events are expected."
+}

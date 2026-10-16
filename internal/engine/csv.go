@@ -29,6 +29,14 @@ func openCompletedCursor(path string) (*completedCursor, error) {
 	if err != nil {
 		return nil, err
 	}
+	return openCompletedCursorFile(f)
+}
+
+func openCompletedCursorFile(f *os.File) (*completedCursor, error) {
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		_ = f.Close()
+		return nil, err
+	}
 	r := csv.NewReader(skipBOM(f))
 	r.FieldsPerRecord = len(csvHeader)
 	header, err := r.Read()
@@ -100,6 +108,24 @@ func formatManifestHash(hash string) string {
 	return sha256ManifestPrefix + hash
 }
 
+// ManifestHeader returns an independent copy of the product CSV schema.
+func ManifestHeader() []string {
+	return append([]string(nil), csvHeader...)
+}
+
+// ManifestFields formats one successful file using the product CSV contract.
+// The caller must establish the relative path, file identity, and metadata
+// stability before accepting these fields.
+func ManifestFields(relativePath string, size int64, bareHash string, mtime time.Time) []string {
+	return []string{
+		relativePath,
+		strconv.FormatInt(size, 10),
+		formatManifestHash(bareHash),
+		mtime.UTC().Format(time.RFC3339Nano),
+		relativePath,
+	}
+}
+
 func normalizeManifestHash(hash string) (string, bool) {
 	if strings.HasPrefix(hash, sha256ManifestPrefix) {
 		bare := strings.TrimPrefix(hash, sha256ManifestPrefix)
@@ -137,7 +163,19 @@ func (c *completedCursor) match(rel string) (completedRow, bool, error) {
 // in its final record. A terminated record can still be torn at the semantic
 // level after sudden power loss. Corruption before the final record is fatal.
 func validateRepairableCSV(path string) error {
-	data, err := os.ReadFile(path)
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return validateRepairableCSVFile(f)
+}
+
+func validateRepairableCSVFile(f *os.File) error {
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	data, err := io.ReadAll(f)
 	if err != nil {
 		return err
 	}
@@ -198,6 +236,13 @@ func repairTruncatedTail(path string) error {
 		return err
 	}
 	defer f.Close()
+	return repairTruncatedTailFile(f)
+}
+
+func repairTruncatedTailFile(f *os.File) error {
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 
 	// Skip the BOM if present.
 	var start int64
@@ -250,6 +295,13 @@ func countValidRows(path string) (int64, error) {
 		return 0, err
 	}
 	defer f.Close()
+	return countValidRowsFile(f)
+}
+
+func countValidRowsFile(f *os.File) (int64, error) {
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return 0, err
+	}
 	r := csv.NewReader(skipBOM(f))
 	r.FieldsPerRecord = len(csvHeader)
 	r.ReuseRecord = true

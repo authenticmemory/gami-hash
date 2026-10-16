@@ -1,7 +1,9 @@
 dist/
 
 /build/bin/
+/build/gocache/
 /build/edge-profile/
+/integration_host.obj
 !/build/appicon.png
 !/build/appicon-source.svg
 !/build/gami-logo.svg

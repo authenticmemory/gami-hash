@@ -2,8 +2,9 @@
 // CSV manifest. Double-click (no arguments) starts the graphical wizard;
 // any argument switches to command-line mode.
 //
-// The program is strictly read-only towards the scanned folder, needs no
-// installation and no admin rights, and contains no networking code at all.
+// The hashing engine opens source files read-only. The current desktop GUI
+// uses a WebView runtime whose network behavior is documented separately;
+// source-code inspection alone does not establish a network-silent process.
 package main
 
 import (
@@ -11,6 +12,9 @@ import (
 )
 
 func main() {
+	if handled, code := runContainedWorkerIfRequested(os.Args[1:]); handled {
+		os.Exit(code)
+	}
 	if len(os.Args) > 1 || cliHandlesNoArgs() {
 		attachConsole() // no-op except on Windows GUI-subsystem builds
 		os.Exit(runCLI(os.Args[1:]))

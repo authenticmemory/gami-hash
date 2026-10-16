@@ -1,0 +1,15 @@
+{
+  "packageVersion": "0.1.13.0",
+  "packageSha256": "47cf3fbd839287633831d1bdacc4f9da11d57761c7b8032625125b1fc5612cb2",
+  "status": "diagnostic-only",
+  "fixture": "local source with a junction named escape targeting a sibling outside folder",
+  "appContainer": true,
+  "shellProperty": "System.FileAttributes",
+  "junctionAttributes": 1040,
+  "ordinaryFileAttributes": 32,
+  "workerFiles": 2,
+  "workerBytes": 53,
+  "guardEnforced": false,
+  "containmentGate": "failed",
+  "note": "The shell attribute property exposed the reparse bit on this local junction, but the diagnostic worker still followed it. SMB and cloud metadata behavior has not yet been checked."
+}

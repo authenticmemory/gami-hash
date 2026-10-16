@@ -2,8 +2,8 @@
 
 Date: 2026-10-16
 
-Status: Accepted for the Phase 1 feasibility decision; Phase 2 implementation
-and release verification remain open.
+Status: Accepted. Phase 2 implementation passed its tested engineering matrix;
+release verification remains open.
 
 ## Context
 
@@ -55,6 +55,29 @@ The GUI must identify recognized remote locations and request the user's
 permission before hashing, with the picker-time caveat recorded in the
 implementation plan. Source-read and output containment rules still require
 separate enforcement and runtime checks.
+
+## Phase 2 API finding (2026-10-16)
+
+Probe 0.1.3.0 tested Windows' AppContainer-aware `*FromApp` file APIs on the
+same picker-selected local fixture. `GetFileAttributesExFromAppW` and
+`FindFirstFileExFromAppW` accessed the root, `CreateFileFromAppW` read one
+file and created an output test file, and `DeleteFileFromAppW` removed that
+test file. Ordinary C++ traversal still failed with access denied. These
+results were reported from the VM's interactive probe run; the Go adapter
+and SMB/cloud `*FromApp` paths had not yet passed runtime tests. A contained
+Go child in probe 0.1.4.0 subsequently enumerated the same local root from
+a `CreateFileFromAppW` directory handle, read a file with the expected SHA-256,
+and created/deleted an output test file. On a same-VM SMB share, `*FromApp`
+returned `ERROR_NETWORK_ACCESS_DENIED` for source and output while the WinRT
+worker still succeeded. On the tested Google Drive for desktop mount, the
+`*FromApp` calls did succeed, but only a one-byte read was attempted. The
+candidate adapter may therefore need brokered WinRT file handles or streams
+for SMB even if direct AppContainer-aware handles cover local and some cloud
+paths. Probe 0.1.6.0 then passed one SMB source read handle and one separate
+SMB output write handle from WinRT to contained Go; its source hash matched
+the fixture. Recursive enumeration, safe publication and resume still need
+the actual storage adapter. The direct ordinary-path decision above stands. See the
+[Phase 2 evidence](../evidence/2026-10-16-windows-appcontainer-phase2/README.md).
 
 ## Rejected shortcuts
 

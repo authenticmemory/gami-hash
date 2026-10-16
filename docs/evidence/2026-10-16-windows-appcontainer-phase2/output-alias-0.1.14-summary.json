@@ -1,0 +1,17 @@
+{
+  "packageVersion": "0.1.14.0",
+  "packageSha256": "581aa40a9bc328ca7378b93e623d1ff65a8f6e4335589d4ec62bafdbb0e614bb",
+  "fixture": "output-link is a junction to source\\inside-output",
+  "appContainer": true,
+  "sourceFilesBeforeRun": 1,
+  "initialWinRtFiles": 1,
+  "goManifestFiles": 2,
+  "filesWrittenInsideSource": [
+    "inside-output\\phase1-probe.csv",
+    "inside-output\\phase2-go-manifest-5084-15290578.csv"
+  ],
+  "selfIncludedManifestRow": "inside-output/phase2-go-manifest-5084-15290578.csv",
+  "selfIncludedSizeBytes": 3,
+  "sourceWriteGate": "failed",
+  "phase2Gate": "open"
+}

@@ -15,14 +15,26 @@ try {
     $password = $null
 }
 $unc = '\\192.168.247.1\GamiPhase1Remote'
-& net.exe use R: $unc /persistent:no | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Could not map remote test share.' }
+$mappedSource = $null
+$mappedOutput = $null
+$existingMapping = Get-SmbMapping -LocalPath 'R:' -ErrorAction SilentlyContinue
+if (-not $existingMapping) {
+    & net.exe use R: $unc /persistent:no | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Could not map remote test share.' }
+    $mappedSource = 'R:\source'
+    $mappedOutput = 'R:\output'
+} elseif ($existingMapping.RemotePath -eq $unc) {
+    $mappedSource = 'R:\source'
+    $mappedOutput = 'R:\output'
+} else {
+    Write-Warning "R: already maps to $($existingMapping.RemotePath); continuing with UNC paths only."
+}
 $result = [ordered]@{
     checkedUtc = [DateTime]::UtcNow.ToString('o')
     source = "$unc\source"
     output = "$unc\output"
-    mappedSource = 'R:\source'
-    mappedOutput = 'R:\output'
+    mappedSource = $mappedSource
+    mappedOutput = $mappedOutput
     sourceReachable = Test-Path -LiteralPath "$unc\source"
     outputReachable = Test-Path -LiteralPath "$unc\output"
     sourceFiles = @()

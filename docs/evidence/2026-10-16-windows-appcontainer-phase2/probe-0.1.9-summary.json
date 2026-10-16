@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-16",
+  "artifact": "disposable AppContainer probe, not a release GUI",
+  "package_version": "0.1.9.0",
+  "package_sha256": "d03cb4979b0216ea3b46a8508f9d4258115cf751c22d60c59617284a8a58c318",
+  "manifest_trust_level": "appContainer",
+  "manifest_capabilities": [],
+  "scenarios": [
+    {
+      "name": "local fixture",
+      "files": 5,
+      "bytes": 65577,
+      "child_ack": "DONE 5 65577",
+      "oracle_mismatches": 0,
+      "csv_sha256": "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232"
+    },
+    {
+      "name": "same-VM SMB fixture",
+      "files": 5,
+      "bytes": 65577,
+      "child_ack": "DONE 5 65577",
+      "oracle_mismatches": 0,
+      "csv_sha256": "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232"
+    },
+    {
+      "name": "separate-host encrypted SMB fixture",
+      "files": 5,
+      "bytes": 65577,
+      "child_ack": "DONE 5 65577",
+      "oracle_mismatches": 0,
+      "source_content_mismatches_before_after": 0,
+      "csv_sha256": "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232"
+    },
+    {
+      "name": "Google Drive for desktop streamed mount",
+      "files": 501,
+      "bytes": 1988627,
+      "child_ack": "DONE 501 1988627",
+      "prior_manifest_mismatches": 0,
+      "csv_sha256": "79adafa7e9374c4a9b8ee26d866d10bd93affa6785171514579050f238f9e6d2"
+    }
+  ],
+  "signed_v1_5_0_cli_sha256": "119921fa70185f18b56c138c15d69c6a15e5bdeefd8adf32e483493b247a1569",
+  "compact_fixture_byte_equal_to_signed_v1_5_0_cli": true,
+  "temporary_host_share_cleanup_verified": true,
+  "phase_2_gate": "open"
+}
