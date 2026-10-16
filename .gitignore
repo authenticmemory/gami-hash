@@ -16,3 +16,6 @@ dist/
 /frontend/dist/
 
 !/build/windows/info.json
+
+build/gocache/
+integration_host.obj
