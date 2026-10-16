@@ -1,0 +1,14 @@
+{
+  "packageVersion": "0.1.12.0",
+  "packageSha256": "6a73e960e022467f69b15adb2a8ecd8782e79b9081796f06851f9099666ae6fc",
+  "status": "diagnostic-failed",
+  "fixture": "local source with a junction named escape targeting a sibling outside folder",
+  "appContainer": true,
+  "rawDirectoryDotCreateHresult": "0x80070005",
+  "rawDirectoryEmptyCreateHresult": "0x80070003",
+  "rawReparseTagObserved": false,
+  "workerFiles": 2,
+  "workerBytes": 53,
+  "containmentGate": "failed",
+  "note": "The WinRT walker still followed the junction; the raw directory query could not run. This is a disposable probe, not the released GUI."
+}

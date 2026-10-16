@@ -19,7 +19,7 @@ if (Get-SmbShare -Name $name -ErrorAction SilentlyContinue) { throw "Share $name
 if (Get-NetFirewallRule -DisplayName $rule -ErrorAction SilentlyContinue) { throw "Firewall rule $rule already exists; refusing to alter it." }
 $fixtureExists = Test-Path -LiteralPath $dir
 $secretExists = Test-Path -LiteralPath $secretFile
-if ($fixtureExists -ne $secretExists) { throw 'Fixture and secret must either both exist or both be absent; refusing partial recovery.' }
+if ($secretExists -and -not $fixtureExists) { throw 'Test secret exists without the fixture; refusing partial recovery.' }
 if ($fixtureExists -and -not (Test-Path -LiteralPath (Join-Path $dir 'expected.json'))) { throw 'Existing fixture lacks expected.json.' }
 
 try {

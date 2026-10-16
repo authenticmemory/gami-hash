@@ -1,0 +1,42 @@
+{
+  "packageVersion": "0.1.16.0",
+  "packageSha256": "6b0ccdcb6e2be15fe87f44ccc3575c46b1981f8f2c4caefe350884ae36deccb6",
+  "appContainer": true,
+  "outputAliasFixture": {
+    "shape": "output-link is a junction to source\\inside-output",
+    "result": "ERROR REFUSED output reparse point",
+    "enumerationStarted": false,
+    "manifestCreated": false,
+    "newSourceFileCreated": false
+  },
+  "regressions": {
+    "local": {
+      "files": 5,
+      "bytes": 65577,
+      "manifestSha256": "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232",
+      "matchesOracle": true
+    },
+    "sameVmSmb": {
+      "files": 5,
+      "bytes": 65577,
+      "manifestSha256": "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232",
+      "matchesOracle": true
+    },
+    "googleDrive": {
+      "files": 501,
+      "bytes": 1988627,
+      "manifestSha256": "79adafa7e9374c4a9b8ee26d866d10bd93affa6785171514579050f238f9e6d2",
+      "matchesOracle": true
+    }
+  },
+  "scope": "known output junction plus known-good local, same-VM SMB, and Google Drive fixtures",
+  "unresolved": [
+    "hard links",
+    "other reparse types",
+    "DFS and provider aliases",
+    "destination replacement races",
+    "stable identity for resume and moved-root checks"
+  ],
+  "sourceWriteGate": "open",
+  "phase2Gate": "open"
+}

@@ -9,7 +9,8 @@
 //   - Runs are resumable: the CSV itself is the record of completed files, a
 //     small sidecar checkpoint file marks an unfinished run and remembers the
 //     root folder. On resume, files already present in the CSV are skipped.
-//   - No network access anywhere (the whole program has no networking code).
+//   - The engine has no socket calls. Reading SMB or cloud-backed files may
+//     cause Windows or a sync provider to use the network outside this process.
 package engine
 
 import (
@@ -36,7 +37,7 @@ import (
 
 type walkItem struct {
 	abs, rel string
-	entry    fs.DirEntry
+	entry    sourceEntry
 }
 
 type walkHeap []walkItem
@@ -310,8 +311,11 @@ type outcome struct {
 
 type engineRun struct {
 	opts     Options
+	rootRef  string
 	ctx      context.Context
 	progress func(Progress)
+	source   sourceAccess
+	dest     destinationAccess
 
 	completed *completedCursor // streaming sorted rows available for resume
 
@@ -336,23 +340,41 @@ type engineRun struct {
 // Fatal setup problems (bad root, output inside root, unwritable output)
 // return an error. Per-file problems never do.
 func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, error) {
-	start := time.Now()
-	var err error
-	opts, err = Validate(opts)
+	validated, err := Validate(opts)
 	if err != nil {
 		return Result{}, err
+	}
+	return runWithAccess(ctx, validated, progressFn, osSourceAccess{}, osDestinationAccess{}, validated.Root, true, nil)
+}
+
+// runWithAccess executes with already validated logical source and destination
+// references. The brokered Windows entry point uses opaque source references
+// and destination names that cannot be validated with ordinary path APIs.
+type preparedResume struct {
+	state  ResumeState
+	cursor *completedCursor
+}
+
+func runWithAccess(ctx context.Context, opts Options, progressFn func(Progress), source sourceAccess, dest destinationAccess, rootRef string, validated bool, prepared *preparedResume) (Result, error) {
+	start := time.Now()
+	if !validated {
+		return Result{}, errors.New("storage run was not validated")
 	}
 	if progressFn == nil {
 		progressFn = func(Progress) {}
 	}
 
-	r := &engineRun{opts: opts, ctx: ctx, progress: progressFn}
+	r := &engineRun{opts: opts, rootRef: rootRef, ctx: ctx, progress: progressFn, source: source, dest: dest}
 	r.res.Output = opts.Output
 
 	// ---- Resume handling -------------------------------------------------
 	resuming := false
 	var resumeState ResumeState
-	if !opts.Fresh {
+	if prepared != nil {
+		resuming = true
+		resumeState = prepared.state
+		r.completed = prepared.cursor
+	} else if !opts.Fresh {
 		st := CheckResume(opts.Output)
 		checkpointExists := fileExists(CheckpointPath(opts.Output))
 		switch {
@@ -369,7 +391,8 @@ func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, 
 	}
 
 	var csvFile *os.File
-	if resuming {
+	var err error
+	if resuming && r.completed == nil {
 		// Validate before any mutation, then detach aliases/hard links before
 		// repairing. The final output is reconstructed from the current tree.
 		resumeSource := resumeState.manifestPath
@@ -391,20 +414,23 @@ func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, 
 			return Result{}, fmt.Errorf("cannot read existing CSV: %w", err)
 		}
 		if !SameRoot(resumeSource, opts.Output) {
-			defer os.Remove(resumeSource)
+			defer r.dest.Remove(resumeSource)
 		}
+	}
+	if r.completed != nil {
 		defer func() {
-			if r.completed != nil {
-				_ = r.completed.Close()
-			}
+			if r.completed != nil { _ = r.completed.Close() }
 		}()
 	}
-	csvFile, err = os.CreateTemp(filepath.Dir(opts.Output), ".gami-manifest-*")
+	if prepared != nil && resumeState.manifestPath != opts.Output {
+		defer r.dest.Remove(resumeState.manifestPath)
+	}
+	csvFile, err = r.dest.CreateWork(opts.Output)
 	if err != nil {
 		return Result{}, fmt.Errorf("cannot create working manifest: %w", err)
 	}
 	workPath := csvFile.Name()
-	defer os.Remove(workPath)
+	defer r.dest.Remove(workPath)
 	defer csvFile.Close()
 	// Every run reconstructs a complete current-tree manifest.
 	if _, err := csvFile.Write(utf8BOM); err != nil {
@@ -434,13 +460,13 @@ func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, 
 	// Always (re)written so the recorded root stays current — e.g. after an
 	// external drive came back under a different drive letter.
 	cpData, _ := json.MarshalIndent(cp, "", "  ")
-	if err := atomicWriteFile(CheckpointPath(opts.Output), cpData, 0o644); err != nil {
+	if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData); err != nil {
 		csvFile.Close()
 		return Result{}, fmt.Errorf("cannot write checkpoint file: %w", err)
 	}
 	// The second traversal recreates the complete warning/error set, including
 	// on resume. Remove only the external directory entry, never truncate it.
-	if err := os.Remove(ErrorLogPath(opts.Output)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := r.dest.Remove(ErrorLogPath(opts.Output)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return Result{}, fmt.Errorf("cannot reset error log: %w", err)
 	}
 
@@ -478,12 +504,12 @@ func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, 
 		if err := csvFile.Close(); err != nil {
 			return Result{}, fmt.Errorf("cannot close canceled manifest: %w", err)
 		}
-		if err := publishFile(workPath, opts.Output); err != nil {
+		if err := r.dest.Publish(workPath, opts.Output); err != nil {
 			return Result{}, fmt.Errorf("cannot publish canceled manifest: %w", err)
 		}
 		cp.WorkPath = ""
 		cpData, _ = json.MarshalIndent(cp, "", "  ")
-		if err := atomicWriteFile(CheckpointPath(opts.Output), cpData, 0o644); err != nil {
+		if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData); err != nil {
 			return Result{}, fmt.Errorf("cannot update canceled checkpoint: %w", err)
 		}
 		r.res.Canceled = true
@@ -616,14 +642,14 @@ func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, 
 		}
 		r.errLog = nil
 	} else if !resuming || opts.Fresh {
-		_ = os.Remove(ErrorLogPath(opts.Output))
+		_ = r.dest.Remove(ErrorLogPath(opts.Output))
 	}
-	if err := publishFile(workPath, opts.Output); err != nil {
+	if err := r.dest.Publish(workPath, opts.Output); err != nil {
 		return Result{}, fmt.Errorf("cannot publish output file: %w", err)
 	}
 	cp.WorkPath = ""
 	cpData, _ = json.MarshalIndent(cp, "", "  ")
-	if err := atomicWriteFile(CheckpointPath(opts.Output), cpData, 0o644); err != nil {
+	if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData); err != nil {
 		return Result{}, fmt.Errorf("cannot finalize checkpoint: %w", err)
 	}
 
@@ -635,7 +661,7 @@ func Run(ctx context.Context, opts Options, progressFn func(Progress)) (Result, 
 	}
 
 	// Success: remove the checkpoint marker.
-	if err := os.Remove(CheckpointPath(opts.Output)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := r.dest.Remove(CheckpointPath(opts.Output)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return Result{}, fmt.Errorf("cannot remove checkpoint file: %w", err)
 	}
 	r.progress(Progress{
@@ -660,22 +686,10 @@ func (r *engineRun) snapshot() Progress {
 // regular files only. When logIssues is true, unreadable directories and
 // skipped non-regular entries are recorded in the error log.
 func (r *engineRun) walk(fn func(rel, abs string, info fs.FileInfo) error, logIssues bool) error {
-	// Our own files must never end up in the manifest, even if the user put
-	// the output right next to (or, blocked elsewhere, inside) the tree.
-	excluded := []string{r.opts.Output, CheckpointPath(r.opts.Output), ErrorLogPath(r.opts.Output)}
-	isExcluded := func(abs string) bool {
-		for _, p := range excluded {
-			if SameRoot(abs, p) {
-				return true
-			}
-		}
-		return false
-	}
-
 	q := &walkHeap{}
 	heap.Init(q)
 	addDir := func(abs, rel string) error {
-		dir, err := os.Open(abs)
+		dir, err := r.source.OpenDir(abs)
 		if err != nil {
 			if logIssues {
 				r.filesFailed.Add(1)
@@ -721,7 +735,7 @@ func (r *engineRun) walk(fn func(rel, abs string, info fs.FileInfo) error, logIs
 						return err
 					}
 				}
-				heap.Push(q, walkItem{abs: filepath.Join(abs, e.Name()), rel: childRel, entry: e})
+				heap.Push(q, walkItem{abs: e.Ref(), rel: childRel, entry: e})
 			}
 			if errors.Is(readErr, io.EOF) {
 				return nil
@@ -735,7 +749,7 @@ func (r *engineRun) walk(fn func(rel, abs string, info fs.FileInfo) error, logIs
 			}
 		}
 	}
-	if err := addDir(r.opts.Root, ""); err != nil {
+	if err := addDir(r.rootRef, ""); err != nil {
 		return err
 	}
 	for q.Len() > 0 {
@@ -743,11 +757,11 @@ func (r *engineRun) walk(fn func(rel, abs string, info fs.FileInfo) error, logIs
 			return nil
 		}
 		item := heap.Pop(q).(walkItem)
-		if isExcluded(item.abs) {
+		if r.source.IsExcluded(item.abs, r.opts.Output) {
 			continue
 		}
 		e := item.entry
-		linkLike, linkErr := entryLinkLike(item.abs, e)
+		linkLike, linkErr := e.LinkLike()
 		if linkErr != nil {
 			if logIssues {
 				r.filesFailed.Add(1)
@@ -877,7 +891,7 @@ func (r *engineRun) hashFile(abs string, buf []byte) (hashed, error) {
 }
 
 func (r *engineRun) hashFileOnce(abs string, buf []byte) (hashed, error) {
-	f, err := os.Open(abs) // O_RDONLY
+	f, err := r.source.OpenRead(abs)
 	if err != nil {
 		return hashed{}, err
 	}
@@ -889,24 +903,9 @@ func (r *engineRun) hashFileOnce(abs string, buf []byte) (hashed, error) {
 	if !before.Mode().IsRegular() {
 		return hashed{}, fmt.Errorf("not a regular file after open")
 	}
-	h := sha256.New()
-	var n int64
-	for {
-		if r.ctx.Err() != nil {
-			return hashed{bytes: n}, r.ctx.Err()
-		}
-		read, rerr := f.Read(buf)
-		if read > 0 {
-			h.Write(buf[:read])
-			n += int64(read)
-			r.bytesDone.Add(int64(read))
-		}
-		if rerr == io.EOF {
-			break
-		}
-		if rerr != nil {
-			return hashed{bytes: n}, rerr
-		}
+	sum, n, err := hashStream(r.ctx, f, buf, &r.bytesDone)
+	if err != nil {
+		return hashed{bytes: n}, err
 	}
 	if r.opts.afterHashRead != nil {
 		r.opts.afterHashRead(abs)
@@ -915,18 +914,54 @@ func (r *engineRun) hashFileOnce(abs string, buf []byte) (hashed, error) {
 	if err != nil {
 		return hashed{bytes: n}, err
 	}
-	got := hashed{sum: hex.EncodeToString(h.Sum(nil)), bytes: n, mtime: after.ModTime()}
+	got := hashed{sum: sum, bytes: n, mtime: after.ModTime()}
 	if before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) || n != after.Size() {
 		return got, errFileChanged
 	}
 	// The open handle may remain readable after its directory entry is deleted
 	// or replaced. Verify that the path still names this same file before
 	// accepting the digest.
-	current, err := os.Lstat(abs)
-	if err != nil || !current.Mode().IsRegular() || !os.SameFile(before, current) {
+	current, err := r.source.Lstat(abs)
+	if err != nil || !current.Mode().IsRegular() || !r.source.SameFile(before, current) {
 		return got, errFileChanged
 	}
 	return got, nil
+}
+
+// hashStream is independent of filesystem paths. A contained storage adapter
+// can supply a brokered read stream while the surrounding engine keeps its
+// metadata stability and manifest checks.
+func hashStream(ctx context.Context, source io.Reader, buf []byte, progress *atomic.Int64) (string, int64, error) {
+	h := sha256.New()
+	var n int64
+	for {
+		if err := ctx.Err(); err != nil {
+			return "", n, err
+		}
+		read, readErr := source.Read(buf)
+		if read > 0 {
+			if _, err := h.Write(buf[:read]); err != nil {
+				return "", n, err
+			}
+			n += int64(read)
+			progress.Add(int64(read))
+		}
+		if readErr == io.EOF {
+			return hex.EncodeToString(h.Sum(nil)), n, nil
+		}
+		if readErr != nil {
+			return "", n, readErr
+		}
+	}
+}
+
+// HashReader computes the same streamed SHA-256 used by Run from a caller's
+// read-only stream. It does not validate the stream's file identity, metadata,
+// or source/destination containment; a storage adapter must do those checks
+// before accepting a manifest row.
+func HashReader(ctx context.Context, source io.Reader) (string, int64, error) {
+	var progress atomic.Int64
+	return hashStream(ctx, source, make([]byte, readBufSize), &progress)
 }
 
 // writeLoop receives outcomes and writes CSV rows in walk order (buffering
@@ -961,13 +996,7 @@ func (r *engineRun) writeLoop(f *os.File, results <-chan outcome, window chan st
 			r.res.FilesHashed++
 			r.res.BytesHashed += o.size
 		}
-		err := w.Write([]string{
-			o.rel,
-			strconv.FormatInt(o.size, 10),
-			formatManifestHash(o.hash),
-			o.mtime.UTC().Format(time.RFC3339Nano),
-			o.rel,
-		})
+		err := w.Write(ManifestFields(o.rel, o.size, o.hash, o.mtime))
 		if err != nil {
 			return err
 		}
@@ -1024,9 +1053,7 @@ func (r *engineRun) logIssue(severity, code, rel string, issue error) error {
 	if r.errLog == nil {
 		openLog := r.opts.openErrorLog
 		if openLog == nil {
-			openLog = func(path string) (*os.File, error) {
-				return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
-			}
+			openLog = r.dest.OpenErrorLog
 		}
 		f, ferr := openLog(ErrorLogPath(r.opts.Output))
 		if ferr != nil {
@@ -1086,6 +1113,18 @@ func encodeNameSpecials(s string) string {
 		i += size
 	}
 	return b.String()
+}
+
+// EncodeManifestRelativePath applies the engine's filename encoding to each
+// slash-separated component supplied by a storage broker. The caller must
+// establish that the input is a safe relative path before using this for a
+// manifest row; encoding is not a path-validation or access-control check.
+func EncodeManifestRelativePath(raw string) string {
+	parts := strings.Split(raw, "/")
+	for i := range parts {
+		parts[i] = encodeNameSpecials(parts[i])
+	}
+	return strings.Join(parts, "/")
 }
 
 func containsUnsafeNameBytes(s string) bool {

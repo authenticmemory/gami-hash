@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-16",
+  "package_version": "0.1.8.0",
+  "package_sha256": "38177dae5f64daddb97639082fd6cf7b6e676d8276117049c419e863d92db7d8",
+  "source_file": "cloud-hydration-control-20261016.bin",
+  "source_file_bytes": 1048576,
+  "source_file_sha256_before_upload": "233e72efb84d5a046de94bdab4e661b8d375335075f64f5e47048604b08a3f3c",
+  "online_only_before_run": "user observed cloud icon in Google Drive for desktop",
+  "contained_worker_pid": 10260,
+  "contained_dynamic_go_pid": 4936,
+  "contained_manifest_go_pid": 9856,
+  "dynamic_read_bytes": 1048576,
+  "dynamic_read_sha256": "233e72efb84d5a046de94bdab4e661b8d375335075f64f5e47048604b08a3f3c",
+  "manifest_rows": 501,
+  "manifest_total_bytes": 1988627,
+  "manifest_new_file_sha256": "233e72efb84d5a046de94bdab4e661b8d375335075f64f5e47048604b08a3f3c",
+  "prior_500_row_mismatches": 0,
+  "manifest_sha256": "79adafa7e9374c4a9b8ee26d866d10bd93affa6785171514579050f238f9e6d2",
+  "limits": "Online-only status was observed in the Drive UI; provider network transfers and destination upload were not attributed."
+}

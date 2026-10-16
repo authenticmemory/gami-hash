@@ -4,20 +4,25 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#include <fileapifromapp.h>
+#include <windowsstoragecom.h>
 #include <bcrypt.h>
 #include <shobjidl.h>
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Storage.h>
+#include <winrt/Windows.Storage.FileProperties.h>
 #include <winrt/Windows.Storage.AccessCache.h>
 #include <winrt/Windows.Storage.Pickers.h>
 #include <winrt/Windows.Storage.Search.h>
 #include <winrt/Windows.Storage.Streams.h>
 #include <filesystem>
+#include <algorithm>
 #include <fstream>
 #include <atomic>
 #include <memory>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -28,6 +33,7 @@
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "windowsapp.lib")
+#pragma comment(lib, "onecore.lib")
 
 using namespace winrt;
 using namespace Windows::Storage;
@@ -178,6 +184,7 @@ static std::wstring hash_file(StorageFile const& file, uint64_t& byte_count) {
         throw;
     }
 }
+static void phase2_reject_reparse_item(const IStorageItem& item);
 static void walk(StorageFolder const& folder, const std::wstring& prefix,
                  std::wostringstream& report, checkpoint_state& state) {
     // GetItemsAsync is paged to make a large directory practical.
@@ -188,6 +195,7 @@ static void walk(StorageFolder const& folder, const std::wstring& prefix,
             if (cancellation_requested()) throw cancelled_error{};
             auto name = prefix + std::wstring(item.Name());
             try {
+                phase2_reject_reparse_item(item);
                 if (item.IsOfType(StorageItemTypes::Folder)) {
                     walk(item.as<StorageFolder>(), name + L"/", report, state);
                 } else if (item.IsOfType(StorageItemTypes::File)) {
@@ -302,6 +310,58 @@ static void path_probe(const std::wstring& root, std::wostringstream& report) {
         report << L"Path API failed after " << files << L" files: " << to_hstring(e.what()).c_str() << L"\n";
     }
 }
+static void from_app_path_probe(const std::wstring& root, const std::wstring& output,
+                                std::wostringstream& report) {
+    WIN32_FILE_ATTRIBUTE_DATA attributes{};
+    BOOL got_attributes = GetFileAttributesExFromAppW(root.c_str(), GetFileExInfoStandard, &attributes);
+    report << L"FromApp root attributes=" << got_attributes << L" error=" << (got_attributes ? 0 : GetLastError()) << L"\n";
+
+    WIN32_FIND_DATAW entry{};
+    HANDLE search = FindFirstFileExFromAppW((root + L"\\*").c_str(), FindExInfoBasic,
+        &entry, FindExSearchNameMatch, nullptr, 0);
+    if (search == INVALID_HANDLE_VALUE) {
+        report << L"FromApp enumerate error=" << GetLastError() << L"\n";
+    } else {
+        DWORD count = 0;
+        std::wstring first_file;
+        do {
+            if (wcscmp(entry.cFileName, L".") && wcscmp(entry.cFileName, L"..")) {
+                ++count;
+                if (first_file.empty() && !(entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                    first_file = root + L"\\" + entry.cFileName;
+                }
+            }
+        } while (FindNextFileW(search, &entry));
+        FindClose(search);
+        report << L"FromApp root entries=" << count << L"\n";
+        if (!first_file.empty()) {
+            HANDLE input = CreateFileFromAppW(first_file.c_str(), GENERIC_READ,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (input == INVALID_HANDLE_VALUE) {
+                report << L"FromApp file open error=" << GetLastError() << L"\n";
+            } else {
+                char byte{}; DWORD read = 0;
+                BOOL ok = ReadFile(input, &byte, 1, &read, nullptr);
+                report << L"FromApp file read=" << ok << L" bytes=" << read << L" error=" << (ok ? 0 : GetLastError()) << L"\n";
+                CloseHandle(input);
+            }
+        }
+    }
+    std::wstring test_path = output + L"\\phase2-fromapp-output-test.tmp";
+    HANDLE out = CreateFileFromAppW(test_path.c_str(), GENERIC_WRITE, FILE_SHARE_READ,
+        nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (out == INVALID_HANDLE_VALUE) {
+        report << L"FromApp output create error=" << GetLastError() << L"\n";
+    } else {
+        char marker = 'x'; DWORD written = 0;
+        BOOL ok = WriteFile(out, &marker, 1, &written, nullptr);
+        CloseHandle(out);
+        BOOL removed = DeleteFileFromAppW(test_path.c_str());
+        report << L"FromApp output write=" << ok << L" bytes=" << written
+               << L" removed=" << removed << L" removeError=" << (removed ? 0 : GetLastError()) << L"\n";
+    }
+}
 static void go_path_probe(const std::wstring& root, const std::wstring& output, std::wostringstream& report) {
     wchar_t module[MAX_PATH]{};
     GetModuleFileNameW(nullptr, module, MAX_PATH);
@@ -352,6 +412,511 @@ static void go_path_probe(const std::wstring& root, const std::wstring& output, 
     CloseHandle(process.hProcess);
     CloseHandle(log);
 }
+static void phase2_go_probe(const std::wstring& root, const std::wstring& output,
+                            std::wostringstream& report, HANDLE source_handle = nullptr,
+                            HANDLE output_handle = nullptr) {
+    wchar_t module[MAX_PATH]{};
+    GetModuleFileNameW(nullptr, module, MAX_PATH);
+    std::wstring image(module);
+    image = image.substr(0, image.find_last_of(L"\\/")) + L"\\Phase2GoProbe.exe";
+    if (GetFileAttributesW(image.c_str()) == INVALID_FILE_ATTRIBUTES) return;
+    const bool inherited = source_handle && output_handle;
+    std::wstring command = L"\"" + image + L"\"";
+    if (inherited) {
+        command += L" --source-handle " + std::to_wstring(reinterpret_cast<uintptr_t>(source_handle));
+        command += L" --output-handle " + std::to_wstring(reinterpret_cast<uintptr_t>(output_handle));
+        SetHandleInformation(source_handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+        SetHandleInformation(output_handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    } else {
+        command += L" --root \"" + root + L"\" --output \"" + output + L"\"";
+    }
+    SECURITY_ATTRIBUTES attributes{};
+    attributes.nLength = sizeof(attributes);
+    attributes.bInheritHandle = TRUE;
+    HANDLE log = CreateFileW(local_path(inherited ? L"phase2-inherited-go-probe.log" : L"phase2-go-probe.log").c_str(), GENERIC_WRITE,
+        FILE_SHARE_READ, &attributes, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (log == INVALID_HANDLE_VALUE) {
+        report << L"Phase2 Go log create failed=" << GetLastError() << L"\n";
+        return;
+    }
+    STARTUPINFOW start{};
+    start.cb = sizeof(start);
+    start.dwFlags = STARTF_USESTDHANDLES;
+    start.hStdOutput = log;
+    start.hStdError = log;
+    PROCESS_INFORMATION process{};
+    BOOL created = CreateProcessW(image.c_str(), command.data(), nullptr, nullptr, TRUE,
+        CREATE_SUSPENDED | CREATE_NO_WINDOW, nullptr, nullptr, &start, &process);
+    if (!created) {
+        report << L"Phase2 Go CreateProcess failed=" << GetLastError() << L"\n";
+        CloseHandle(log);
+        return;
+    }
+    DWORD contained = 0, size = 0;
+    HANDLE token = nullptr;
+    BOOL token_ok = OpenProcessToken(process.hProcess, TOKEN_QUERY, &token) &&
+        GetTokenInformation(token, TokenIsAppContainer, &contained, sizeof(contained), &size);
+    if (token) CloseHandle(token);
+    report << (inherited ? L"Phase2 inherited Go PID=" : L"Phase2 Go PID=") << process.dwProcessId << L" AppContainer="
+           << (token_ok ? std::to_wstring(contained) : L"unknown") << L"\n";
+    ResumeThread(process.hThread);
+    DWORD wait = WaitForSingleObject(process.hProcess, 30000);
+    if (wait == WAIT_TIMEOUT) TerminateProcess(process.hProcess, 124);
+    DWORD exit_code = 0;
+    GetExitCodeProcess(process.hProcess, &exit_code);
+    report << (inherited ? L"Phase2 inherited Go exit=" : L"Phase2 Go exit=") << exit_code << L" wait=" << wait << L"\n";
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    CloseHandle(log);
+}
+static void phase2_dynamic_handle_probe(HANDLE source, HANDLE output, std::wostringstream& report) {
+    wchar_t module[MAX_PATH]{};
+    GetModuleFileNameW(nullptr, module, MAX_PATH);
+    std::wstring image(module);
+    image = image.substr(0, image.find_last_of(L"\\/")) + L"\\Phase2GoProbe.exe";
+    if (GetFileAttributesW(image.c_str()) == INVALID_FILE_ATTRIBUTES) return;
+    SECURITY_ATTRIBUTES attributes{};
+    attributes.nLength = sizeof(attributes);
+    attributes.bInheritHandle = TRUE;
+    HANDLE child_input = nullptr, parent_input = nullptr;
+    if (!CreatePipe(&child_input, &parent_input, &attributes, 0)) {
+        report << L"Phase2 dynamic pipe error=" << GetLastError() << L"\n";
+        return;
+    }
+    SetHandleInformation(parent_input, HANDLE_FLAG_INHERIT, 0);
+    HANDLE log = CreateFileW(local_path(L"phase2-dynamic-go-probe.log").c_str(), GENERIC_WRITE,
+        FILE_SHARE_READ, &attributes, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (log == INVALID_HANDLE_VALUE) {
+        report << L"Phase2 dynamic log error=" << GetLastError() << L"\n";
+        CloseHandle(child_input);
+        CloseHandle(parent_input);
+        return;
+    }
+    std::wstring command = L"\"" + image + L"\" --handles-stdin";
+    STARTUPINFOW start{};
+    start.cb = sizeof(start);
+    start.dwFlags = STARTF_USESTDHANDLES;
+    start.hStdInput = child_input;
+    start.hStdOutput = log;
+    start.hStdError = log;
+    PROCESS_INFORMATION process{};
+    BOOL created = CreateProcessW(image.c_str(), command.data(), nullptr, nullptr, TRUE,
+        CREATE_NO_WINDOW, nullptr, nullptr, &start, &process);
+    CloseHandle(child_input);
+    if (!created) {
+        report << L"Phase2 dynamic CreateProcess error=" << GetLastError() << L"\n";
+        CloseHandle(parent_input);
+        CloseHandle(log);
+        return;
+    }
+    DWORD contained = 0, size = 0;
+    HANDLE token = nullptr;
+    BOOL token_ok = OpenProcessToken(process.hProcess, TOKEN_QUERY, &token) &&
+        GetTokenInformation(token, TokenIsAppContainer, &contained, sizeof(contained), &size);
+    if (token) CloseHandle(token);
+    report << L"Phase2 dynamic Go PID=" << process.dwProcessId << L" AppContainer="
+           << (token_ok ? std::to_wstring(contained) : L"unknown") << L"\n";
+    HANDLE child_source = nullptr, child_output = nullptr;
+    BOOL source_ok = DuplicateHandle(GetCurrentProcess(), source, process.hProcess,
+                                     &child_source, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    DWORD source_error = source_ok ? 0 : GetLastError();
+    BOOL output_ok = DuplicateHandle(GetCurrentProcess(), output, process.hProcess,
+                                     &child_output, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    DWORD output_error = output_ok ? 0 : GetLastError();
+    report << L"Phase2 dynamic source duplicate=" << source_ok << L" error=" << source_error
+           << L" output duplicate=" << output_ok << L" error=" << output_error << L"\n";
+    if (source_ok && output_ok) {
+        std::string message = std::to_string(reinterpret_cast<uintptr_t>(child_source)) + " " +
+                              std::to_string(reinterpret_cast<uintptr_t>(child_output)) + "\n";
+        DWORD written = 0;
+        BOOL sent = WriteFile(parent_input, message.data(), static_cast<DWORD>(message.size()), &written, nullptr);
+        report << L"Phase2 dynamic control sent=" << sent << L" bytes=" << written << L"\n";
+    }
+    CloseHandle(parent_input);
+    DWORD wait = WaitForSingleObject(process.hProcess, 30000);
+    if (wait == WAIT_TIMEOUT) TerminateProcess(process.hProcess, 124);
+    DWORD exit_code = 0;
+    GetExitCodeProcess(process.hProcess, &exit_code);
+    report << L"Phase2 dynamic Go exit=" << exit_code << L" wait=" << wait << L"\n";
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    CloseHandle(log);
+}
+static std::string phase2_hex_name(const std::wstring& relative) {
+    static constexpr char digits[] = "0123456789abcdef";
+    std::string utf8 = to_string(hstring(relative));
+    std::string result;
+    result.reserve(utf8.size() * 2);
+    for (unsigned char b : utf8) { result += digits[b >> 4]; result += digits[b & 15]; }
+    return result;
+}
+static void phase2_send_frame(HANDLE pipe, const std::string& frame) {
+    if (frame.size() > (1u << 20)) throw std::runtime_error("manifest frame exceeds 1 MiB");
+    DWORD written = 0;
+    if (!WriteFile(pipe, frame.data(), static_cast<DWORD>(frame.size()), &written, nullptr) || written != frame.size())
+        throw std::runtime_error("manifest control pipe write failed");
+}
+static std::string phase2_read_ack(HANDLE pipe, HANDLE child) {
+    std::string line;
+    auto deadline = GetTickCount64() + 300000;
+    while (GetTickCount64() < deadline) {
+        DWORD available = 0;
+        if (!PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr))
+            throw std::runtime_error("manifest acknowledgement pipe closed");
+        if (available) {
+            char ch = 0;
+            DWORD read = 0;
+            if (!ReadFile(pipe, &ch, 1, &read, nullptr) || read != 1)
+                throw std::runtime_error("manifest acknowledgement read failed");
+            if (ch == '\n') return line;
+            if (ch != '\r') line.push_back(ch);
+            if (line.size() > 128) throw std::runtime_error("manifest acknowledgement too long");
+        } else {
+            if (WaitForSingleObject(child, 0) == WAIT_OBJECT_0)
+                throw std::runtime_error("manifest child exited before acknowledgement");
+            Sleep(10);
+        }
+    }
+    throw std::runtime_error("manifest acknowledgement timed out");
+}
+struct phase2_queued_item {
+    IStorageItem item;
+    std::wstring relative;
+    std::string sort_key;
+};
+static std::string phase2_manifest_sort_key(const std::wstring& relative) {
+    const std::string utf8 = to_string(relative);
+    std::string encoded;
+    encoded.reserve(utf8.size());
+    constexpr char hex[] = "0123456789ABCDEF";
+    for (unsigned char byte : utf8) {
+        if (byte == '%' || byte < 0x20 || byte == 0x7f) {
+            encoded.push_back('%');
+            encoded.push_back(hex[byte >> 4]);
+            encoded.push_back(hex[byte & 0x0f]);
+        } else {
+            encoded.push_back(static_cast<char>(byte));
+        }
+    }
+    return encoded;
+}
+static void phase2_raw_directory_probe(const StorageFolder& folder, std::wostringstream& report) {
+    auto access = folder.try_as<IStorageFolderHandleAccess>();
+    if (!access) {
+        report << L"Phase2 raw directory interface=0\n";
+        return;
+    }
+    HANDLE directory = nullptr;
+    HRESULT hr = access->Create(L".", HCO_OPEN_EXISTING, HAO_READ,
+        HSO_SHARE_READ | HSO_SHARE_WRITE | HSO_SHARE_DELETE, HO_NONE, nullptr, &directory);
+    report << L"Phase2 raw directory dot HRESULT=" << static_cast<unsigned>(hr) << L"\n";
+    if (FAILED(hr)) {
+        hr = access->Create(L"", HCO_OPEN_EXISTING, HAO_READ,
+            HSO_SHARE_READ | HSO_SHARE_WRITE | HSO_SHARE_DELETE, HO_NONE, nullptr, &directory);
+        report << L"Phase2 raw directory empty HRESULT=" << static_cast<unsigned>(hr) << L"\n";
+    }
+    if (FAILED(hr)) return;
+    std::vector<uint64_t> buffer((64 * 1024) / sizeof(uint64_t));
+    auto bytes = reinterpret_cast<unsigned char*>(buffer.data());
+    BOOL queried = GetFileInformationByHandleEx(directory, FileIdExtdDirectoryInfo,
+        bytes, static_cast<DWORD>(buffer.size() * sizeof(uint64_t)));
+    DWORD query_error = queried ? 0 : GetLastError();
+    report << L"Phase2 raw directory query=" << queried << L" error=" << query_error << L"\n";
+    if (queried) {
+        size_t offset = 0;
+        for (;;) {
+            auto entry = reinterpret_cast<FILE_ID_EXTD_DIR_INFO*>(bytes + offset);
+            if (entry->FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+                std::wstring name(entry->FileName, entry->FileNameLength / sizeof(wchar_t));
+                report << L"Phase2 raw reparse name=" << name << L" tag="
+                       << entry->ReparsePointTag << L"\n";
+            }
+            if (entry->NextEntryOffset == 0) break;
+            offset += entry->NextEntryOffset;
+            if (offset + sizeof(FILE_ID_EXTD_DIR_INFO) > buffer.size() * sizeof(uint64_t)) break;
+        }
+    }
+    CloseHandle(directory);
+}
+static DWORD phase2_shell_attributes(const IStorageItem& item) {
+    try {
+        auto names = winrt::single_threaded_vector<winrt::hstring>();
+        names.Append(L"System.FileAttributes");
+        auto values = item.as<IStorageItemProperties>().Properties().RetrievePropertiesAsync(names).get();
+        auto value = values.Lookup(L"System.FileAttributes");
+        auto boxed = value.try_as<Windows::Foundation::IPropertyValue>();
+        if (!boxed) throw std::runtime_error("source item has no file attributes");
+        if (boxed.Type() == Windows::Foundation::PropertyType::UInt32)
+            return boxed.GetUInt32();
+        if (boxed.Type() == Windows::Foundation::PropertyType::Int32 && boxed.GetInt32() >= 0)
+            return static_cast<DWORD>(boxed.GetInt32());
+        throw std::runtime_error("source item has unsupported file attributes");
+    } catch (winrt::hresult_error const&) {
+        throw std::runtime_error("source item file attributes unavailable");
+    }
+}
+static void phase2_reject_reparse_item(const IStorageItem& item) {
+    if (phase2_shell_attributes(item) & FILE_ATTRIBUTE_REPARSE_POINT)
+        throw std::runtime_error("REFUSED source reparse point: " + to_string(item.Name()));
+}
+static bool phase2_output_matches_source_tree(const StorageFolder& source,
+                                              const StorageFolder& output) {
+    std::queue<StorageFolder> pending;
+    pending.push(source);
+    uint64_t inspected = 0;
+    while (!pending.empty()) {
+        if (cancellation_requested()) throw cancelled_error{};
+        auto current = pending.front();
+        pending.pop();
+        if (current.IsEqual(output)) return true;
+        if (++inspected > 1000000) throw std::runtime_error("source identity scan limit reached");
+        for (uint32_t offset = 0;;) {
+            auto page = current.GetItemsAsync(offset, 128).get();
+            if (page.Size() == 0) break;
+            for (auto const& item : page) {
+                if (!item.IsOfType(StorageItemTypes::Folder)) continue;
+                phase2_reject_reparse_item(item);
+                pending.push(item.as<StorageFolder>());
+            }
+            offset += page.Size();
+        }
+    }
+    return false;
+}
+static void phase2_shell_attribute_probe(const StorageFolder& folder, std::wostringstream& report) {
+    for (auto const& item : folder.GetItemsAsync(0, 128).get()) {
+        try {
+            auto names = winrt::single_threaded_vector<winrt::hstring>();
+            names.Append(L"System.FileAttributes");
+            auto values = item.as<IStorageItemProperties>().Properties().RetrievePropertiesAsync(names).get();
+            auto value = values.Lookup(L"System.FileAttributes");
+            auto boxed = value.try_as<Windows::Foundation::IPropertyValue>();
+            if (!boxed) {
+                report << L"Phase2 shell attributes name=" << item.Name().c_str() << L" type=none\n";
+                continue;
+            }
+            auto type = boxed.Type();
+            report << L"Phase2 shell attributes name=" << item.Name().c_str()
+                   << L" type=" << static_cast<int>(type);
+            if (type == Windows::Foundation::PropertyType::UInt32)
+                report << L" value=" << boxed.GetUInt32();
+            else if (type == Windows::Foundation::PropertyType::Int32)
+                report << L" value=" << boxed.GetInt32();
+            else if (type == Windows::Foundation::PropertyType::UInt64)
+                report << L" value=" << boxed.GetUInt64();
+            report << L"\n";
+        } catch (winrt::hresult_error const& e) {
+            report << L"Phase2 shell attributes name=" << item.Name().c_str()
+                   << L" error=" << static_cast<unsigned>(e.code().value) << L"\n";
+        }
+    }
+}
+struct phase2_item_after {
+    bool operator()(phase2_queued_item const& a, phase2_queued_item const& b) const {
+        return a.sort_key > b.sort_key;
+    }
+};
+static void phase2_enqueue_folder(const StorageFolder& folder, const std::wstring& prefix,
+                                  std::priority_queue<phase2_queued_item,
+                                      std::vector<phase2_queued_item>, phase2_item_after>& pending) {
+    for (uint32_t offset = 0;;) {
+        auto page = folder.GetItemsAsync(offset, 128).get();
+        if (page.Size() == 0) break;
+        for (auto const& item : page) {
+            auto relative = prefix + std::wstring(item.Name());
+            pending.push({item, relative, phase2_manifest_sort_key(relative)});
+        }
+        offset += page.Size();
+    }
+}
+static void phase2_manifest_walk(const StorageFolder& folder,
+                                 HANDLE process, HANDLE pipe, HANDLE ack, uint64_t& files) {
+    std::priority_queue<phase2_queued_item, std::vector<phase2_queued_item>, phase2_item_after> pending;
+    phase2_enqueue_folder(folder, L"", pending);
+    while (!pending.empty()) {
+        if (cancellation_requested()) throw cancelled_error{};
+        auto current = pending.top();
+        pending.pop();
+        auto const& item = current.item;
+        auto const& relative = current.relative;
+        phase2_reject_reparse_item(item);
+        if (item.IsOfType(StorageItemTypes::Folder)) {
+            phase2_enqueue_folder(item.as<StorageFolder>(), relative + L"/", pending);
+            continue;
+        }
+        if (!item.IsOfType(StorageItemTypes::File)) continue;
+        HANDLE source = nullptr;
+        auto access = item.as<IStorageItemHandleAccess>();
+        check_hresult(access->Create(HAO_READ, HSO_SHARE_READ | HSO_SHARE_WRITE | HSO_SHARE_DELETE,
+                                     HO_SEQUENTIAL_SCAN, nullptr, &source));
+        HANDLE child_source = nullptr;
+        BOOL duplicated = DuplicateHandle(GetCurrentProcess(), source, process, &child_source,
+                                          0, FALSE, DUPLICATE_SAME_ACCESS);
+        CloseHandle(source);
+        if (!duplicated) throw std::runtime_error("manifest source DuplicateHandle failed");
+        phase2_send_frame(pipe, "FILE " + std::to_string(reinterpret_cast<uintptr_t>(child_source)) +
+                                " " + phase2_hex_name(relative) + "\n");
+        ++files;
+        if (phase2_read_ack(ack, process) != "OK " + std::to_string(files))
+            throw std::runtime_error("manifest file acknowledgement mismatch");
+    }
+}
+static void phase2_manifest_probe(const StorageFolder& source, const StorageFolder& output,
+                                  std::wostringstream& report) {
+    wchar_t module[MAX_PATH]{};
+    GetModuleFileNameW(nullptr, module, MAX_PATH);
+    std::wstring image(module);
+    image = image.substr(0, image.find_last_of(L"\\/")) + L"\\Phase2GoProbe.exe";
+    if (GetFileAttributesW(image.c_str()) == INVALID_FILE_ATTRIBUTES) return;
+    std::wstring file_name = L"phase2-go-manifest-" + std::to_wstring(GetCurrentProcessId()) +
+                             L"-" + std::to_wstring(GetTickCount64()) + L".csv";
+    auto output_file = output.CreateFileAsync(file_name, CreationCollisionOption::FailIfExists).get();
+    HANDLE output_handle = nullptr;
+    check_hresult(output_file.as<IStorageItemHandleAccess>()->Create(
+        HAO_WRITE, HSO_SHARE_READ | HSO_SHARE_DELETE, HO_NONE, nullptr, &output_handle));
+    SECURITY_ATTRIBUTES attributes{};
+    attributes.nLength = sizeof(attributes);
+    attributes.bInheritHandle = TRUE;
+    HANDLE child_input = nullptr, parent_input = nullptr;
+    if (!CreatePipe(&child_input, &parent_input, &attributes, 0)) {
+        CloseHandle(output_handle);
+        throw std::runtime_error("manifest control pipe creation failed");
+    }
+    SetHandleInformation(parent_input, HANDLE_FLAG_INHERIT, 0);
+    HANDLE parent_ack = nullptr, child_ack = nullptr;
+    if (!CreatePipe(&parent_ack, &child_ack, &attributes, 0)) {
+        CloseHandle(child_input); CloseHandle(parent_input); CloseHandle(output_handle);
+        throw std::runtime_error("manifest acknowledgement pipe creation failed");
+    }
+    SetHandleInformation(parent_ack, HANDLE_FLAG_INHERIT, 0);
+    HANDLE log = CreateFileW(local_path(L"phase2-manifest-go-probe.log").c_str(), GENERIC_WRITE,
+        FILE_SHARE_READ, &attributes, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (log == INVALID_HANDLE_VALUE) {
+        CloseHandle(child_input); CloseHandle(parent_input); CloseHandle(parent_ack);
+        CloseHandle(child_ack); CloseHandle(output_handle);
+        throw std::runtime_error("manifest child log creation failed");
+    }
+    std::wstring command = L"\"" + image + L"\" --manifest-stdin";
+    STARTUPINFOW start{};
+    start.cb = sizeof(start);
+    start.dwFlags = STARTF_USESTDHANDLES;
+    start.hStdInput = child_input;
+    start.hStdOutput = child_ack;
+    start.hStdError = log;
+    PROCESS_INFORMATION process{};
+    BOOL created = CreateProcessW(image.c_str(), command.data(), nullptr, nullptr, TRUE,
+                                  CREATE_NO_WINDOW, nullptr, nullptr, &start, &process);
+    DWORD create_error = created ? 0 : GetLastError();
+    CloseHandle(child_input);
+    CloseHandle(child_ack);
+    if (!created) {
+        CloseHandle(parent_input); CloseHandle(parent_ack); CloseHandle(output_handle); CloseHandle(log);
+        output_file.DeleteAsync().get();
+        report << L"Phase2 manifest CreateProcess error=" << create_error << L"\n";
+        return;
+    }
+    DWORD contained = 0, size = 0;
+    HANDLE token = nullptr;
+    BOOL token_ok = OpenProcessToken(process.hProcess, TOKEN_QUERY, &token) &&
+        GetTokenInformation(token, TokenIsAppContainer, &contained, sizeof(contained), &size);
+    if (token) CloseHandle(token);
+    report << L"Phase2 manifest Go PID=" << process.dwProcessId << L" AppContainer="
+           << (token_ok ? std::to_wstring(contained) : L"unknown") << L"\n";
+    bool sent = false;
+    uint64_t files = 0;
+    try {
+        HANDLE child_output = nullptr;
+        if (!DuplicateHandle(GetCurrentProcess(), output_handle, process.hProcess, &child_output,
+                             0, FALSE, DUPLICATE_SAME_ACCESS))
+            throw std::runtime_error("manifest output DuplicateHandle failed");
+        phase2_send_frame(parent_input, "GAMI-MANIFEST-1 OUT " +
+                          std::to_string(reinterpret_cast<uintptr_t>(child_output)) + "\n");
+        if (phase2_read_ack(parent_ack, process.hProcess) != "READY")
+            throw std::runtime_error("manifest child did not accept output handle");
+        phase2_manifest_walk(source, process.hProcess, parent_input, parent_ack, files);
+        phase2_send_frame(parent_input, "END\n");
+        auto done = phase2_read_ack(parent_ack, process.hProcess);
+        if (!done.starts_with("DONE " + std::to_string(files) + " "))
+            throw std::runtime_error("manifest completion acknowledgement mismatch");
+        report << L"Phase2 manifest child " << to_hstring(done).c_str() << L"\n";
+        sent = true;
+    } catch (const hresult_error& e) {
+        report << L"Phase2 manifest broker " << error_text(e) << L"\n";
+    } catch (const cancelled_error&) {
+        report << L"Phase2 manifest broker cancelled\n";
+    } catch (const std::exception& e) {
+        report << L"Phase2 manifest broker error=" << to_hstring(e.what()).c_str() << L"\n";
+    }
+    CloseHandle(parent_input);
+    CloseHandle(parent_ack);
+    CloseHandle(output_handle);
+    DWORD wait = WaitForSingleObject(process.hProcess, 300000);
+    if (wait == WAIT_TIMEOUT) TerminateProcess(process.hProcess, 124);
+    DWORD exit_code = 0;
+    GetExitCodeProcess(process.hProcess, &exit_code);
+    report << L"Phase2 manifest transferred files=" << files << L" Go exit=" << exit_code
+           << L" wait=" << wait << L"\n";
+    if (sent && exit_code == 0) report << L"Phase2 manifest CSV=" << std::wstring(output_file.Path()) << L"\n";
+    else output_file.DeleteAsync().get();
+    CloseHandle(process.hThread); CloseHandle(process.hProcess); CloseHandle(log);
+}
+static void phase2_winrt_handle_probe(const StorageFolder& source, const StorageFolder& output,
+                                      std::wostringstream& report) {
+    auto files = source.GetFilesAsync().get();
+    if (files.Size() == 0) {
+        report << L"Phase2 WinRT handle probe: no source file in root\n";
+        return;
+    }
+    HANDLE input = nullptr;
+    try {
+        auto access = files.GetAt(0).as<IStorageItemHandleAccess>();
+        HRESULT hr = access->Create(HAO_READ, HSO_SHARE_READ | HSO_SHARE_WRITE | HSO_SHARE_DELETE,
+                                    HO_SEQUENTIAL_SCAN, nullptr, &input);
+        report << L"Phase2 WinRT source handle HRESULT=" << static_cast<unsigned>(hr)
+               << L" file=" << std::wstring(files.GetAt(0).Name()) << L"\n";
+        if (FAILED(hr) || !input) return;
+    } catch (hresult_error const& e) {
+        report << L"Phase2 WinRT source handle " << error_text(e) << L"\n";
+        return;
+    }
+    std::wstring temp_name = L"phase2-handle-output-" + std::to_wstring(GetCurrentProcessId()) + L".tmp";
+    HANDLE out = nullptr;
+    bool created_remote = false;
+    bool local_fallback = false;
+    try {
+        auto file = output.CreateFileAsync(temp_name, CreationCollisionOption::FailIfExists).get();
+        created_remote = true;
+        auto access = file.as<IStorageItemHandleAccess>();
+        HRESULT hr = access->Create(HAO_WRITE, HSO_SHARE_READ | HSO_SHARE_DELETE,
+                                    HO_NONE, nullptr, &out);
+        report << L"Phase2 WinRT output file handle HRESULT=" << static_cast<unsigned>(hr) << L"\n";
+    } catch (hresult_error const& e) {
+        report << L"Phase2 WinRT output file handle " << error_text(e) << L"\n";
+    }
+    if (!out) {
+        // Still test whether a brokered SMB source handle can reach Go, even
+        // if this provider refuses a writable OS handle for the output.
+        out = CreateFileW(local_path(L"phase2-inherited-fallback.tmp").c_str(),
+                          GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS,
+                          FILE_ATTRIBUTE_NORMAL, nullptr);
+        local_fallback = out != INVALID_HANDLE_VALUE;
+        if (!local_fallback) out = nullptr;
+        report << L"Phase2 local output fallback=" << local_fallback << L"\n";
+    }
+    if (out) phase2_dynamic_handle_probe(input, out, report);
+    if (out) CloseHandle(out);
+    CloseHandle(input);
+    if (local_fallback) DeleteFileW(local_path(L"phase2-inherited-fallback.tmp").c_str());
+    try {
+        if (created_remote) {
+            auto item = output.GetFileAsync(temp_name).get();
+            item.DeleteAsync().get();
+            report << L"Phase2 WinRT output test removed=1\n";
+        }
+    } catch (hresult_error const& e) {
+        report << L"Phase2 WinRT output cleanup " << error_text(e) << L"\n";
+    }
+}
 static int run_worker() {
     init_apartment(apartment_type::multi_threaded);
     std::wostringstream report;
@@ -367,10 +932,19 @@ static int run_worker() {
             std::wstring source_path(source_folder.Path());
             std::wstring output_path(output_folder.Path());
             report << L"Source=" << source_path << L"\nOutput=" << output_path << L"\n";
+            // A selected output junction can redirect CSV writes into the source.
+            // This is a conservative stop for that case, not full identity proof.
+            if (phase2_shell_attributes(output_folder) & FILE_ATTRIBUTE_REPARSE_POINT)
+                throw std::runtime_error("REFUSED output reparse point");
+            phase2_raw_directory_probe(source_folder, report);
+            phase2_shell_attribute_probe(source_folder, report);
             std::wstring lower_source = source_path, lower_output = output_path;
             CharLowerBuffW(lower_source.data(), static_cast<DWORD>(lower_source.size()));
             CharLowerBuffW(lower_output.data(), static_cast<DWORD>(lower_output.size()));
-            if (lower_output == lower_source || lower_output.starts_with(lower_source + L"\\")) {
+            bool output_matches_source = phase2_output_matches_source_tree(source_folder, output_folder);
+            report << L"Phase2 output identity matches source tree=" << output_matches_source << L"\n";
+            if (lower_output == lower_source || lower_output.starts_with(lower_source + L"\\") ||
+                output_matches_source) {
                 report << L"REFUSED: output is inside source\n";
             } else {
                 auto state = load_checkpoint(source, output);
@@ -379,7 +953,13 @@ static int run_worker() {
                     walk(source_folder, L"", report, state);
                     report << L"WinRT enumeration files=" << state.files << L" bytes=" << state.bytes << L"\n";
                     path_probe(source_path, report);
-                    if (source_path.find(L"local-fixture") != std::wstring::npos) go_path_probe(source_path, output_path, report);
+                    from_app_path_probe(source_path, output_path, report);
+                    if (source_path.find(L"local-fixture") != std::wstring::npos) {
+                        go_path_probe(source_path, output_path, report);
+                        phase2_go_probe(source_path, output_path, report);
+                    }
+                    phase2_winrt_handle_probe(source_folder, output_folder, report);
+                    phase2_manifest_probe(source_folder, output_folder, report);
                     auto out = output_folder.CreateFileAsync(L"phase1-probe.csv", CreationCollisionOption::ReplaceExisting).get();
                     FileIO::WriteTextAsync(out, checkpoint_csv(state)).get();
                     report << L"Wrote diagnostic CSV=" << std::wstring(out.Path()) << L"\n";

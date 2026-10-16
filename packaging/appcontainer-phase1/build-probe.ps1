@@ -1,7 +1,9 @@
 param(
     [string]$Version = '0.1.0.0',
     [switch]$Sign,
-    [string]$ReleasedCliPath = ''
+    [string]$ReleasedCliPath = '',
+    [string]$Phase2GoPath = '',
+    [string]$DevCertificateThumbprint = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,6 +33,10 @@ if ($ReleasedCliPath) {
     if (-not (Test-Path -LiteralPath $ReleasedCliPath -PathType Leaf)) { throw "Missing released CLI: $ReleasedCliPath" }
     Copy-Item -LiteralPath $ReleasedCliPath -Destination (Join-Path $stage 'signed-v1.5.0-cli.exe')
 }
+if ($Phase2GoPath) {
+    if (-not (Test-Path -LiteralPath $Phase2GoPath -PathType Leaf)) { throw "Missing Phase 2 Go probe: $Phase2GoPath" }
+    Copy-Item -LiteralPath $Phase2GoPath -Destination (Join-Path $stage 'Phase2GoProbe.exe')
+}
 
 [xml]$manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'AppxManifest.xml') -Raw
 $manifest.Package.Identity.Version = $Version
@@ -57,36 +63,47 @@ if ($LASTEXITCODE -ne 0) { throw 'MakeAppx package validation failed' }
 $unpacked = Join-Path $out 'unpacked-check'
 & $makeappx unpack /p $package /d $unpacked /o
 if ($LASTEXITCODE -ne 0) { throw 'MakeAppx round-trip failed' }
-foreach ($file in (@('GamiPhase1Probe.exe','AppxManifest.xml') + $(if ($ReleasedCliPath) { @('signed-v1.5.0-cli.exe') } else { @() }))) {
+foreach ($file in (@('GamiPhase1Probe.exe','AppxManifest.xml') + $(if ($ReleasedCliPath) { @('signed-v1.5.0-cli.exe') } else { @() }) + $(if ($Phase2GoPath) { @('Phase2GoProbe.exe') } else { @() }))) {
     if ((Get-FileHash -LiteralPath (Join-Path $stage $file)).Hash -ne
         (Get-FileHash -LiteralPath (Join-Path $unpacked $file)).Hash) { throw "Package content mismatch: $file" }
 }
 
 $certFingerprint = $null
 if ($Sign) {
-    if (-not (Test-Path -LiteralPath $openssl)) { throw "Missing OpenSSL: $openssl" }
-    $key = Join-Path $out 'development-key.pem'
-    $pem = Join-Path $out 'development-certificate.pem'
     $cer = Join-Path $out 'development-certificate.cer'
-    $pfx = Join-Path $out 'development-signing.pfx'
-    $pfxPassword = [guid]::NewGuid().ToString('N')
-    $priorErrorAction = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue' # OpenSSL prints key-generation progress to stderr.
-    try {
-        & $openssl req -quiet -x509 -newkey rsa:3072 -sha256 -noenc -days 30 `
-            -subj '/CN=GAMI Hash Phase 1 Probe' -addext 'basicConstraints=critical,CA:FALSE' `
-            -addext 'keyUsage=critical,digitalSignature' -addext 'extendedKeyUsage=codeSigning' `
-            -keyout $key -out $pem 2>$null
-        if ($LASTEXITCODE -ne 0) { throw 'Development certificate generation failed' }
-        & $openssl x509 -in $pem -outform der -out $cer
-        if ($LASTEXITCODE -ne 0) { throw 'Development certificate export failed' }
-        & $openssl pkcs12 -legacy -export -inkey $key -in $pem -out $pfx -passout "pass:$pfxPassword"
-        if ($LASTEXITCODE -ne 0) { throw 'Development PFX generation failed' }
-    } finally { $ErrorActionPreference = $priorErrorAction }
+    if ($DevCertificateThumbprint) {
+        $certificate = Get-Item -LiteralPath ("Cert:\CurrentUser\My\" + $DevCertificateThumbprint) -ErrorAction Stop
+        if (-not $certificate.HasPrivateKey) { throw 'Development signing certificate has no private key' }
+        if ($certificate.Subject -ne 'CN=GAMI Hash Phase 1 Probe') {
+            throw 'Only the disposable probe certificate may sign this package'
+        }
+        Export-Certificate -Cert $certificate -FilePath $cer -Force | Out-Null
+        $signArguments = @('sign','/debug','/fd','SHA256','/sha1',$certificate.Thumbprint,$package)
+    } else {
+        if (-not (Test-Path -LiteralPath $openssl)) { throw "Missing OpenSSL: $openssl" }
+        $key = Join-Path $out 'development-key.pem'
+        $pem = Join-Path $out 'development-certificate.pem'
+        $pfx = Join-Path $out 'development-signing.pfx'
+        $pfxPassword = [guid]::NewGuid().ToString('N')
+        $priorErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue' # OpenSSL prints key-generation progress to stderr.
+        try {
+            & $openssl req -quiet -x509 -newkey rsa:3072 -sha256 -noenc -days 30 `
+                -subj '/CN=GAMI Hash Phase 1 Probe' -addext 'basicConstraints=critical,CA:FALSE' `
+                -addext 'keyUsage=critical,digitalSignature' -addext 'extendedKeyUsage=codeSigning' `
+                -keyout $key -out $pem 2>$null
+            if ($LASTEXITCODE -ne 0) { throw 'Development certificate generation failed' }
+            & $openssl x509 -in $pem -outform der -out $cer
+            if ($LASTEXITCODE -ne 0) { throw 'Development certificate export failed' }
+            & $openssl pkcs12 -legacy -export -inkey $key -in $pem -out $pfx -passout "pass:$pfxPassword"
+            if ($LASTEXITCODE -ne 0) { throw 'Development PFX generation failed' }
+        } finally { $ErrorActionPreference = $priorErrorAction }
+        $signArguments = @('sign','/debug','/fd','SHA256','/a','/f',$pfx,'/p',$pfxPassword,$package)
+    }
     $priorErrorAction = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $signOutput = & $signtool sign /debug /fd SHA256 /a /f $pfx /p $pfxPassword $package 2>&1
+        $signOutput = & $signtool @signArguments 2>&1
         $signExit = $LASTEXITCODE
     } finally { $ErrorActionPreference = $priorErrorAction }
     $signOutput | Set-Content -LiteralPath (Join-Path $out 'signing-output.txt')
