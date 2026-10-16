@@ -23,6 +23,10 @@ Current implementation status:
 - Destination publication uses a verified exclusive handle, repeated stable
   identity checks, deletion by handle, and a fail-if-exists rename. Providers
   with ambiguous link capability fail closed.
+- Phase 3 classifies both selected folders as local, network/cloud, or unknown.
+  Network/cloud and unknown selections require explicit approval bound to the
+  opened folder identities. The launcher and broker reclassify and validate
+  that authorization before servicing storage requests.
 - The native wizard is Phase 4; no WebView bridge should call this component.
 
 Do not package a broker that substitutes a display path or picker token for a

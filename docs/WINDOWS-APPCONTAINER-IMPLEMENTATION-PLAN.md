@@ -1,12 +1,13 @@
 # Windows AppContainer GUI implementation plan
 
-Status: **Phase 2 engineering gate passed on the tested Windows 11 VM;
+Status: **Phase 3 engineering gate passed on the tested Windows 11 VM;
 release acceptance remains open**.
 The [architecture decision](decisions/0001-windows-appcontainer-storage-adapter.md)
 directed Phase 2 toward a contained storage adapter. The production integration
-host, contained worker, and brokered engine adapter now pass the Phase 2 matrix
-recorded below. The native product wizard and release acceptance work remain,
-and no released Windows GUI yet meets the assurance gates.
+host, contained worker, and brokered engine adapter pass the tested Phase 2
+matrix, and the Phase 3 build adds identity-bound storage classification and
+consent enforcement. The native product wizard and release acceptance work
+remain, and no released Windows GUI yet meets the assurance gates.
 The signed v1.5.0 GUI still uses WebView2 and [failed the no-independent-network
 claim](evidence/2026-10-16-windows-v1.5.0/README.md). This plan is for its
 successor, not a retroactive certification of v1.5.0.
@@ -270,6 +271,16 @@ additional cloud providers, Windows 10, final-artifact network attribution, the
 native wizard, signing, and independent acceptance remain later-phase gates.
 See the [Phase 2 evidence](evidence/2026-10-16-windows-appcontainer-phase2/README.md).
 
+Subsequent Phase 3 verification narrowed the cloud completeness result. The
+Google Drive source contained 502 filesystem entries, including hidden
+`desktop.ini`, while the production WinRT broker returned 501 entries and
+omitted only that hidden file. An experimental raw-handle walker included all
+502 entries but failed on the local AppContainer fixture with access denied, so
+it was not retained. The Phase 2 pass therefore applies to the tested entries
+exposed by Windows.Storage; a claim that every filesystem entry is included is
+still open. This limitation does not bypass or invalidate the Phase 3 consent
+gate, but it must be resolved before collection-completeness acceptance.
+
 Tasks:
 
 1. If picked paths work under AppContainer, retain the existing Go engine and
@@ -297,6 +308,28 @@ fixtures. Gate: same hashes/manifest semantics as the current engine and no
 source-tree write requests in local, SMB, or cloud runs.
 
 ## Phase 3 — classify both paths and enforce consent
+
+Engineering outcome (2026-10-16): development-signed package `0.3.5.0`
+(SHA-256
+`eeefe631654e540fedd68a41df7dc1840af0936713daef26e1aec8cef0a15995`)
+classified both selected folders before worker launch and bound the decision to
+their opened-handle identities. The launcher and broker independently
+reclassified and validated that authorization before preflight or output
+creation. Local storage proceeded without a notice. UNC SMB and Google Drive
+were classified as `Network/cloud`, displayed their paths and reasons, and
+required explicit approval. Declining SMB Fresh and Google Drive Resume left
+the corresponding destination snapshots unchanged; a later attempt prompted
+again. Approved local, SMB, and Google Drive Fresh runs exited 0. The existing
+junction and output-alias refusal checks also remained effective.
+
+Focused native tests cover local automatic authorization, network/cloud and
+unknown denial and approval, source and destination substitution,
+reclassification, remap, and resume invalidation. The UI states the timing
+limit: picker browsing and classification metadata may already contact a
+provider, while approval is guaranteed before GAMI starts preflight, hashing,
+or output creation. This is a conservative classifier and is not proof that
+every third-party storage provider will be detected. Gate result: **PASS for
+the tested Phase 3 matrix.** See the [Phase 3 evidence](evidence/2026-10-16-windows-appcontainer-phase3/README.md).
 
 Tasks:
 

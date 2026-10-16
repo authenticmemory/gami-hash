@@ -1,5 +1,7 @@
 #pragma once
 
+#include "storage_consent.h"
+
 #include <winrt/Windows.Storage.h>
 #include <atomic>
 #include <cstdint>
@@ -18,6 +20,7 @@ worker_result run_storage_worker(
     std::wstring const& worker_executable,
     winrt::Windows::Storage::StorageFolder const& source,
     winrt::Windows::Storage::StorageFolder const& destination,
+    storage_authorization const& authorization,
     std::wstring const& output_name, bool resume,
     std::atomic_bool const* cancel_requested = nullptr);
 

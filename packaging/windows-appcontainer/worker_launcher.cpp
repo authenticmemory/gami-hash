@@ -81,7 +81,13 @@ void make_pipe(owned_handle& read, owned_handle& write) {
 worker_result run_storage_worker(std::wstring const& worker_executable,
     winrt::Windows::Storage::StorageFolder const& source,
     winrt::Windows::Storage::StorageFolder const& destination,
+    storage_authorization const& authorization,
     std::wstring const& output_name, bool resume, std::atomic_bool const* cancel_requested) {
+    // Reclassify and compare stable identities before creating the worker. The
+    // broker repeats this after launch, closing both selection-time and
+    // launch-time substitution windows.
+    validate_authorization(authorization,
+        classify_storage_folder(source), classify_storage_folder(destination));
     owned_handle worker_stdin, broker_write, broker_read, worker_stdout;
     make_pipe(worker_stdin, broker_write);
     make_pipe(broker_read, worker_stdout);
@@ -123,7 +129,7 @@ worker_result run_storage_worker(std::wstring const& worker_executable,
     worker_stdout = owned_handle{};
     error_log = owned_handle{};
 
-    storage_broker_session session(source, destination, output_name, resume,
+    storage_broker_session session(source, destination, authorization, output_name, resume,
         process_handle.value, broker_read.value, broker_write.value);
     std::atomic_bool monitor_done{false};
     std::thread monitor;

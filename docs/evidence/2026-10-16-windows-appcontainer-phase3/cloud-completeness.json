@@ -1,0 +1,17 @@
+{
+  "production": {
+    "sourceFiles": 502,
+    "manifestRows": 501,
+    "missing": ["desktop.ini"],
+    "mismatched": 0,
+    "extra": 0
+  },
+  "experimentalRawHandleBuild": {
+    "sourceFiles": 502,
+    "manifestRows": 502,
+    "mismatched": 0,
+    "extra": 0,
+    "retained": false,
+    "reason": "local AppContainer fixture failed with access denied"
+  }
+}

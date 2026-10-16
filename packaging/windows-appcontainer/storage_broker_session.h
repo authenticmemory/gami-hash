@@ -1,6 +1,7 @@
 #pragma once
 
 #include "broker_protocol.h"
+#include "storage_consent.h"
 #include "storage_identity.h"
 
 #include <winrt/Windows.Storage.h>
@@ -16,6 +17,7 @@ public:
     storage_broker_session(
         winrt::Windows::Storage::StorageFolder const& source,
         winrt::Windows::Storage::StorageFolder const& destination,
+        storage_authorization const& authorization,
         std::wstring output_name, bool resume, HANDLE worker_process,
         HANDLE worker_requests, HANDLE broker_responses);
 
