@@ -1,0 +1,24 @@
+{
+  "candidate": {
+    "version": "0.3.5.0",
+    "sha256": "eeefe631654e540fedd68a41df7dc1840af0936713daef26e1aec8cef0a15995"
+  },
+  "fresh": {
+    "local": { "classification": "Local", "exit": 0, "pid": 5928 },
+    "smb": { "classification": "Network/cloud", "approved": true, "exit": 0, "pid": 3924 },
+    "googleDrive": { "classification": "Network/cloud", "approved": true, "exit": 0, "pid": 8948 }
+  },
+  "denial": {
+    "smbFreshDestinationUnchanged": true,
+    "googleDriveResumeDestinationUnchanged": true,
+    "workerStarted": false,
+    "approvalRequestedAgain": true
+  },
+  "regressions": {
+    "sourceJunctionRefused": true,
+    "destinationAliasInsideSourceRefused": true,
+    "localAndSmbManifestRows": 5,
+    "localAndSmbByteIdentical": true,
+    "manifestSha256": "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232"
+  }
+}

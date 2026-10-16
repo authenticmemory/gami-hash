@@ -2,8 +2,10 @@ dist/
 
 /build/bin/
 /build/gocache/
+/build/gomodcache/
 /build/edge-profile/
 /integration_host.obj
+/storage_consent_test.obj
 !/build/appicon.png
 !/build/appicon-source.svg
 !/build/gami-logo.svg
@@ -14,8 +16,4 @@ dist/
 !/build/windows/installer/project.nsi
 /frontend/node_modules/
 /frontend/dist/
-
 !/build/windows/info.json
-
-build/gocache/
-integration_host.obj

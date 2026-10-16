@@ -1,4 +1,5 @@
 #include "worker_launcher.h"
+#include "storage_consent.h"
 #include <windows.h>
 #include <shobjidl.h>
 #include <winrt/Windows.Foundation.h>
@@ -27,6 +28,9 @@ std::mutex state_mutex;
 
 constexpr wchar_t source_setting[] = L"phase2.sourceToken";
 constexpr wchar_t destination_setting[] = L"phase2.destinationToken";
+
+std::wstring classification_line(wchar_t const* label,
+    gami::storage::location_classification const& value);
 
 void append_status_log(std::wstring const& value) {
     try {
@@ -79,18 +83,39 @@ void pick(HWND owner, bool source) {
             check_hresult(picker.as<IInitializeWithWindow>()->Initialize(owner));
             auto folder = picker.PickSingleFolderAsync().get();
             if (!folder) return;
+            auto classification = gami::storage::classify_storage_folder(folder);
             auto token = std::wstring(source ? L"phase2-source" : L"phase2-destination");
             StorageApplicationPermissions::FutureAccessList().AddOrReplace(token, folder);
             save_token(source, token);
             status(std::wstring(source ? L"Source: " : L"Destination: ") + std::wstring(folder.Path()));
+            status(classification_line(source ? L"Source classification" : L"Destination classification",
+                classification));
         } catch (hresult_error const& e) { status(L"Picker error: " + std::wstring(e.message())); }
     }).detach();
 }
 
-void run(bool resume) {
+std::wstring classification_line(wchar_t const* label,
+    gami::storage::location_classification const& value) {
+    return std::wstring(label) + L": " + gami::storage::kind_name(value.kind) +
+        L"\r\n" + value.display_path + L"\r\nReason: " + value.reason;
+}
+
+bool obtain_approval(HWND owner, gami::storage::location_classification const& source,
+    gami::storage::location_classification const& destination) {
+    if (!gami::storage::requires_explicit_consent(source, destination)) return true;
+    auto message = classification_line(L"Source", source) + L"\r\n\r\n" +
+        classification_line(L"Destination", destination) +
+        L"\r\n\r\nBrowsing and classification metadata may already have contacted a storage provider. "
+        L"If you continue, source bytes may be fetched or read over a network, and the CSV, "
+        L"checkpoint, or error log may be written or synced remotely.\r\n\r\nContinue?";
+    return MessageBoxW(owner, message.c_str(), L"Network or cloud storage approval",
+        MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDYES;
+}
+
+void run(HWND owner, bool resume) {
     if (running.exchange(true)) { status(L"A run is already active"); return; }
     cancel_requested = false;
-    std::thread([resume] {
+    std::thread([owner, resume] {
         init_apartment(apartment_type::multi_threaded);
         try {
             std::wstring selected_source, selected_destination;
@@ -103,11 +128,23 @@ void run(bool resume) {
             auto access = StorageApplicationPermissions::FutureAccessList();
             auto source = access.GetFolderAsync(selected_source).get();
             auto destination = access.GetFolderAsync(selected_destination).get();
+            auto source_classification = gami::storage::classify_storage_folder(source);
+            auto destination_classification = gami::storage::classify_storage_folder(destination);
+            status(classification_line(L"Source classification", source_classification));
+            status(classification_line(L"Destination classification", destination_classification));
+            auto const approved = obtain_approval(owner, source_classification, destination_classification);
+            if (!approved) {
+                status(L"Operation declined; no preflight, hashing, or output creation was started");
+                running = false;
+                return;
+            }
+            auto authorization = gami::storage::authorize_storage(
+                source_classification, destination_classification, approved);
             wchar_t image[32768]{};
             GetModuleFileNameW(nullptr, image, static_cast<DWORD>(std::size(image)));
             std::wstring worker(image);
             worker.replace(worker.find_last_of(L"\\/") + 1, std::wstring::npos, L"GamiHashContainedWorker.exe");
-            auto result = gami::storage::run_storage_worker(worker, source, destination,
+            auto result = gami::storage::run_storage_worker(worker, source, destination, authorization,
                 L"phase2-product.csv", resume, &cancel_requested);
             std::wostringstream out;
             out << L"Product worker PID=" << result.process_id << L" exit=" << result.exit_code
@@ -126,13 +163,13 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp) {
         CreateWindowW(L"BUTTON", L"Fresh", WS_CHILD|WS_VISIBLE, 296,12,90,32,hwnd,(HMENU)3,nullptr,nullptr);
         CreateWindowW(L"BUTTON", L"Resume", WS_CHILD|WS_VISIBLE, 398,12,90,32,hwnd,(HMENU)4,nullptr,nullptr);
         CreateWindowW(L"BUTTON", L"Cancel", WS_CHILD|WS_VISIBLE, 500,12,90,32,hwnd,(HMENU)5,nullptr,nullptr);
-        text_window=CreateWindowExW(WS_EX_CLIENTEDGE,L"EDIT",L"Phase 2 production integration host",
+        text_window=CreateWindowExW(WS_EX_CLIENTEDGE,L"EDIT",L"Phase 3 production integration host",
             WS_CHILD|WS_VISIBLE|ES_MULTILINE|ES_READONLY|WS_VSCROLL,12,56,740,390,hwnd,nullptr,nullptr,nullptr);
         return 0;
     }
     if (message == WM_COMMAND) {
         if (LOWORD(wp)==1) pick(hwnd,true); else if (LOWORD(wp)==2) pick(hwnd,false);
-        else if (LOWORD(wp)==3) run(false); else if (LOWORD(wp)==4) run(true);
+        else if (LOWORD(wp)==3) run(hwnd,false); else if (LOWORD(wp)==4) run(hwnd,true);
         else if (LOWORD(wp)==5) { cancel_requested=true; status(L"Cancel requested"); }
         return 0;
     }
@@ -157,7 +194,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     }
     WNDCLASSW wc{}; wc.lpfnWndProc=window_proc; wc.hInstance=instance; wc.lpszClassName=L"GamiPhase2ProductHost";
     wc.hCursor=LoadCursor(nullptr,IDC_ARROW); RegisterClassW(&wc);
-    auto hwnd=CreateWindowW(wc.lpszClassName,L"GAMI Hash Phase 2 Product Integration",WS_OVERLAPPEDWINDOW,
+    auto hwnd=CreateWindowW(wc.lpszClassName,L"GAMI Hash Phase 3 Product Integration",WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,CW_USEDEFAULT,790,510,nullptr,nullptr,instance,nullptr);
     ShowWindow(hwnd,show);
     status((source_token.empty() || destination_token.empty())

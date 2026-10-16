@@ -1,0 +1,15 @@
+  17-validate-the-cli[m
+  2-audit-the-existing-implementation[m
+  30-phase-0-freeze-the-contract-and-baseline[m
+  32-phase-2-adapt-storage-and-preserve-the-engine[m
+  34-phase-2-adapt-storage-and-preserve-the-engine[m
+* [32m37-phase-3-classify-both-paths-and-enforce-consent[m
+  4-harden-the-go-engine[m
+  5-build-the-safety-and-correctness-test-suite[m
+  8-define-the-gui-boundary[m
+  ci/native-rpm-signatures[m
+  feat/linux-desktop-release[m
+  fix/match-rpm-signature-filename[m
+  fix/rpm-signature-verification[m
+  main[m
+  portal-design-ui[m

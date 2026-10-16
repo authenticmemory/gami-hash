@@ -30,7 +30,7 @@ $package=Join-Path $out "gami-hash-phase2-product-$Version-x64.msix"
 if($LASTEXITCODE-ne 0){throw 'MSIX packaging failed'}
 if($DevCertificateThumbprint){
   $cert=Get-Item -LiteralPath ("Cert:\CurrentUser\My\"+$DevCertificateThumbprint)
-  if($cert.Subject-ne 'CN=GAMI Hash Phase 1 Probe' -or -not $cert.HasPrivateKey){throw 'Invalid disposable certificate'}
+  if($cert.Subject -notin @('CN=GAMI Hash Phase 1 Probe','CN=GAMI Hash Phase 3 Integration') -or -not $cert.HasPrivateKey){throw 'Invalid disposable certificate'}
   & $signtool sign /fd SHA256 /sha1 $cert.Thumbprint $package | Out-Null
   if($LASTEXITCODE-ne 0){throw 'MSIX signing failed'}
   Export-Certificate -Cert $cert -FilePath (Join-Path $out 'development-certificate.cer') -Force | Out-Null
@@ -45,5 +45,5 @@ if($DevCertificateThumbprint){
   } finally { Remove-Item -LiteralPath ("Cert:\CurrentUser\My\"+$generated.Thumbprint) -Force }
 }
 $hash=(Get-FileHash $package -Algorithm SHA256).Hash.ToLowerInvariant()
-[pscustomobject]@{prototype=$false;release=$false;phase=2;package=$package;sha256=$hash;signed=[bool]($DevCertificateThumbprint -or $Sign);runtimeTested=$false} | ConvertTo-Json | Set-Content (Join-Path $out 'build-report.json')
+[pscustomobject]@{prototype=$false;release=$false;phase=3;package=$package;sha256=$hash;signed=[bool]($DevCertificateThumbprint -or $Sign);runtimeTested=$false} | ConvertTo-Json | Set-Content (Join-Path $out 'build-report.json')
 Write-Output $package; Write-Output $hash

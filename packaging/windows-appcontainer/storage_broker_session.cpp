@@ -135,7 +135,8 @@ JsonObject item_json(IStorageItem const& item, std::wstring const& id) {
 } // namespace
 
 storage_broker_session::storage_broker_session(StorageFolder const& source,
-    StorageFolder const& destination, std::wstring output_name, bool resume,
+    StorageFolder const& destination, storage_authorization const& authorization,
+    std::wstring output_name, bool resume,
     HANDLE worker_process, HANDLE worker_requests, HANDLE broker_responses)
     : source_(source), destination_(destination),
       source_identity_(source), destination_identity_(destination),
@@ -144,6 +145,8 @@ storage_broker_session::storage_broker_session(StorageFolder const& source,
       error_name_(output_name_.substr(0, output_name_.find_last_of(L'.')) + L"_errors.log"),
       resume_(resume), worker_process_(worker_process), protocol_(worker_requests, broker_responses) {
     if (!worker_process_) throw identity_error("worker process is unavailable");
+    validate_authorization(authorization,
+        classify_storage_folder(source_), classify_storage_folder(destination_));
     if (source_identity_.value() == destination_identity_.value())
         throw identity_error("source and destination are the same folder");
     if (output_name_.empty() || output_name_.find_first_of(L"\\/:\r\n") != std::wstring::npos)
