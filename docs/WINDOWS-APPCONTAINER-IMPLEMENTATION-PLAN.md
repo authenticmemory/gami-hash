@@ -116,6 +116,8 @@ Tasks:
 Deliverable: baseline fixture set, provider matrix, and a versioned list of
 supported scenarios. Gate: every claim has a measurable acceptance test.
 
+Phase 0 artifact: [frozen baseline, fixtures, matrix and support list](WINDOWS-APPCONTAINER-PHASE-0-BASELINE.md).
+
 ## Phase 1 — prove AppContainer and picker feasibility
 
 Build a minimal, separately named **prototype**, not a release GUI. It needs
