@@ -1,6 +1,8 @@
 # Windows AppContainer GUI implementation plan
 
-Status: **approved direction; planning only**. No product implementation has
+Status: **Phase 1 stop/go decision reached: direct-path migration stopped**.
+The [architecture decision](decisions/0001-windows-appcontainer-storage-adapter.md)
+directs Phase 2 toward a contained storage adapter. No product implementation has
 started under this plan, and no released Windows GUI meets its assurance gates.
 The signed v1.5.0 GUI still uses WebView2 and [failed the no-independent-network
 claim](evidence/2026-10-16-windows-v1.5.0/README.md). This plan is for its
@@ -123,14 +125,33 @@ Phase 0 artifact: [frozen baseline, fixtures, matrix and support list](WINDOWS-A
 Build a minimal, separately named **prototype**, not a release GUI. It needs
 only two pickers, a status window, a contained worker, and diagnostic output.
 
+Prototype and current test status: [Phase 1 probe](../packaging/appcontainer-phase1/README.md).
+First [VM run record](evidence/2026-10-16-windows-appcontainer-phase1/README.md):
+picker-granted WinRT streaming worked for local, same-VM SMB, separate-host
+SMB, and Google Drive for desktop folders; ordinary path traversal failed.
+Two tested off-loopback UDP sends were dropped after an API-level success;
+a later WFP/PktMon run independently attributed IPv4 drops and loopback
+non-delivery to the contained worker. The diagnostic 1,024-file fixture
+cancelled after 64 files and resumed to a fully verified CSV after GUI restart.
+The separate-host share was removed after testing and a saved-token retry
+failed with a missing-file error. The signed v1.5.0 Go CLI was subsequently
+launched as a contained child by prototype 0.1.2.0 and
+failed to read the picked local root with `Access is denied`; the same root
+worked through WinRT. The Phase 1 direct-engine gate therefore failed.
+Further process/network attribution and provider, failure, and standard-user
+matrix checks remain open for the storage-adapter and release gates. They do
+not justify a direct-path GUI rewrite.
+
 Tasks:
 
 1. Package and install it on a disposable Windows VM. Inspect the package
    manifest and live process tokens. Prove GUI and worker are AppContainer
    processes and no full-trust child is launched.
 2. From those same tokens, deliberately attempt TCP, UDP, DNS, loopback, and
-   private-network sockets. Each direct attempt must be denied. Capture the
-   denial; merely seeing no traffic while idle is insufficient.
+   private-network sockets. Prove that direct traffic cannot leave the app's
+   network boundary, using API results plus packet/WFP drops and a positive
+   control. UDP `sendto` may return success before Windows drops the packet;
+   API success or silence alone is insufficient.
 3. Pick a local folder and output, then an authenticated SMB share through UNC
    and a mapped drive, then an online-only cloud folder. Without adding network
    capabilities, enumerate **all children**, stream large files into SHA-256,
@@ -151,6 +172,14 @@ has no direct network capability. If this fails, **stop the GUI rewrite** and
 write an architecture decision record. Possible alternatives are a brokered
 storage-stream adapter or a revised assurance boundary; a silent full-trust
 helper or broad network capability is not an acceptable workaround.
+
+Outcome: **STOP the direct-path rewrite**. Picked WinRT storage objects worked
+in the tested configurations, but the bundled signed v1.5.0 Go CLI could not
+read the same picked local root from its AppContainer token. The
+[decision record](decisions/0001-windows-appcontainer-storage-adapter.md)
+selects a contained storage adapter for Phase 2. The untested standard-user,
+provider, and network routes remain explicit gates on that adapter and the
+release; the Phase 1 probe does not certify them.
 
 ## Phase 2 — adapt storage and preserve the engine
 
