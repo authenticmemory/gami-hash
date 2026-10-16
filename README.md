@@ -28,10 +28,12 @@ IT.
   just policy: choosing an output location inside the scanned folder is
   refused.
 - It never modifies, moves or deletes any file. Files are opened read-only.
-- It makes no network connections by design: no upload, telemetry, accounts,
-  remote fonts, remote images, or remote help content.
-- No accounts, no configuration, no telemetry. Windows and macOS releases are
-  packaged as installable/native apps; the CLI artifact remains portable.
+- The hashing engine has no upload or telemetry feature. The signed v1.5.0
+  Windows GUI **does make external requests through WebView2**, including
+  Microsoft account profile and browser component update requests in a VM
+  test. See the [runtime evidence](docs/evidence/2026-10-16-windows-v1.5.0/followup/README.md).
+- Hashing requires no GAMI account. Windows and macOS releases are packaged
+  as installable/native apps; the CLI artifact remains portable.
 
 ## Robustness (built for the archive reality)
 

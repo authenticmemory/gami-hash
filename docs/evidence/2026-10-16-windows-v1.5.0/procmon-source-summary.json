@@ -1,0 +1,37 @@
+﻿{
+    "AnalyzedUTC":  "2026-10-15T23:07:13.0248353Z",
+    "SourcePrefix":  "C:\\Users\\Public\\Documents\\GamiHashTest\\source",
+    "GamiSourceEventCount":  17017,
+    "Operations":  {
+                       "QueryNetworkOpenInformationFile":  517,
+                       "QueryAllInformationFile":  1542,
+                       "QueryNameInformationFile":  6,
+                       "QueryBasicInformationFile":  1030,
+                       "QueryAttributeInformationVolume":  2,
+                       "CloseFile":  2580,
+                       "QueryOpen":  1547,
+                       "QueryDirectory":  10,
+                       "ReadFile":  3590,
+                       "CreateFile":  2580,
+                       "QueryNormalizedNameInformationFile":  3,
+                       "QueryInformationVolume":  1544,
+                       "IRP_MJ_CLOSE":  2066
+                   },
+    "Results":  {
+                    "BUFFER OVERFLOW":  1542,
+                    "SUCCESS":  13410,
+                    "FAST IO DISALLOWED":  1547,
+                    "END OF FILE":  514,
+                    "NO MORE FILES":  4
+                },
+    "CreateFileDesiredAccess":  {
+                                    "Read Attributes":  1547,
+                                    "Read Attributes, Synchronize":  517,
+                                    "Generic Read":  516
+                                },
+    "WriteLikeEventCount":  0,
+    "WriteLikeExamples":  [
+
+                          ],
+    "FilteredCsvSHA256":  "C1F3223C67224CC56757424A3A6BE4046E6FDC62AC2F2C61E468054D6CBF3A48"
+}

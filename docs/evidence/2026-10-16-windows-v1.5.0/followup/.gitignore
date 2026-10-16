@@ -1,0 +1,13 @@
+# WebView2 NetLog and raw process traces may contain account tokens or private URLs.
+netlog.json
+sysmon-followup.evtx
+sysmon-followup.json
+packet-followup.etl
+packet-followup.txt
+packet-proxy.etl
+packet-proxy.txt
+sysmon-proxy.json
+proxy-control.json
+proxy-state.json
+mitmproxy*
+*.mitm

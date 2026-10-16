@@ -1,0 +1,28 @@
+﻿{
+    "InspectedUTC":  "2026-10-15T23:10:46.2718902Z",
+    "InstallPath":  "C:\\Users\\tech\\AppData\\Local\\Programs\\Authentic Memory Hashing Tool",
+    "Files":  [
+                  {
+                      "Name":  "GAMI Hash.exe",
+                      "SHA256":  "9A458F76521C7488F10872749E209D256E65F924C0092FBD1CC73A482135BD61",
+                      "SignatureStatus":  "Valid",
+                      "Signer":  "CN=Authentic Memory gemeinnützige UG (haftungsbeschränkt), O=Authentic Memory gemeinnützige UG (haftungsbeschränkt), STREET=Wendelsteinstr. 3, L=Muenchen, S=Bavaria, C=DE, PostalCode=81541",
+                      "ProductVersion":  "1.5.0"
+                  },
+                  {
+                      "Name":  "gami-hash.exe",
+                      "SHA256":  "119921FA70185F18B56C138C15D69C6A15E5BDEEFD8ADF32E483493B247A1569",
+                      "SignatureStatus":  "Valid",
+                      "Signer":  "CN=Authentic Memory gemeinnützige UG (haftungsbeschränkt), O=Authentic Memory gemeinnützige UG (haftungsbeschränkt), STREET=Wendelsteinstr. 3, L=Muenchen, S=Bavaria, C=DE, PostalCode=81541",
+                      "ProductVersion":  null
+                  },
+                  {
+                      "Name":  "uninstall.exe",
+                      "SHA256":  "087E112095A0015CCF6F6B59F00CE95D40F4F48B7138900261F9ED2BF2108CF9",
+                      "SignatureStatus":  "NotSigned",
+                      "Signer":  null,
+                      "ProductVersion":  "1.5.0"
+                  }
+              ],
+    "WebView2Version":  "155.0.4283.60"
+}

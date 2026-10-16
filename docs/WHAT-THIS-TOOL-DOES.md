@@ -4,10 +4,10 @@
 
 ## What it is
 
-A single portable executable (about 3 MB) that computes SHA-256 checksums
-for every file under a folder chosen by the user and writes them to one CSV
-file. It is used to prepare collection handovers to GAMI without shipping
-the files themselves.
+A Windows desktop application and separate command-line tool that compute
+SHA-256 checksums for files under a folder chosen by the user and write a CSV
+manifest. They prepare collection handovers to GAMI without shipping the
+source files themselves.
 
 ## What it does, completely
 
@@ -19,38 +19,49 @@ the files themselves.
    folder (two paths, nothing else), so the next start can offer to continue
    with one click. Removed when the run completes.
 4. Shows a progress bar, and at the end an "Open folder" button that reveals
-   the result file in the system file manager. That is all.
+   the result file in the system file manager. On Windows, the GUI also starts
+   Microsoft's WebView2 runtime, whose processes made account-related and
+   component-update requests in the v1.5.0 VM test.
 
 ## What it does not do
 
-- No network activity by design: no upload, telemetry, accounts, remote fonts,
-  remote images, or remote help content. Runtime firewall or Process Monitor
-  verification remains part of the production release gate.
+- The hashing code contains no upload, telemetry, account, remote-font,
+  remote-image, or remote-help feature. **The v1.5.0 Windows GUI's WebView2
+  child processes did make external network connections in a VM test.** Do
+  not describe this release as making no internet connections. The
+  [follow-up capture](evidence/2026-10-16-windows-v1.5.0/followup/README.md)
+  identified Microsoft account profile requests with authorization headers
+  and a browser component update request.
 - No writes into the scanned folder. Enforced in code, and every file is
   opened with read-only flags. You can run it against a read-only share or a
   write-protected drive.
 - Output paths are resolved before use, including Windows junctions. Output
   files are built separately and then published without truncating an existing
   symlink or hard-link target in place.
-- No accounts, services, drivers, or registry changes for hashing. Windows and
-  macOS releases are packaged as installable/native apps; the CLI artifact
-  remains portable.
-- No file contents leave the machine. The output CSV contains only: relative
-  path, size, SHA-256, modification time.
+- Hashing does not require a GAMI account or install a service or driver.
+  The Windows GUI's WebView2 processes nevertheless sent account-related
+  requests in the tested VM. Windows and macOS releases are packaged as
+  installable/native apps; the CLI artifact remains portable.
+- The output CSV contains five columns: `relative_path`, `size_bytes`,
+  `file_hash` (SHA-256), `mtime_utc`, and `source_record_id`. The last column
+  repeats the relative path for handover compatibility.
 
 ## Verifying the binary
 
-Until code signing is in place, Windows SmartScreen may warn on first run
-("unknown publisher"). Internal testers can verify the download:
+The v1.5.0 Windows installer is Authenticode signed and timestamped by
+Authentic Memory. Windows SmartScreen can still warn if the installer has
+little reputation. Check the signature and download hash:
 
 ```powershell
-Get-FileHash .\GAMI-Hashing-Tool-1.2.0.exe -Algorithm SHA256
+$installer = '.\gami-hash-windows-amd64-installer.exe'
+Get-AuthenticodeSignature -LiteralPath $installer | Format-List Status,SignerCertificate,TimeStamperCertificate
+Get-FileHash -LiteralPath $installer -Algorithm SHA256
 ```
 
-Compare the result with the checksum published by GAMI (delivered
-separately: by mail from your GAMI contact and on the release page). The
-release reproducibility is not yet claimed; see `VERIFY.md` in the repository
-for current build limits.
+Require a `Valid` signature with the expected publisher, and compare the hash
+with the checksum published for the same release. A valid signature does not
+establish that SmartScreen will suppress a reputation warning. Release
+reproducibility is not claimed; see `VERIFY.md` for current build limits.
 
 ## Resource use
 

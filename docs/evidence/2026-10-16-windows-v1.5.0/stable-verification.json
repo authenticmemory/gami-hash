@@ -1,0 +1,11 @@
+﻿{
+    "VerifiedUTC":  "2026-10-15T22:59:01.4617081Z",
+    "Manifest":  "C:\\Users\\Public\\Documents\\GamiHashTest\\output\\stable.csv",
+    "ManifestSHA256":  "4B18E5080B9B6BF9562FEBC2CDEAA292ACF9858FD5F7E79FE4BF31A6762188CB",
+    "Columns":  "relative_path,size_bytes,file_hash,mtime_utc,source_record_id",
+    "Rows":  514,
+    "MismatchCount":  0,
+    "Mismatches":  [
+
+                   ]
+}

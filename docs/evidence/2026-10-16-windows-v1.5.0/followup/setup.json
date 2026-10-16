@@ -1,0 +1,8 @@
+﻿{
+    "StartedUTC":  "2026-10-15T23:44:37.2247195Z",
+    "HostApp":  "GAMI Hash.exe",
+    "BrowserArguments":  "--log-net-log=\"C:\\Users\\Public\\Documents\\GamiHashTest\\netlog-followup.json\" --net-log-capture-mode=IncludeSensitive",
+    "NetLogPath":  "C:\\Users\\Public\\Documents\\GamiHashTest\\netlog-followup.json",
+    "PacketPath":  "C:\\Users\\Public\\Documents\\GamiHashTest\\packet-followup.etl",
+    "SysmonRunning":  true
+}

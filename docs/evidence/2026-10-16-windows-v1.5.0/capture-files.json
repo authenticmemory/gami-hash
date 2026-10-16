@@ -1,0 +1,17 @@
+﻿[
+    {
+        "Name":  "gami-network.etl",
+        "Length":  5725251,
+        "SHA256":  "2CD9377B1FDC218D41C7C9EE0DC095FAD1BD112D798197ACE8100805C3CF2901"
+    },
+    {
+        "Name":  "phase-markers.csv",
+        "Length":  616,
+        "SHA256":  "748CD014C2CC6D0571097CD28C5A35F252369D4C8F178B08DAF36FEF25674CFF"
+    },
+    {
+        "Name":  "sysmon-operational.evtx",
+        "Length":  1118208,
+        "SHA256":  "95A4F1D5455644C67E4C80A277DA41BA2541F4D3E24EB8CBCC9F2CADD3FA29E2"
+    }
+]

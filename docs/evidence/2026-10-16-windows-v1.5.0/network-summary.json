@@ -1,0 +1,262 @@
+{
+  "app": {
+    "pid": "796",
+    "guid": "{5a8a72b4-5834-6ad1-8d01-000000000800}",
+    "created_utc": "2026-10-15T22:48:20.6166216Z"
+  },
+  "webview_child_count": 15,
+  "webview_children": [
+    {
+      "pid": "7412",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-592b-6ad1-be01-000000000800}"
+    },
+    {
+      "pid": "1504",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5905-6ad1-b601-000000000800}"
+    },
+    {
+      "pid": "4140",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-58e3-6ad1-ad01-000000000800}"
+    },
+    {
+      "pid": "9352",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-58c6-6ad1-aa01-000000000800}"
+    },
+    {
+      "pid": "316",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-58ad-6ad1-a901-000000000800}"
+    },
+    {
+      "pid": "5656",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-58ad-6ad1-a801-000000000800}"
+    },
+    {
+      "pid": "5468",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5898-6ad1-a201-000000000800}"
+    },
+    {
+      "pid": "5756",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5887-6ad1-a101-000000000800}"
+    },
+    {
+      "pid": "2516",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-587a-6ad1-9e01-000000000800}"
+    },
+    {
+      "pid": "1040",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5835-6ad1-9301-000000000800}"
+    },
+    {
+      "pid": "8332",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5835-6ad1-9201-000000000800}"
+    },
+    {
+      "pid": "3928",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5835-6ad1-9101-000000000800}"
+    },
+    {
+      "pid": "5916",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5835-6ad1-9001-000000000800}"
+    },
+    {
+      "pid": "7048",
+      "parent_pid": "9912",
+      "guid": "{5a8a72b4-5834-6ad1-8f01-000000000800}"
+    },
+    {
+      "pid": "9912",
+      "parent_pid": "796",
+      "guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}"
+    }
+  ],
+  "dns_queries": [
+    {
+      "utc": "2026-10-15T22:48:29.8348274Z",
+      "pid": "5916",
+      "name": "wpad",
+      "status": "1460"
+    },
+    {
+      "utc": "2026-10-15T22:50:39.7315645Z",
+      "pid": "9912",
+      "name": "substrate.office.com",
+      "status": "0"
+    }
+  ],
+  "external_destinations": {
+    "40.104.15.66": 8,
+    "150.171.27.11": 2,
+    "52.123.243.147": 4
+  },
+  "flows": [
+    {
+      "first_sysmon_utc": "2026-10-15T22:48:24.1516779Z",
+      "process_id": "5916",
+      "process_guid": "{5a8a72b4-5835-6ad1-9001-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57320",
+      "destination_ip": "52.123.243.147",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 14,
+      "packets_in": 24
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:48:25.6911097Z",
+      "process_id": "5916",
+      "process_guid": "{5a8a72b4-5835-6ad1-9001-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "56971",
+      "destination_ip": "52.123.243.147",
+      "destination_port": "443",
+      "sysmon_events": 2,
+      "packets_out": 0,
+      "packets_in": 0
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:48:25.6911224Z",
+      "process_id": "5916",
+      "process_guid": "{5a8a72b4-5835-6ad1-9001-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "51094",
+      "destination_ip": "52.123.243.147",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 6,
+      "packets_in": 11
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:49:23.7364059Z",
+      "process_id": "5916",
+      "process_guid": "{5a8a72b4-5835-6ad1-9001-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "53238",
+      "destination_ip": "150.171.27.11",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 31,
+      "packets_in": 47
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:50:39.5876692Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "53245",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 12,
+      "packets_in": 23
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:50:39.5876868Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "53244",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 10,
+      "packets_in": 16
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:50:48.8381152Z",
+      "process_id": "5916",
+      "process_guid": "{5a8a72b4-5835-6ad1-9001-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57480",
+      "destination_ip": "150.171.27.11",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 27,
+      "packets_in": 33
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:51:53.8417585Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57482",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 16,
+      "packets_in": 29
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:51:53.8417749Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57481",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 13,
+      "packets_in": 26
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:57:30.0375734Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57490",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 15,
+      "packets_in": 27
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T22:57:30.0375904Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57491",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 18,
+      "packets_in": 29
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T23:00:28.7784633Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57496",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 11,
+      "packets_in": 15
+    },
+    {
+      "first_sysmon_utc": "2026-10-15T23:00:28.7784750Z",
+      "process_id": "9912",
+      "process_guid": "{5a8a72b4-5834-6ad1-8e01-000000000800}",
+      "source_ip": "192.168.247.128",
+      "source_port": "57495",
+      "destination_ip": "40.104.15.66",
+      "destination_port": "443",
+      "sysmon_events": 1,
+      "packets_out": 8,
+      "packets_in": 12
+    }
+  ]
+}

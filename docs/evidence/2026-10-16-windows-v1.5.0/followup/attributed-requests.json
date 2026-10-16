@@ -1,0 +1,145 @@
+[
+  {
+    "utc": "2026-10-15T23:50:53.448496+00:00",
+    "pid": 10604,
+    "port": 56982,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/imageB2/v1.0/me/image/$value",
+    "status": 404,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:50:53.452349+00:00",
+    "pid": 10604,
+    "port": 56981,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/imageB2/v1.0/me/image/$value",
+    "status": 404,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:50:53.453833+00:00",
+    "pid": 10604,
+    "port": 56983,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/profileb2/v2.0/me/V1Profile",
+    "status": 200,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:50:53.447492+00:00",
+    "pid": 10604,
+    "port": 56984,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/profileb2/v2.0/me/V1Profile",
+    "status": 200,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:51:49.781295+00:00",
+    "pid": 4856,
+    "port": 57479,
+    "method": "POST",
+    "host": "edge.microsoft.com",
+    "path": "/componentupdater/api/v1/update",
+    "status": 200,
+    "body_bytes": 5675,
+    "auth_header": false
+  },
+  {
+    "utc": "2026-10-15T23:53:15.997919+00:00",
+    "pid": 10604,
+    "port": 51378,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/imageB2/v1.0/me/image/$value",
+    "status": 404,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:53:15.995601+00:00",
+    "pid": 10604,
+    "port": 51377,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/profileb2/v2.0/me/V1Profile",
+    "status": 200,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:53:19.577073+00:00",
+    "pid": 10604,
+    "port": 51377,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/imageB2/v1.0/me/image/$value",
+    "status": 404,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:53:19.578694+00:00",
+    "pid": 10604,
+    "port": 51378,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/profileb2/v2.0/me/V1Profile",
+    "status": 200,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:54:38.612837+00:00",
+    "pid": 10604,
+    "port": 55297,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/imageB2/v1.0/me/image/$value",
+    "status": 404,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:54:38.616122+00:00",
+    "pid": 10604,
+    "port": 55298,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/profileb2/v2.0/me/V1Profile",
+    "status": 200,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:55:44.708563+00:00",
+    "pid": 10604,
+    "port": 55304,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/imageB2/v1.0/me/image/$value",
+    "status": 404,
+    "body_bytes": 0,
+    "auth_header": true
+  },
+  {
+    "utc": "2026-10-15T23:55:44.712256+00:00",
+    "pid": 10604,
+    "port": 55305,
+    "method": "GET",
+    "host": "substrate.office.com",
+    "path": "/profileb2/v2.0/me/V1Profile",
+    "status": 200,
+    "body_bytes": 0,
+    "auth_header": true
+  }
+]

@@ -1,0 +1,14 @@
+﻿{
+    "ComputerName":  "GAMI-HASH-VM",
+    "WindowsCaption":  "Microsoft Windows 11 Pro",
+    "WindowsVersion":  "10.0.26300",
+    "WindowsBuild":  "26300",
+    "CaptureSetupUTC":  "2026-10-15T22:43:24.3797362Z",
+    "User":  "Gami-Hash-VM\\gami_runner",
+    "IsAdministrator":  true,
+    "WebView2ApplicationVersions":  [
+                                        "155.0.4283.60",
+                                        "PlatformExperiencesHelper",
+                                        "SetupMetrics"
+                                    ]
+}

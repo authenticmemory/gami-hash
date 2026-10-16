@@ -1,0 +1,2 @@
+ae0fb30322f923c63d55c43ee3e531be4f7114ae0cb911ed6524bdb0fedea308  gami-hash-windows-amd64-installer.exe
+9a458f76521c7488f10872749e209d256e65f924c0092fbd1cc73a482135bd61  gami-hash.exe

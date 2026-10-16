@@ -1,7 +1,11 @@
 # Windows acceptance test: step-by-step guide
 
-Status: pending. This guide is for someone who did not build GAMI Hash. You do
-not need Go, Node.js, or developer tools. PowerShell is included with Windows.
+Status: partial. The v1.5.0 Windows VM network test found outbound WebView2
+traffic, so the unqualified "no internet use" claim fails for this release.
+See [the 2026-10-16 runtime evidence](evidence/2026-10-16-windows-v1.5.0/README.md).
+The WebView2-missing installer test and other scenarios below remain open.
+This guide is for someone who did not build GAMI Hash. You do not need Go,
+Node.js, or developer tools. PowerShell is included with Windows.
 
 ## Before you begin
 
@@ -302,6 +306,20 @@ these on a disposable machine and provide the stated evidence:
 
 Running successfully offline alone does NOT prove the app makes no network
 attempts. Network verification requires captured observations and IT analysis.
+
+### Observed v1.5.0 result (2026-10-16)
+
+| Scenario | Status | Evidence and limit |
+| --- | --- | --- |
+| Network activity | **FAIL** for a "no internet use" claim | The first capture attributed external TCP/443 connections to GAMI Hash's WebView2 children. A [follow-up TLS inspection](evidence/2026-10-16-windows-v1.5.0/followup/README.md) matched 11 WebView2 proxy connections to 13 HTTP requests and bidirectional packets: 12 Microsoft account profile/image GETs with authorization headers, and one browser component update POST. The internal cause still needs investigation. |
+| Source read-only behavior | **PASS for the tested fixture** | Process Monitor recorded 17,017 app operations under the 514-file source tree, with no write-like operation or write-capable `CreateFile` access. Independent hashing matched all rows. This does not cover every device and error path. |
+| Cancel and resume | **PASS for the tested fixture** | The GUI offered "Continue now" after cancellation. The resumed 514-row CSV matched the uninterrupted CSV byte for byte. |
+| Production WebView | **PARTIAL** | In the signed v1.5.0 GUI, the operator tried F12 and Ctrl+Shift+I; neither opened DevTools. External navigation restrictions were not tested. |
+| WebView2 missing | **NOT TESTED** | The VM already had WebView2 `155.0.4283.60`. A snapshot-backed removal attempt returned exit code 93 and left it present, so the installer branch could not be exercised. NSIS source inspection shows a bundled online Evergreen bootstrapper is run silently when the runtime is absent, but its exit status is not checked. Actual offline/online behavior still needs a separate clean VM test. |
+
+The other section 8 scenarios retain their pending status. A new build with
+WebView2 network changes needs the same full runtime capture before its
+network status can change.
 
 ## 9. Return results; do not declare production readiness yourself
 

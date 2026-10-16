@@ -1,0 +1,10 @@
+# Local raw VM captures include unrelated personal/account activity.
+# Keep these for local audit or share through an approved private channel.
+gami-file-access.zip
+gami-network.etl
+gami-network-text.zip
+sysmon-operational.evtx
+sysmon-events.json
+app-status.json
+processes-*.json
+gui-observed.csv
