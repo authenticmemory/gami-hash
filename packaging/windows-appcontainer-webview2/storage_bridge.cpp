@@ -17,6 +17,7 @@
 #include <fstream>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace winrt;
@@ -67,6 +68,42 @@ HWND app_window() {
     return TRUE;
   }, reinterpret_cast<LPARAM>(&value));
   return value.found;
+}
+
+StorageFolder pick_folder_on_sta(HWND window) {
+  StorageFolder selected{nullptr};
+  std::exception_ptr failure;
+  std::thread picker_thread([&] {
+    try {
+      init_apartment(apartment_type::single_threaded);
+      native_log(L"picker STA initialized");
+      FolderPicker picker;
+      picker.FileTypeFilter().Append(L"*");
+      auto initialize_with_window = picker.as<::IInitializeWithWindow>();
+      check_hresult(initialize_with_window->Initialize(window));
+      native_log(L"FolderPicker attached to application window");
+
+      auto operation = picker.PickSingleFolderAsync();
+      handle completed{CreateEventW(nullptr, TRUE, FALSE, nullptr)};
+      if (!completed) throw_last_error();
+      operation.Completed([signal = completed.get()](auto const&, auto) noexcept {
+        SetEvent(signal);
+      });
+
+      DWORD index{};
+      HANDLE signal = completed.get();
+      check_hresult(CoWaitForMultipleHandles(
+          COWAIT_DISPATCH_CALLS | COWAIT_DISPATCH_WINDOW_MESSAGES,
+          INFINITE, 1, &signal, &index));
+      selected = operation.GetResults();
+      native_log(L"FolderPicker completed");
+    } catch (...) {
+      failure = std::current_exception();
+    }
+  });
+  picker_thread.join();
+  if (failure) std::rethrow_exception(failure);
+  return selected;
 }
 
 void copy_text(std::wstring const& value, wchar_t* buffer, unsigned capacity) {
@@ -162,16 +199,10 @@ extern "C" __declspec(dllexport) int __stdcall GamiSelectFolder(
     native_log(L"GamiSelectFolder entered");
     init_apartment(apartment_type::multi_threaded);
     native_log(L"COM apartment initialized");
-    FolderPicker picker;
-    picker.FileTypeFilter().Append(L"*");
-    native_log(L"FolderPicker created");
     auto window = app_window();
     if (!window) throw std::runtime_error("cannot locate the application window");
     native_log(L"application window located");
-    check_hresult(picker.as<IInitializeWithWindow>()->Initialize(window));
-    native_log(L"FolderPicker attached to application window");
-    auto selected = picker.PickSingleFolderAsync().get();
-    native_log(L"FolderPicker completed");
+    auto selected = pick_folder_on_sta(window);
     if (!selected) return -1;
     // Classification opens the stable directory identity now. A provider that
     // only supplies a display path is rejected before the frontend advances.
