@@ -25,6 +25,11 @@ $sdk = Get-ChildItem -LiteralPath (Join-Path $windowsKits 'bin') -Directory |
 if (-not $sdk) { throw 'No Windows SDK with MakeAppx and C++/WinRT headers was found.' }
 $makeAppx = Join-Path $windowsKits "bin\$sdk\x64\makeappx.exe"
 $signTool = Join-Path $windowsKits "bin\$sdk\x64\signtool.exe"
+$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+if (-not (Test-Path -LiteralPath $vswhere)) { throw "Visual Studio locator not found: $vswhere" }
+$visualStudio = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath) | Select-Object -First 1
+if (-not $visualStudio) { throw 'Visual Studio C++ build tools were not found.' }
+$vc = Join-Path $visualStudio 'VC\Auxiliary\Build\vcvars64.bat'
 $out = Join-Path $repo "build/bin/windows-appcontainer-webview2/$Version"
 $stage = Join-Path $out 'stage'
 $assets = Join-Path $stage 'Assets'
@@ -60,8 +65,8 @@ try {
 # strings only and never turns those strings back into filesystem authority.
 $components = Join-Path $repo 'build/bin/windows-appcontainer-webview2-components'
 & (Join-Path $repo 'packaging/windows-appcontainer/build-product-components.ps1') `
-    -OutputDirectory $components -Version $Version | Out-Null
-$vc = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat'
+    -OutputDirectory $components -Version $Version -Go $goCommand.Source `
+    -WindowsSDKVersion $sdk -VCVars64 $vc | Out-Null
 $cppwinrt = Join-Path $windowsKits "Include\$sdk\cppwinrt"
 $bridge = Join-Path $stage 'GamiHashStorageBridge.dll'
 $bridgeBuild = 'call "' + $vc + '" >nul && cl /nologo /std:c++20 /EHsc /MD /LD /DUNICODE /D_UNICODE /I "' + `
