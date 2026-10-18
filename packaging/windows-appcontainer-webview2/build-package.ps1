@@ -3,11 +3,14 @@ param(
     [string]$Go = 'go',
     [string]$Publisher = 'CN=GAMI Hash Windows Development',
     [string]$DevCertificateThumbprint = '',
+    [switch]$Release,
     [switch]$SkipFrontendBuild
 )
 
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+\.0$') { throw 'Version must have four numeric parts and end in .0.' }
+if ($Release -and $DevCertificateThumbprint) { throw 'Release packages must be signed by the release pipeline, not a development certificate.' }
+if ($Release -and $Publisher -eq 'CN=GAMI Hash Windows Development') { throw 'Release packages require the organization signing publisher.' }
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $sdk = '10.0.22621.0'
@@ -140,7 +143,7 @@ if ($manifestText -match 'runFullTrust|internetClient|internetClientServer|priva
 
 $report = [ordered]@{
     prototype = $false
-    release = $false
+    release = [bool]$Release
     product = 'windows-appcontainer-webview2'
     version = $Version
     package = $package
