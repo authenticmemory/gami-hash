@@ -1,0 +1,10 @@
+{
+  "capture": "network-probe.pcapng",
+  "probePid": 3056,
+  "captureBytes": 53676,
+  "gamiSpikePayloadOccurrences": 0,
+  "exampleComOccurrences": 0,
+  "publicIpv4TargetOccurrences": 0,
+  "publicIpv6TargetOccurrences": 0,
+  "interpretation": "No marked UDP datagram, public DNS query, or public target packet from the explicit probe appeared in the simultaneous full-packet capture."
+}

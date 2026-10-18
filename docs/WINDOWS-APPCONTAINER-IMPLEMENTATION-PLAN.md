@@ -400,6 +400,19 @@ windows; and every output manifest independently matched its fixture. See
 `docs/evidence/2026-10-18-windows-appcontainer-signed-1.6.10/`. The exact-build
 socket negative control and a genuine online-only placeholder remain open.
 
+Final signed-candidate follow-up (2026-10-18): organization-signed `1.6.11.0`
+(SHA-256 `0f1586634a678630bf5bfb792207183e5b04177bbc05c08141b590c3e49e6c58`)
+closes both remaining controls. The exact installed release process received
+access-denied results for private/public IPv4 TCP, could not resolve public DNS,
+and emitted none of the marked UDP payloads into a simultaneous full-packet
+capture. A freshly uploaded Google Drive file showed the provider's online-only
+icon before first content read; the signed application hydrated it through the
+picker grant and recorded the expected 1 MiB size and independently known
+SHA-256. See
+`docs/evidence/2026-10-18-windows-appcontainer-signed-1.6.11/`. These results
+support the release claim for the tested routes and Google Drive configuration;
+they do not generalize to every Windows network API or every cloud provider.
+
 Implementation status (2026-10-16): native package candidate `0.4.4.0` is
 built and development-signed. It replaces the diagnostic host with native
 Win32 welcome, collection, result-file, review/consent, progress, canceled,
