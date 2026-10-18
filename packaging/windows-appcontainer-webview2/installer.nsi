@@ -14,6 +14,12 @@ ManifestDPIAware true
 !ifndef PRODUCT_VERSION
   !error "PRODUCT_VERSION is required"
 !endif
+!ifndef ICON_PATH
+  !error "ICON_PATH is required"
+!endif
+!ifndef INSTALL_SCRIPT_PATH
+  !error "INSTALL_SCRIPT_PATH is required"
+!endif
 
 !define PRODUCT_NAME "GAMI Hash"
 !define PACKAGE_FILE "gami-hash-windows-${PRODUCT_VERSION}-x64.msix"
@@ -33,7 +39,7 @@ VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey "FileVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey "LegalCopyright" "Authentic Memory"
 
-!define MUI_ICON "..\..\windows-appcontainer\assets\gami-logo.ico"
+!define MUI_ICON "${ICON_PATH}"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_RUN
@@ -48,9 +54,10 @@ VIAddVersionKey "LegalCopyright" "Authentic Memory"
 Section "Install GAMI Hash" SEC_INSTALL
   SetOutPath "$PLUGINSDIR"
   File "/oname=${PACKAGE_FILE}" "${PACKAGE_PATH}"
+  File "/oname=install-package.ps1" "${INSTALL_SCRIPT_PATH}"
 
   DetailPrint "Installing the signed GAMI Hash application package..."
-  nsExec::ExecToStack 'powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $"Add-AppxPackage -LiteralPath $\'$PLUGINSDIR\${PACKAGE_FILE}$\' -ForceApplicationShutdown -ErrorAction Stop$"'
+  nsExec::ExecToStack 'powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\install-package.ps1" -Package "$PLUGINSDIR\${PACKAGE_FILE}"'
   Pop $0
   Pop $1
   DetailPrint "$1"

@@ -18,6 +18,8 @@ if ([IO.Path]::GetFileName($packagePath) -ne $expectedPackageName) {
 if (-not $OutputDirectory) { $OutputDirectory = Split-Path -Parent $packagePath }
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $outputPath = [IO.Path]::GetFullPath((Join-Path $OutputDirectory "gami-hash-windows-$Version-x64-installer.exe"))
+$iconPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\windows-appcontainer\assets\gami-logo.ico')).Path
+$installScriptPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot 'install-package.ps1')).Path
 $makeNSISCommand = Get-Command $MakeNSIS -ErrorAction SilentlyContinue
 if (-not $makeNSISCommand) {
     $installedNSIS = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
@@ -34,6 +36,8 @@ $script = Join-Path $PSScriptRoot 'installer.nsi'
     "/DPACKAGE_PATH=$packagePath" `
     "/DOUTPUT_PATH=$outputPath" `
     "/DPRODUCT_VERSION=$Version" `
+    "/DICON_PATH=$iconPath" `
+    "/DINSTALL_SCRIPT_PATH=$installScriptPath" `
     $script
 if ($LASTEXITCODE -ne 0) { throw 'NSIS bootstrapper build failed.' }
 
