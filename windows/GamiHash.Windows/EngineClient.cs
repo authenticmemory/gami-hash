@@ -49,8 +49,8 @@ internal sealed class EngineClient : IAsyncDisposable
     public async Task<PreflightResult> PreflightAsync(string root, string output, string mode) =>
         Deserialize<PreflightResult>(await CallAsync("preflight", new { root, output, workers = 2, mode }));
 
-    public async Task StartRunAsync(string root, string output, string mode) =>
-        _ = await CallAsync("start", new { root, output, workers = 2, mode });
+    public async Task StartRunAsync(string root, string output, string mode, bool storageApproved) =>
+        _ = await CallAsync("start", new { root, output, workers = 2, mode, storageApproved });
 
     public async Task CancelAsync() => _ = await CallAsync("cancel", new { });
 

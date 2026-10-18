@@ -1,4 +1,6 @@
 using Microsoft.Win32;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
@@ -14,6 +16,12 @@ public partial class MainWindow : Window
     private string _root = "";
     private string _output = "";
     private string _mode = "fresh";
+    private ResumeInspection? _conflictingResume;
+    private bool _runActive;
+    private bool _cancelRequested;
+    private bool _closeAfterCancel;
+    private bool _allowClose;
+    private bool _requiresStorageConsent;
     private DateTime _startedAt;
     private readonly DispatcherTimer _elapsedTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
@@ -23,6 +31,15 @@ public partial class MainWindow : Window
         _elapsedTimer.Tick += (_, _) => ElapsedText.Text = FormatElapsed(DateTime.Now - _startedAt);
         ResumeCard.Visibility = _args.Contains("--resume-fixture") ? Visibility.Visible : Visibility.Collapsed;
         Loaded += async (_, _) => await ConnectGoBackendAsync();
+        Closing += Window_Closing;
+        PreviewKeyDown += (_, eventArgs) =>
+        {
+            if (eventArgs.Key == System.Windows.Input.Key.Escape && _runActive && !_cancelRequested)
+            {
+                eventArgs.Handled = true;
+                BeginCancel();
+            }
+        };
         Closed += async (_, _) =>
         {
             if (_engine is not null) await _engine.DisposeAsync();
@@ -85,7 +102,12 @@ public partial class MainWindow : Window
             var sameRoot = resume.Root is not null &&
                 string.Equals(Path.GetFullPath(resume.Root).TrimEnd('\\'), Path.GetFullPath(_root).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
             if (resume.Resumable && !sameRoot)
-                throw new InvalidOperationException("This result file belongs to a different folder. Choose another result file.");
+            {
+                _output = picker.FileName;
+                _conflictingResume = resume;
+                ShowResumeConflict(resume);
+                return;
+            }
             _mode = resume.Resumable ? "resume" : "fresh";
             var review = await _engine.PreflightAsync(_root, picker.FileName, _mode);
             _output = review.Output;
@@ -112,14 +134,19 @@ public partial class MainWindow : Window
         ElapsedText.Text = "0 sec";
         _elapsedTimer.Start();
         RunStateStore.Write(_root, _output);
+        _runActive = true;
+        _cancelRequested = false;
         await Dispatcher.Yield(DispatcherPriority.Render);
-        try { await _engine.StartRunAsync(_root, _output, _mode); }
+        try { await _engine.StartRunAsync(_root, _output, _mode, _requiresStorageConsent); }
         catch (Exception error) { ShowFailure(error.Message); }
     }
 
-    private async void Cancel_Click(object sender, RoutedEventArgs e)
+    private void Cancel_Click(object sender, RoutedEventArgs e) => BeginCancel();
+
+    private async void BeginCancel()
     {
-        if (_engine is null) return;
+        if (_engine is null || !_runActive || _cancelRequested) return;
+        _cancelRequested = true;
         CancelButton.IsEnabled = false;
         CancelButton.Content = "Stopping…";
         ProgressTitle.Text = "Stopping…";
@@ -151,9 +178,22 @@ public partial class MainWindow : Window
             var remaining = TimeSpan.FromMilliseconds(750) - (DateTime.Now - _startedAt);
             if (remaining > TimeSpan.Zero) await Task.Delay(remaining);
             _elapsedTimer.Stop();
+            _runActive = false;
+            _cancelRequested = false;
+            if (_closeAfterCancel)
+            {
+                _allowClose = true;
+                Close();
+                return;
+            }
             ShowResult(engineEvent.Result);
         }
-        else if (engineEvent.Kind == "fatal") ShowFailure(engineEvent.Error ?? "The run failed.");
+        else if (engineEvent.Kind == "fatal")
+        {
+            _runActive = false;
+            _cancelRequested = false;
+            ShowFailure(engineEvent.Error ?? "The run failed.");
+        }
     });
 
     private async void Home_Click(object sender, RoutedEventArgs e)
@@ -162,6 +202,7 @@ public partial class MainWindow : Window
         ResultView.Visibility = Visibility.Collapsed;
         ProgressView.Visibility = Visibility.Collapsed;
         ReadyView.Visibility = Visibility.Collapsed;
+        ConflictView.Visibility = Visibility.Collapsed;
         SelectedView.Visibility = Visibility.Collapsed;
         WelcomeView.Visibility = Visibility.Visible;
         CancelButton.IsEnabled = true;
@@ -177,22 +218,85 @@ public partial class MainWindow : Window
         if (!result.Canceled) RunStateStore.Clear();
         ProgressView.Visibility = Visibility.Collapsed;
         ResultView.Visibility = Visibility.Visible;
+        ContinueNowButton.Visibility = result.Canceled ? Visibility.Visible : Visibility.Collapsed;
+        OpenFolderButton.Visibility = result.Canceled ? Visibility.Collapsed : Visibility.Visible;
+        ResultOutputCard.Visibility = result.Canceled ? Visibility.Collapsed : Visibility.Visible;
+        ResultWarning.Visibility = Visibility.Collapsed;
+        ResultHomeButton.Content = "Close";
         ResultTitle.Text = result.Canceled ? "Stopped. Nothing is lost." : "Done";
         ResultSummary.Text = result.Canceled
             ? "Your progress is saved. You can close the program and continue later."
             : $"{result.FilesHashed + result.FilesResumed:N0} files ({FormatBytes(result.BytesTotal)}) were recorded.";
         ResultOutput.Text = result.Output;
+        var issues = result.FilesFailed + result.Warnings;
+        if (!result.Canceled && issues > 0)
+        {
+            ResultWarning.Visibility = Visibility.Visible;
+            var detail = string.IsNullOrWhiteSpace(result.ErrorLog)
+                ? "Details are in the report next to the result file."
+                : $"Details are in {Path.GetFileName(result.ErrorLog)} next to the result file.";
+            ResultWarningText.Text = $"{issues:N0} file{(issues == 1 ? "" : "s")} could not be read and are missing from the list. {detail} Please send it along.";
+        }
     }
 
     private void ShowReady(PreflightResult review)
     {
         ReviewRoot.Text = review.Root;
         ReviewOutput.Text = review.Output;
-        StartButton.Content = review.WillResume ? "Continue" : "Start";
+        var source = StorageClassifier.Classify(review.Root);
+        var destination = StorageClassifier.Classify(review.Output);
+        _requiresStorageConsent = source.RequiresConsent || destination.RequiresConsent;
+        StorageNotice.Visibility = _requiresStorageConsent ? Visibility.Visible : Visibility.Collapsed;
+        StorageNoticeText.Text = $"Source: {source.Kind} ({source.Reason}). Result: {destination.Kind} ({destination.Reason}). Windows or the selected storage provider may transfer source bytes or sync result files. Continue only if you approve this storage access.";
+        StartButton.Content = _requiresStorageConsent ? "Approve and start" : review.WillResume ? "Continue" : "Start";
         StartButton.IsEnabled = true;
         WelcomeView.Visibility = Visibility.Collapsed;
         SelectedView.Visibility = Visibility.Collapsed;
         ReadyView.Visibility = Visibility.Visible;
+    }
+
+    private void ShowResumeConflict(ResumeInspection resume)
+    {
+        ConflictSummary.Text = $"The chosen file already contains {resume.Rows:N0} recorded files from an earlier, interrupted run. It will not be mixed with a different folder.";
+        ConflictEarlierRoot.Text = resume.Root ?? "Unknown folder";
+        ConflictSelectedRoot.Text = _root;
+        SelectedView.Visibility = Visibility.Collapsed;
+        ReadyView.Visibility = Visibility.Collapsed;
+        ConflictView.Visibility = Visibility.Visible;
+    }
+
+    private void ChooseDifferentOutput_Click(object sender, RoutedEventArgs e)
+    {
+        ConflictView.Visibility = Visibility.Collapsed;
+        SelectedView.Visibility = Visibility.Visible;
+        ChooseOutput_Click(sender, e);
+    }
+
+    private async void StartOver_Click(object sender, RoutedEventArgs e)
+    {
+        if (_engine is null) return;
+        try
+        {
+            _mode = "fresh";
+            _conflictingResume = null;
+            ShowReady(await _engine.PreflightAsync(_root, _output, _mode));
+            ConflictView.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception error) { ShowLocationError(error); }
+    }
+
+    private async void ContinueEarlier_Click(object sender, RoutedEventArgs e)
+    {
+        if (_engine is null || _conflictingResume?.Root is null) return;
+        try
+        {
+            _root = _conflictingResume.Root;
+            _mode = "resume";
+            _conflictingResume = null;
+            ShowReady(await _engine.PreflightAsync(_root, _output, _mode));
+            ConflictView.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception error) { ShowLocationError(error); }
     }
 
     private async Task RefreshResumeCardAsync()
@@ -234,12 +338,50 @@ public partial class MainWindow : Window
 
     private void ShowFailure(string message)
     {
+        _runActive = false;
+        _cancelRequested = false;
         _elapsedTimer.Stop();
         ProgressView.Visibility = Visibility.Collapsed;
         ResultView.Visibility = Visibility.Visible;
         ResultTitle.Text = "The run could not continue";
         ResultSummary.Text = message;
-        ResultOutput.Text = _output;
+        ResultOutputCard.Visibility = Visibility.Collapsed;
+        ResultWarning.Visibility = Visibility.Collapsed;
+        ContinueNowButton.Visibility = Visibility.Collapsed;
+        OpenFolderButton.Visibility = Visibility.Collapsed;
+        ResultHomeButton.Content = "Back to start";
+    }
+
+    private async void ContinueNow_Click(object sender, RoutedEventArgs e)
+    {
+        if (_engine is null) return;
+        try
+        {
+            _mode = "resume";
+            ShowReady(await _engine.PreflightAsync(_root, _output, _mode));
+            ResultView.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception error) { ShowFailure(error.Message); }
+    }
+
+    private void OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_output)) return;
+        var info = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
+        info.ArgumentList.Add("/select,");
+        info.ArgumentList.Add(Path.GetFullPath(_output));
+        Process.Start(info);
+    }
+
+    private void ShowLocationError(Exception error) =>
+        MessageBox.Show(this, error.Message, "The selected locations cannot be used", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+    private void Window_Closing(object? sender, CancelEventArgs e)
+    {
+        if (_allowClose || !_runActive) return;
+        e.Cancel = true;
+        _closeAfterCancel = true;
+        BeginCancel();
     }
 
     private static string FormatBytes(long bytes) => bytes switch

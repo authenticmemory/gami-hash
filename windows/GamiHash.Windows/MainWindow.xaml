@@ -104,10 +104,37 @@
               </StackPanel>
             </StackPanel>
           </Border>
+          <Border x:Name="StorageNotice" Visibility="Collapsed" Margin="0,0,0,18" Padding="16,13" BorderBrush="#E7C778" BorderThickness="1" CornerRadius="10" Background="#FFF8E7">
+            <StackPanel>
+              <TextBlock Text="Network, cloud, or uncertain storage" Foreground="#7A4800" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock x:Name="StorageNoticeText" Foreground="#7A4800" FontSize="13" Margin="0,5,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Button Style="{StaticResource SecondaryButton}" Click="ChangeOutput_Click" Content="Change" Margin="0,0,10,0" />
             <Button x:Name="StartButton" Style="{StaticResource PillButton}" Click="Start_Click" Content="Start" IsEnabled="False" />
           </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="ConflictView" Visibility="Collapsed" Width="640" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center"
+              BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="14" Background="{StaticResource Bg}">
+        <StackPanel>
+          <TextBlock Text="INTERRUPTED RUN" Foreground="{StaticResource Green}" FontSize="11.5" FontWeight="SemiBold" />
+          <TextBlock Text="This file belongs to a different folder" FontSize="26" FontWeight="SemiBold" Margin="0,12,0,10" />
+          <TextBlock x:Name="ConflictSummary" Foreground="{StaticResource InkSoft}" FontSize="15" LineHeight="24.75" TextWrapping="Wrap" />
+          <Border Margin="0,18,0,8" Padding="16,14" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
+            <StackPanel><TextBlock Text="RECORDED EARLIER" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ConflictEarlierRoot" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
+          </Border>
+          <Border Margin="0,0,0,18" Padding="16,14" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
+            <StackPanel><TextBlock Text="SELECTED NOW" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ConflictSelectedRoot" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
+          </Border>
+          <TextBlock Text="Continuing records the earlier folder. Starting over clears the result file and records the newly selected folder instead." Foreground="{StaticResource InkSoft}" FontSize="14" TextWrapping="Wrap" />
+          <WrapPanel HorizontalAlignment="Right" Margin="0,22,0,0">
+            <Button Style="{StaticResource SecondaryButton}" Click="ChooseDifferentOutput_Click" Content="Choose another file" Margin="0,0,10,0" />
+            <Button Style="{StaticResource SecondaryButton}" Click="StartOver_Click" Content="Start over" Margin="0,0,10,0" />
+            <Button Style="{StaticResource PillButton}" Click="ContinueEarlier_Click" Content="Continue earlier run" />
+          </WrapPanel>
         </StackPanel>
       </Border>
 
@@ -138,11 +165,16 @@
         <StackPanel HorizontalAlignment="Stretch">
           <TextBlock x:Name="ResultTitle" Text="Done" FontSize="26" FontWeight="SemiBold" TextAlignment="Center" />
           <TextBlock x:Name="ResultSummary" Foreground="{StaticResource InkSoft}" FontSize="15" Margin="0,14,0,0" TextAlignment="Center" TextWrapping="Wrap" />
-          <Border Margin="0,20" Padding="16,13" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
+          <Border x:Name="ResultWarning" Visibility="Collapsed" Margin="0,18,0,0" Padding="16,13" BorderBrush="#E7C778" BorderThickness="1" CornerRadius="10" Background="#FFF8E7">
+            <TextBlock x:Name="ResultWarningText" Foreground="#7A4800" FontSize="13.5" TextWrapping="Wrap" />
+          </Border>
+          <Border x:Name="ResultOutputCard" Margin="0,20" Padding="16,13" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
             <StackPanel><TextBlock Text="RESULT FILE" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ResultOutput" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
           </Border>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Style="{StaticResource SecondaryButton}" Click="Home_Click" Content="Close" />
+            <Button x:Name="ResultHomeButton" Style="{StaticResource SecondaryButton}" Click="Home_Click" Content="Close" />
+            <Button x:Name="ContinueNowButton" Visibility="Collapsed" Style="{StaticResource PillButton}" Click="ContinueNow_Click" Content="Continue now" Margin="10,0,0,0" />
+            <Button x:Name="OpenFolderButton" Visibility="Collapsed" Style="{StaticResource PillButton}" Click="OpenFolder_Click" Content="Open folder" Margin="10,0,0,0" />
           </StackPanel>
         </StackPanel>
       </Border>
