@@ -19,3 +19,4 @@ dist/
 /frontend/dist/
 /spikes/wpf-parity/GamiHash.WpfSpike/bin/
 /spikes/wpf-parity/GamiHash.WpfSpike/obj/
+/build/native-installer-payload/

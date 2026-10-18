@@ -1,0 +1,60 @@
+﻿[
+    {
+        "TimeCreated":  "2026-10-18T18:09:35.3166867Z",
+        "Id":  1,
+        "Data":  {
+                     "ParentCommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash Native Test\\GamiHash.WpfSpike.exe\" ",
+                     "Description":  "-",
+                     "CommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash Native Test\\GamiHashEngine.exe\" --native-ui-worker",
+                     "CurrentDirectory":  "C:\\Users\\gami_runner\\",
+                     "Hashes":  "SHA256=D8379E758000C1B69D5AA81B86B54E48558F7B71008CA5B205CA951194C322A1",
+                     "Image":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash Native Test\\GamiHashEngine.exe",
+                     "UtcTime":  "2026-10-18 18:09:35.310",
+                     "ProcessGuid":  "{5a8a72b4-0b5f-6ad5-5601-000000001700}",
+                     "ParentUser":  "Gami-Hash-VM\\gami_runner",
+                     "Company":  "-",
+                     "IntegrityLevel":  "High",
+                     "FileVersion":  "-",
+                     "User":  "Gami-Hash-VM\\gami_runner",
+                     "RuleName":  "-",
+                     "Product":  "-",
+                     "LogonId":  "0x75437",
+                     "ProcessId":  "3584",
+                     "OriginalFileName":  "-",
+                     "LogonGuid":  "{5a8a72b4-099c-6ad5-3754-070000000000}",
+                     "TerminalSessionId":  "1",
+                     "ParentProcessGuid":  "{5a8a72b4-0b5e-6ad5-5501-000000001700}",
+                     "ParentProcessId":  "1020",
+                     "ParentImage":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash Native Test\\GamiHash.WpfSpike.exe"
+                 }
+    },
+    {
+        "TimeCreated":  "2026-10-18T18:09:34.8519545Z",
+        "Id":  1,
+        "Data":  {
+                     "ParentCommandLine":  "\"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -ExecutionPolicy Bypass -File C:\\Users\\Public\\Documents\\GamiHashNativeTest\\capture-idle.ps1",
+                     "Description":  "GamiHash.WpfSpike",
+                     "CommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash Native Test\\GamiHash.WpfSpike.exe\" ",
+                     "CurrentDirectory":  "C:\\Users\\gami_runner\\",
+                     "Hashes":  "SHA256=03D2568877D12F83656BFEC492E2FC258A1CE9D3E83561F4B1A52AFCA0CAB928",
+                     "Image":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash Native Test\\GamiHash.WpfSpike.exe",
+                     "UtcTime":  "2026-10-18 18:09:34.847",
+                     "ProcessGuid":  "{5a8a72b4-0b5e-6ad5-5501-000000001700}",
+                     "ParentUser":  "Gami-Hash-VM\\gami_runner",
+                     "Company":  "GamiHash.WpfSpike",
+                     "IntegrityLevel":  "High",
+                     "FileVersion":  "1.0.0.0",
+                     "User":  "Gami-Hash-VM\\gami_runner",
+                     "RuleName":  "-",
+                     "Product":  "GamiHash.WpfSpike",
+                     "LogonId":  "0x75437",
+                     "ProcessId":  "1020",
+                     "OriginalFileName":  "GamiHash.WpfSpike.dll",
+                     "LogonGuid":  "{5a8a72b4-099c-6ad5-3754-070000000000}",
+                     "TerminalSessionId":  "1",
+                     "ParentProcessGuid":  "{5a8a72b4-0b5e-6ad5-5101-000000001700}",
+                     "ParentProcessId":  "7300",
+                     "ParentImage":  "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+                 }
+    }
+]
