@@ -5,12 +5,15 @@ export interface RunRequest {
   output: string;
   workers: number;
   mode: RunMode;
+  storageApproved?: boolean;
 }
 
 export interface ResumeInspection {
   resumable: boolean;
   root?: string;
+  output?: string;
   rows: number;
+  error?: string;
 }
 
 export interface PreflightResult {
@@ -18,6 +21,15 @@ export interface PreflightResult {
   output: string;
   resume: ResumeInspection;
   willResume: boolean;
+  source: StorageLocation;
+  destination: StorageLocation;
+  requiresStorageConsent: boolean;
+}
+
+export interface StorageLocation {
+  kind: string;
+  reason: string;
+  path: string;
 }
 
 export interface Progress {

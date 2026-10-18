@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 
 	"github.com/wailsapp/wails/v2"
@@ -31,7 +32,9 @@ func runGUI() error {
 		AssetServer: &assetserver.Options{
 			Assets: frontendAssets,
 		},
-		OnStartup:  wailsadapter.OnStartup(backend),
+		OnStartup: func(ctx context.Context) {
+			wailsadapter.OnStartup(backend)(ctx)
+		},
 		OnShutdown: wailsadapter.OnShutdown(backend),
 		Bind:       []interface{}{backend},
 		SingleInstanceLock: &options.SingleInstanceLock{
@@ -41,7 +44,7 @@ func runGUI() error {
 			WebviewIsTransparent:              false,
 			WindowIsTranslucent:               false,
 			DisableFramelessWindowDecorations: false,
-			WebviewUserDataPath:               "",
+			WebviewUserDataPath:               webViewUserDataPath(),
 			ZoomFactor:                        1,
 		},
 	})

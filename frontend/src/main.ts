@@ -19,6 +19,7 @@ let startedAt = 0;
 let lastBytes = 0;
 let lastProgressAt = 0;
 let bytesPerSecond = 0;
+let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
 const esc = (value: string) => value.replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
@@ -130,17 +131,25 @@ async function renderWelcome(): Promise<void> {
   step = "welcome";
   const run = lastRunStore.read();
   let resume = "";
-  if (run) {
-    try {
-      const state = await api.inspectResume(run.output);
+  let restoreWarning = "";
+  try {
+      // The native package owns persisted picker grants. Browser storage is a
+      // convenience cache only; upgrades or WebView profile recovery must not
+      // hide a valid interrupted run.
+      const state = await api.inspectResume(run?.output ?? "");
       if (state.resumable) {
-        resume = `<section class="resume-card"><div><span class="eyebrow">Interrupted run</span><strong>${number.format(state.rows)} files recorded so far</strong><p>${esc(run.root)}</p></div>${button("resume", "Continue")}</section>`;
-        root = run.root;
-        output = run.output;
-      } else lastRunStore.clear();
+        root = state.root ?? run?.root ?? "";
+        output = state.output ?? run?.output ?? "";
+        resume = `<section class="resume-card"><div><span class="eyebrow">Interrupted run</span><strong>${number.format(state.rows)} files recorded so far</strong><p>${esc(root)}</p></div>${button("resume", "Continue")}</section>`;
+        lastRunStore.write(root, output);
+      } else {
+        if (state.error) {
+          restoreWarning = `<div class="notice warning"><b>Saved access is unavailable</b><span>${esc(state.error)} Choose the folders again to continue.</span></div>`;
+        }
+        lastRunStore.clear();
+      }
     } catch { lastRunStore.clear(); }
-  }
-  shell(`<section class="panel hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${resume}<div class="actions">${button("begin", "Choose folder", resume !== "")}</div></section>`);
+  shell(`<section class="panel hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${restoreWarning}${resume}<div class="actions">${button("begin", "Choose folder", resume !== "")}</div></section>`);
   document.querySelector("#begin")?.addEventListener("click", () => chooseCollection());
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());
 }
@@ -203,7 +212,11 @@ function renderReview(): void {
   const resumeText = review?.willResume
     ? `<div class="notice info"><b>Continuing an interrupted run</b><span>${number.format(review.resume.rows)} files are already recorded and will be kept.</span></div>`
     : "";
-  shell(`<section class="panel"><span class="eyebrow">Step 3 of 3</span><h1>Ready to start</h1><p>Depending on the amount of data this can take several hours. You can keep using the computer, and you can stop and continue later at any time.</p><dl class="review-list"><div><dt>Folder</dt><dd>${esc(review?.root ?? root)}</dd></div><div><dt>Result file</dt><dd>${esc(review?.output ?? output)}</dd></div></dl>${resumeText}<div class="actions">${button("back", "Change", true)}${button("start", review?.willResume ? "Continue" : "Start")}</div></section>`);
+  const storageNotice = review?.requiresStorageConsent
+    ? `<div class="notice warning"><b>Network, cloud, or uncertain storage</b><span>Source: ${esc(review.source.kind)} (${esc(review.source.reason)}). Result: ${esc(review.destination.kind)} (${esc(review.destination.reason)}). Windows or the selected storage provider may transfer source bytes or sync result files. Continue only if you approve this storage access.</span></div>`
+    : "";
+  const startLabel = review?.requiresStorageConsent ? "Approve and start" : (review?.willResume ? "Continue" : "Start");
+  shell(`<section class="panel"><span class="eyebrow">Step 3 of 3</span><h1>Ready to start</h1><p>Depending on the amount of data this can take several hours. You can keep using the computer, and you can stop and continue later at any time.</p><dl class="review-list"><div><dt>Folder</dt><dd>${esc(review?.root ?? root)}</dd></div><div><dt>Result file</dt><dd>${esc(review?.output ?? output)}</dd></div></dl>${storageNotice}${resumeText}<div class="actions">${button("back", "Change", true)}${button("start", startLabel)}</div></section>`);
   document.querySelector("#back")?.addEventListener("click", () => chooseOutput());
   document.querySelector("#start")?.addEventListener("click", () => startRun(review?.willResume ? "resume" : "fresh"));
 }
@@ -224,9 +237,27 @@ async function startRun(mode: RunRequest["mode"]): Promise<void> {
   bytesPerSecond = 0;
   step = "progress";
   renderProgress({ Phase: 0, FilesDone: 0, FilesTotal: 0, BytesDone: 0, BytesTotal: 0 });
+  startElapsedTimer();
   lastRunStore.write(root, output);
-  try { await api.start({ root, output, workers: 2, mode }); }
+  try { await api.start({ root, output, workers: 2, mode, storageApproved: review?.requiresStorageConsent === true }); }
   catch (error) { finishFatal(error); }
+}
+
+function startElapsedTimer(): void {
+  stopElapsedTimer();
+  elapsedTimer = setInterval(() => {
+    const elapsed = document.querySelector("#elapsed");
+    if (elapsed && startedAt > 0) {
+      elapsed.textContent = formatETAElapsed((performance.now() - startedAt) / 1000);
+    }
+  }, 1000);
+}
+
+function stopElapsedTimer(): void {
+  if (elapsedTimer !== null) {
+    clearInterval(elapsedTimer);
+    elapsedTimer = null;
+  }
 }
 
 function renderProgress(progress: import("./backend").Progress): void {
@@ -280,6 +311,7 @@ async function cancelRun(): Promise<void> {
 }
 
 function finishFatal(error: unknown): void {
+  stopElapsedTimer();
   busy = false;
   fatalError = error instanceof Error ? error.message : String(error);
   finalResult = null;
@@ -325,6 +357,7 @@ function onEvent(event: EngineEvent): void {
   if (event.kind === "progress" && step === "progress") renderProgress(event.progress);
   if (event.kind === "fatal") finishFatal(event.error);
   if (event.kind === "result") {
+    stopElapsedTimer();
     busy = false;
     finalResult = event.result;
     fatalError = "";
@@ -352,4 +385,7 @@ async function init(): Promise<void> {
   await renderWelcome();
 }
 
-void init();
+void init().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  app.innerHTML = `<main><section class="panel result"><div class="result-icon warning">!</div><h1>GAMI Hash could not start</h1><p class="inline-error" role="alert">${esc(message)}</p><p>Close the application and try again. If this continues, send this message to support.</p></section></main>`;
+});

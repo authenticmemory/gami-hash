@@ -1,19 +1,18 @@
 dist/
 
-/build/bin/
-/build/gocache/
-/build/gomodcache/
-/build/edge-profile/
-/integration_host.obj
-/storage_consent_test.obj
+# Build outputs, VM automation, runtime captures, and scratch screenshots are
+# disposable. Keep only the small source assets and installer inputs tracked
+# below; durable runtime evidence belongs under docs/evidence/.
+/build/*
 !/build/appicon.png
 !/build/appicon-source.svg
 !/build/gami-logo.svg
-/build/windows/*
 !/build/windows/
+/build/windows/*
 !/build/windows/installer/
 /build/windows/installer/*
 !/build/windows/installer/project.nsi
+!/build/windows/info.json
+*.obj
 /frontend/node_modules/
 /frontend/dist/
-!/build/windows/info.json
