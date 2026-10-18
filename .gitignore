@@ -1,4 +1,5 @@
 dist/
+/local-release/
 
 # Build outputs, VM automation, runtime captures, and scratch screenshots are
 # disposable. Keep only the small source assets and installer inputs tracked
