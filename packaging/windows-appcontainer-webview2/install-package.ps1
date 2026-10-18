@@ -1,4 +1,4 @@
 param([Parameter(Mandatory)][string]$Package)
 
 $ErrorActionPreference = 'Stop'
-Add-AppxPackage -LiteralPath $Package -ForceApplicationShutdown -ErrorAction Stop
+Add-AppxPackage -Path $Package -ForceApplicationShutdown -ErrorAction Stop
