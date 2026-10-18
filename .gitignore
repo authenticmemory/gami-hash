@@ -17,3 +17,5 @@ dist/
 *.obj
 /frontend/node_modules/
 /frontend/dist/
+/spikes/wpf-parity/GamiHash.WpfSpike/bin/
+/spikes/wpf-parity/GamiHash.WpfSpike/obj/

@@ -1,0 +1,151 @@
+<Window x:Class="GamiHash.WpfSpike.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Authentic Memory · Hashing Tool" Width="980" Height="715"
+        MinWidth="760" MinHeight="560" WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource Bg}">
+  <shell:WindowChrome.WindowChrome>
+    <shell:WindowChrome CaptionHeight="52" ResizeBorderThickness="6" CornerRadius="0" GlassFrameThickness="0" />
+  </shell:WindowChrome.WindowChrome>
+  <Grid Background="{StaticResource Bg}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="52" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <Border Grid.Row="0" BorderBrush="{StaticResource Rule}" BorderThickness="0,0,0,1">
+      <Grid Margin="40,0,12,0">
+        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Image Source="Assets/gami-logo.ico" Width="26" Height="26" Margin="0,1,11,0" />
+          <TextBlock Text="Authentic Memory" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="·" FontSize="13" Foreground="{StaticResource InkFaintest}" Margin="7,0" VerticalAlignment="Center" />
+          <TextBlock Text="Hashing Tool" FontSize="13.5" Foreground="{StaticResource InkFaint}" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button Style="{StaticResource CaptionButton}" Click="Minimize_Click" Content="―" />
+          <Button Style="{StaticResource CaptionButton}" Click="Maximize_Click" Content="□" />
+          <Button Style="{StaticResource CloseButton}" Click="Close_Click" Content="×" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" Margin="48,24">
+      <Border x:Name="WelcomeView" Width="640" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center"
+              BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="14" Background="{StaticResource Bg}">
+        <StackPanel>
+          <TextBlock Text="Create a checksum list of your collection." FontSize="29" FontWeight="SemiBold"
+                     LineHeight="36" Margin="0,0,0,10" />
+          <TextBlock Foreground="{StaticResource InkSoft}" FontSize="15" LineHeight="24.75" TextWrapping="Wrap"
+                     Text="The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted." />
+          <TextBlock Foreground="{StaticResource InkSoft}" FontSize="15" LineHeight="24.75" Margin="0,0,0,0"
+                     Text="You can stop at any time and continue later." />
+
+          <Border x:Name="ResumeCard" Visibility="Collapsed" Margin="0,26,0,0" Padding="18,15"
+                  BorderBrush="{StaticResource GreenBg}" BorderThickness="1" CornerRadius="12" Background="{StaticResource GreenFaint}">
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="INTERRUPTED RUN" Foreground="{StaticResource Green}" FontSize="11.5" FontWeight="SemiBold" />
+                <TextBlock x:Name="ResumeCount" Text="80 files recorded so far" FontSize="14.5" FontWeight="SemiBold" Margin="0,4,0,0" />
+                <TextBlock x:Name="ResumePath" Text="C:\projects\gami-hash\stage3-resume-fixture" FontFamily="{StaticResource MonoFont}"
+                           Foreground="{StaticResource InkSoft}" FontSize="12" Margin="0,4,18,0" />
+              </StackPanel>
+              <Button Grid.Column="1" Style="{StaticResource PillButton}" Click="Resume_Click" Content="Continue" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,28,0,0">
+            <Button Style="{StaticResource PillButton}" Click="ChooseFolder_Click" Content="Choose folder" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="SelectedView" Visibility="Collapsed" Width="640" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center"
+              BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="14" Background="{StaticResource Bg}">
+        <StackPanel>
+          <TextBlock Text="STEP 1 OF 3" Foreground="{StaticResource Green}" FontSize="11.5" FontWeight="SemiBold" />
+          <TextBlock Text="Folder selected" FontSize="26" FontWeight="SemiBold" Margin="0,12,0,10" />
+          <TextBlock Foreground="{StaticResource InkSoft}" FontSize="15" LineHeight="24.75" TextWrapping="Wrap"
+                     Text="All files in this folder and its subfolders will be recorded. Links and special files are skipped and noted in the report." />
+          <Border Margin="0,18" Padding="16,14" BorderBrush="{StaticResource Rule}" BorderThickness="1"
+                  CornerRadius="10" Background="{StaticResource Surface2}">
+            <StackPanel>
+              <TextBlock Text="FOLDER" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" />
+              <TextBlock x:Name="SelectedPath" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}"
+                         FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Style="{StaticResource SecondaryButton}" Click="Back_Click" Content="Back" Margin="0,0,10,0" />
+            <Button Style="{StaticResource PillButton}" Click="ChooseOutput_Click" Content="Choose where to save" MinWidth="184" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="ReadyView" Visibility="Collapsed" Width="640" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center"
+              BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="14" Background="{StaticResource Bg}">
+        <StackPanel>
+          <TextBlock Text="STEP 3 OF 3" Foreground="{StaticResource Green}" FontSize="11.5" FontWeight="SemiBold" />
+          <TextBlock Text="Ready to start" FontSize="26" FontWeight="SemiBold" Margin="0,12,0,10" />
+          <TextBlock Foreground="{StaticResource InkSoft}" FontSize="15" LineHeight="24.75" TextWrapping="Wrap"
+                     Text="Depending on the amount of data this can take several hours. You can keep using the computer, and you can stop and continue later at any time." />
+          <Border Margin="0,18" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
+            <StackPanel>
+              <StackPanel Margin="16,13">
+                <TextBlock Text="FOLDER" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" />
+                <TextBlock x:Name="ReviewRoot" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" />
+              </StackPanel>
+              <Border BorderBrush="{StaticResource Rule}" BorderThickness="0,1,0,0" />
+              <StackPanel Margin="16,13">
+                <TextBlock Text="RESULT FILE" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" />
+                <TextBlock x:Name="ReviewOutput" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Style="{StaticResource SecondaryButton}" Click="ChangeOutput_Click" Content="Change" Margin="0,0,10,0" />
+            <Button x:Name="StartButton" Style="{StaticResource PillButton}" Click="Start_Click" Content="Start" IsEnabled="False" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="ProgressView" Visibility="Collapsed" Width="640" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center"
+              BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="14" Background="{StaticResource Bg}">
+        <StackPanel>
+          <TextBlock Text="HASHING" Foreground="{StaticResource Green}" FontSize="11.5" FontWeight="SemiBold" />
+          <TextBlock x:Name="ProgressTitle" Text="Counting files" FontSize="26" FontWeight="SemiBold" Margin="0,12,0,8" />
+          <TextBlock x:Name="ProgressDetail" Foreground="{StaticResource InkSoft}" FontSize="15" />
+          <ProgressBar x:Name="ProgressBar" Height="8" Margin="0,22,0,18" Minimum="0" Maximum="100" />
+          <Grid Margin="0,0,0,18">
+            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+            <StackPanel><TextBlock Text="FILES" Foreground="{StaticResource InkFaint}" FontSize="11" /><TextBlock x:Name="FilesText" FontSize="16" FontWeight="SemiBold" Margin="0,5,0,0" /></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="DATA READ" Foreground="{StaticResource InkFaint}" FontSize="11" /><TextBlock x:Name="BytesText" FontSize="16" FontWeight="SemiBold" Margin="0,5,0,0" /></StackPanel>
+            <StackPanel Grid.Column="2"><TextBlock Text="ELAPSED" Foreground="{StaticResource InkFaint}" FontSize="11" /><TextBlock x:Name="ElapsedText" FontSize="16" FontWeight="SemiBold" Margin="0,5,0,0" /></StackPanel>
+          </Grid>
+          <Border Padding="16,13" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
+            <StackPanel><TextBlock Text="RESULT FILE" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ProgressOutput" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
+          </Border>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+            <Button x:Name="CancelButton" Style="{StaticResource SecondaryButton}" Click="Cancel_Click" Content="Cancel" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="ResultView" Visibility="Collapsed" Width="640" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center"
+              BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="14" Background="{StaticResource Bg}">
+        <StackPanel HorizontalAlignment="Stretch">
+          <TextBlock x:Name="ResultTitle" Text="Done" FontSize="26" FontWeight="SemiBold" TextAlignment="Center" />
+          <TextBlock x:Name="ResultSummary" Foreground="{StaticResource InkSoft}" FontSize="15" Margin="0,14,0,0" TextAlignment="Center" TextWrapping="Wrap" />
+          <Border Margin="0,20" Padding="16,13" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
+            <StackPanel><TextBlock Text="RESULT FILE" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ResultOutput" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
+          </Border>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource SecondaryButton}" Click="Home_Click" Content="Close" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

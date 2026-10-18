@@ -13,6 +13,9 @@ import (
 )
 
 func main() {
+	if handled, code := runNativeUIWorkerIfRequested(os.Args[1:], os.Stdin, os.Stdout); handled {
+		os.Exit(code)
+	}
 	if handled, code := runAppContainerNetworkProbeIfRequested(os.Args[1:]); handled {
 		exitProcess(code)
 	}
