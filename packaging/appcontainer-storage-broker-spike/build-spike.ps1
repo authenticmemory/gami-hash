@@ -6,12 +6,19 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+\.0$') { throw 'Use a four-part MSIX version ending in .0' }
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-$sdk = '10.0.22621.0'
-$vc = @(
-  'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat',
-  'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat'
-) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 $kits = 'C:\Program Files (x86)\Windows Kits\10'
+$sdk = Get-ChildItem -LiteralPath (Join-Path $kits 'bin') -Directory |
+  Where-Object {
+    $_.Name -match '^\d+\.\d+\.\d+\.\d+$' -and
+    (Test-Path -LiteralPath (Join-Path $_.FullName 'x64\makeappx.exe')) -and
+    (Test-Path -LiteralPath (Join-Path $kits "Include\$($_.Name)\cppwinrt"))
+  } | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1 -ExpandProperty Name
+if (-not $sdk) { throw 'No Windows SDK with MakeAppx and C++/WinRT headers was found' }
+$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+if (-not (Test-Path -LiteralPath $vswhere)) { throw "Visual Studio locator not found: $vswhere" }
+$visualStudio = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath) | Select-Object -First 1
+if (-not $visualStudio) { throw 'Visual Studio C++ build tools were not found' }
+$vc = Join-Path $visualStudio 'VC\Auxiliary\Build\vcvars64.bat'
 $cppwinrt = Join-Path $kits "Include\$sdk\cppwinrt"
 $makeappx = Join-Path $kits "bin\$sdk\x64\makeappx.exe"
 foreach ($required in @($vc, $cppwinrt, $makeappx)) {
