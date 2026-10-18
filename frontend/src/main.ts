@@ -19,6 +19,7 @@ let startedAt = 0;
 let lastBytes = 0;
 let lastProgressAt = 0;
 let bytesPerSecond = 0;
+let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
 const esc = (value: string) => value.replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
@@ -131,13 +132,16 @@ async function renderWelcome(): Promise<void> {
   const run = lastRunStore.read();
   let resume = "";
   let restoreWarning = "";
-  if (run) {
-    try {
-      const state = await api.inspectResume(run.output);
+  try {
+      // The native package owns persisted picker grants. Browser storage is a
+      // convenience cache only; upgrades or WebView profile recovery must not
+      // hide a valid interrupted run.
+      const state = await api.inspectResume(run?.output ?? "");
       if (state.resumable) {
-        resume = `<section class="resume-card"><div><span class="eyebrow">Interrupted run</span><strong>${number.format(state.rows)} files recorded so far</strong><p>${esc(run.root)}</p></div>${button("resume", "Continue")}</section>`;
-        root = run.root;
-        output = run.output;
+        root = state.root ?? run?.root ?? "";
+        output = state.output ?? run?.output ?? "";
+        resume = `<section class="resume-card"><div><span class="eyebrow">Interrupted run</span><strong>${number.format(state.rows)} files recorded so far</strong><p>${esc(root)}</p></div>${button("resume", "Continue")}</section>`;
+        lastRunStore.write(root, output);
       } else {
         if (state.error) {
           restoreWarning = `<div class="notice warning"><b>Saved access is unavailable</b><span>${esc(state.error)} Choose the folders again to continue.</span></div>`;
@@ -145,7 +149,6 @@ async function renderWelcome(): Promise<void> {
         lastRunStore.clear();
       }
     } catch { lastRunStore.clear(); }
-  }
   shell(`<section class="panel hero"><h1>Create a checksum list of your collection.</h1><p class="lede">The program reads every file in a folder you choose and writes one CSV file with a SHA-256 checksum per file, for handover to Authentic Memory. Your files are only read. Nothing is changed, moved or deleted.</p><p class="lede">You can stop at any time and continue later.</p>${restoreWarning}${resume}<div class="actions">${button("begin", "Choose folder", resume !== "")}</div></section>`);
   document.querySelector("#begin")?.addEventListener("click", () => chooseCollection());
   document.querySelector("#resume")?.addEventListener("click", () => resumeRun());
@@ -234,9 +237,27 @@ async function startRun(mode: RunRequest["mode"]): Promise<void> {
   bytesPerSecond = 0;
   step = "progress";
   renderProgress({ Phase: 0, FilesDone: 0, FilesTotal: 0, BytesDone: 0, BytesTotal: 0 });
+  startElapsedTimer();
   lastRunStore.write(root, output);
   try { await api.start({ root, output, workers: 2, mode, storageApproved: review?.requiresStorageConsent === true }); }
   catch (error) { finishFatal(error); }
+}
+
+function startElapsedTimer(): void {
+  stopElapsedTimer();
+  elapsedTimer = setInterval(() => {
+    const elapsed = document.querySelector("#elapsed");
+    if (elapsed && startedAt > 0) {
+      elapsed.textContent = formatETAElapsed((performance.now() - startedAt) / 1000);
+    }
+  }, 1000);
+}
+
+function stopElapsedTimer(): void {
+  if (elapsedTimer !== null) {
+    clearInterval(elapsedTimer);
+    elapsedTimer = null;
+  }
 }
 
 function renderProgress(progress: import("./backend").Progress): void {
@@ -290,6 +311,7 @@ async function cancelRun(): Promise<void> {
 }
 
 function finishFatal(error: unknown): void {
+  stopElapsedTimer();
   busy = false;
   fatalError = error instanceof Error ? error.message : String(error);
   finalResult = null;
@@ -335,6 +357,7 @@ function onEvent(event: EngineEvent): void {
   if (event.kind === "progress" && step === "progress") renderProgress(event.progress);
   if (event.kind === "fatal") finishFatal(event.error);
   if (event.kind === "result") {
+    stopElapsedTimer();
     busy = false;
     finalResult = event.result;
     fatalError = "";

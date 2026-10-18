@@ -115,17 +115,43 @@ selected_folder_identity::~selected_folder_identity() {
 }
 
 std::uint32_t projected_file_attributes(IStorageItem const& item) {
-    auto names = single_threaded_vector<hstring>();
-    names.Append(L"System.FileAttributes");
-    auto values = item.as<IStorageItemProperties>().Properties()
-        .RetrievePropertiesAsync(names).get();
-    auto value = values.Lookup(L"System.FileAttributes");
-    auto boxed = value.try_as<IPropertyValue>();
-    if (!boxed) throw identity_error("storage item has no file attributes");
-    if (boxed.Type() == PropertyType::UInt32) return boxed.GetUInt32();
-    if (boxed.Type() == PropertyType::Int32 && boxed.GetInt32() >= 0)
-        return static_cast<std::uint32_t>(boxed.GetInt32());
-    throw identity_error("storage item has unsupported file attributes");
+    // Projected providers normally expose System.FileAttributes. The SMB
+    // WinRT provider can omit that property even though it supplies a valid
+    // brokered handle, so use the handle as the authoritative fallback.
+    try {
+        auto names = single_threaded_vector<hstring>();
+        names.Append(L"System.FileAttributes");
+        auto values = item.as<IStorageItemProperties>().Properties()
+            .RetrievePropertiesAsync(names).get();
+        if (values.HasKey(L"System.FileAttributes")) {
+            auto boxed = values.Lookup(L"System.FileAttributes").try_as<IPropertyValue>();
+            if (boxed) {
+                if (boxed.Type() == PropertyType::UInt32) return boxed.GetUInt32();
+                if (boxed.Type() == PropertyType::Int32 && boxed.GetInt32() >= 0)
+                    return static_cast<std::uint32_t>(boxed.GetInt32());
+            }
+        }
+    } catch (...) {
+        // Continue to the opened-handle check. Failing closed below preserves
+        // the reparse-point boundary when neither representation is usable.
+    }
+
+    HANDLE handle{};
+    if (auto access = item.try_as<IStorageItemHandleAccess>()) {
+        auto const result = access->Create(HAO_READ_ATTRIBUTES,
+            HSO_SHARE_READ | HSO_SHARE_WRITE | HSO_SHARE_DELETE,
+            HO_NONE, nullptr, &handle);
+        if (SUCCEEDED(result) && handle && handle != INVALID_HANDLE_VALUE) {
+            FILE_ATTRIBUTE_TAG_INFO info{};
+            auto const available = GetFileInformationByHandleEx(
+                handle, FileAttributeTagInfo, &info, sizeof(info));
+            CloseHandle(handle);
+            if (available) return info.FileAttributes;
+        } else if (handle && handle != INVALID_HANDLE_VALUE) {
+            CloseHandle(handle);
+        }
+    }
+    throw identity_error("storage provider did not expose file attributes");
 }
 
 void require_ordinary_item(IStorageItem const& item) {

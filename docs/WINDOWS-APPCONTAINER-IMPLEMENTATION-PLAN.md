@@ -374,6 +374,23 @@ one-click after selection. Do not claim perfect remote-source detection.
 
 ## Phase 4 — build the native Windows wizard
 
+Follow-up status (2026-10-18): the WebView2-inside-AppContainer feasibility
+gate passed, so the proven bridge and lifecycle were promoted into the
+production-owned Windows AppContainer components instead of replacing the
+deployed interface with the native wizard. Development candidate `1.6.7.0`
+now uses the stable `AuthenticMemory.GAMIHash.Windows` package identity and
+has passed local, UNC SMB, mapped-drive, cached Google Drive, changed-file
+resume, revoked-grant recovery, upgrade-while-open, clean shutdown, and a
+1,000,000-row interrupted-manifest restore. Enumeration startup was reduced
+to about six seconds locally and eight seconds over SMB for the 1,024-file
+fixture. Detailed engineering evidence is under
+`docs/evidence/2026-10-18-windows-appcontainer-productization/`.
+
+This does not close the release gate. A genuine online-only cloud placeholder
+has not been exercised, `1.6.7.0` is signed with a disposable development
+certificate, and process containment plus network capture must be repeated
+against the exact organization-signed release artifact.
+
 Implementation status (2026-10-16): native package candidate `0.4.4.0` is
 built and development-signed. It replaces the diagnostic host with native
 Win32 welcome, collection, result-file, review/consent, progress, canceled,

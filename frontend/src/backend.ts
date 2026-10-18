@@ -11,6 +11,7 @@ export interface RunRequest {
 export interface ResumeInspection {
   resumable: boolean;
   root?: string;
+  output?: string;
   rows: number;
   error?: string;
 }

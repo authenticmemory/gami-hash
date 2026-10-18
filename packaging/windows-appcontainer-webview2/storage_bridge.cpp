@@ -4,6 +4,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <tlhelp32.h>
 #include <shobjidl.h>
 #include <winrt/Windows.Storage.h>
 #include <winrt/Windows.Storage.AccessCache.h>
@@ -106,6 +107,35 @@ long long count_manifest_rows(StorageFile const& manifest) {
   }
   stream.Close();
   return lines > 0 ? lines - 1 : 0;
+}
+
+void terminate_descendants(DWORD root) {
+  auto snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot == INVALID_HANDLE_VALUE) return;
+  std::vector<DWORD> tree{root};
+  bool added = true;
+  while (added) {
+    added = false;
+    PROCESSENTRY32W entry{sizeof(entry)};
+    if (!Process32FirstW(snapshot, &entry)) break;
+    do {
+      if (std::find(tree.begin(), tree.end(), entry.th32ProcessID) != tree.end())
+        continue;
+      if (std::find(tree.begin(), tree.end(), entry.th32ParentProcessID) != tree.end()) {
+        tree.push_back(entry.th32ProcessID);
+        added = true;
+      }
+    } while (Process32NextW(snapshot, &entry));
+  }
+  CloseHandle(snapshot);
+  for (auto item = tree.rbegin(); item != tree.rend(); ++item) {
+    if (*item == root) continue;
+    auto process = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, *item);
+    if (!process) continue;
+    TerminateProcess(process, 0);
+    WaitForSingleObject(process, 2000);
+    CloseHandle(process);
+  }
 }
 }
 
@@ -255,6 +285,7 @@ extern "C" __declspec(dllexport) void __stdcall GamiGetResult(
 extern "C" __declspec(dllexport) void __stdcall GamiCancel() { cancel_requested = true; }
 
 extern "C" __declspec(dllexport) void __stdcall GamiTerminateHost(int exit_code) {
+  terminate_descendants(GetCurrentProcessId());
   TerminateProcess(GetCurrentProcess(), static_cast<UINT>(exit_code));
 }
 
@@ -274,7 +305,7 @@ extern "C" __declspec(dllexport) int __stdcall GamiOpenOutputFolder(
   } catch (std::exception const& e) { return fail(e, error, error_capacity); }
 }
 
-extern "C" __declspec(dllexport) int __stdcall GamiRestoreState(
+int restore_state_impl(
     wchar_t* root, unsigned root_capacity, wchar_t* output,
     unsigned output_capacity, int* resumable, long long* rows, wchar_t* error,
     unsigned error_capacity) {
@@ -319,4 +350,25 @@ extern "C" __declspec(dllexport) int __stdcall GamiRestoreState(
     }
     return 1;
   } catch (std::exception const& e) { return fail(e, error, error_capacity); }
+}
+
+extern "C" __declspec(dllexport) int __stdcall GamiRestoreState(
+    wchar_t* root, unsigned root_capacity, wchar_t* output,
+    unsigned output_capacity, int* resumable, long long* rows, wchar_t* error,
+    unsigned error_capacity) {
+  // Third-party storage providers execute below this ABI boundary. Some
+  // provider failures surface as structured exceptions instead of C++/WinRT
+  // hresult_error values. Never let such a failure tear down the GUI while it
+  // is inspecting an optional saved grant.
+  __try {
+    return restore_state_impl(root, root_capacity, output, output_capacity,
+                              resumable, rows, error, error_capacity);
+  } __except (EXCEPTION_EXECUTE_HANDLER) {
+    if (error && error_capacity != 0) {
+      wcsncpy_s(error, error_capacity,
+                L"saved folder access is no longer available.",
+                _TRUNCATE);
+    }
+    return 0;
+  }
 }

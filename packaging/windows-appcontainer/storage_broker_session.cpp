@@ -12,6 +12,7 @@ using namespace winrt;
 using namespace Windows::Data::Json;
 using namespace Windows::Foundation;
 using namespace Windows::Storage;
+using namespace Windows::Storage::FileProperties;
 using namespace Windows::Storage::Search;
 
 namespace gami::storage {
@@ -99,6 +100,9 @@ void verify_destination_outside_source(StorageFolder const& source,
         // collections appear to stall before hashing begins. Walk directories
         // only; files are still validated when the worker lists and opens them.
         QueryOptions options(CommonFolderQuery::DefaultQuery);
+        auto prefetched = single_threaded_vector<hstring>();
+        prefetched.Append(L"System.FileAttributes");
+        options.SetPropertyPrefetch(PropertyPrefetchOptions::BasicProperties, prefetched);
         auto query = current.CreateFolderQueryWithOptions(options);
         std::uint32_t offset{};
         for (;;) {
@@ -113,22 +117,76 @@ void verify_destination_outside_source(StorageFolder const& source,
     }
 }
 
+struct item_metadata {
+    std::uint32_t attributes{};
+    std::uint64_t size{};
+    DateTime modified{};
+};
+
+item_metadata read_item_metadata(IStorageItem const& item) {
+    // One attribute handle supplies every field needed by enumeration. This
+    // avoids a separate WinRT property request and BasicProperties request per
+    // file, which scaled to tens of seconds for only 1,024 local files.
+    HANDLE handle{};
+    if (auto access = item.try_as<IStorageItemHandleAccess>()) {
+        auto const opened = access->Create(HAO_READ_ATTRIBUTES,
+            HSO_SHARE_READ | HSO_SHARE_WRITE | HSO_SHARE_DELETE,
+            HO_NONE, nullptr, &handle);
+        if (SUCCEEDED(opened) && handle && handle != INVALID_HANDLE_VALUE) {
+            FILE_ATTRIBUTE_TAG_INFO attributes{};
+            FILE_STANDARD_INFO standard{};
+            FILE_BASIC_INFO basic{};
+            auto const complete =
+                GetFileInformationByHandleEx(handle, FileAttributeTagInfo,
+                    &attributes, sizeof(attributes)) &&
+                GetFileInformationByHandleEx(handle, FileStandardInfo,
+                    &standard, sizeof(standard)) &&
+                GetFileInformationByHandleEx(handle, FileBasicInfo,
+                    &basic, sizeof(basic));
+            CloseHandle(handle);
+            if (complete) {
+                return {
+                    attributes.FileAttributes,
+                    static_cast<std::uint64_t>(standard.EndOfFile.QuadPart),
+                    DateTime{TimeSpan{basic.LastWriteTime.QuadPart}},
+                };
+            }
+        } else if (handle && handle != INVALID_HANDLE_VALUE) {
+            CloseHandle(handle);
+        }
+    }
+
+    // Some projected providers do not grant item handles. Retain the WinRT
+    // path for them and fail closed through projected_file_attributes when
+    // neither representation exposes reparse information.
+    item_metadata result{};
+    result.attributes = projected_file_attributes(item);
+    if (item.IsOfType(StorageItemTypes::File)) {
+        auto properties = item.as<StorageFile>().GetBasicPropertiesAsync().get();
+        result.size = properties.Size();
+        result.modified = properties.DateModified();
+    } else {
+        result.modified = item.DateCreated();
+    }
+    return result;
+}
+
 JsonObject item_json(IStorageItem const& item, std::wstring const& id) {
-    require_ordinary_item(item);
-    auto const attributes = projected_file_attributes(item);
+    auto const metadata = read_item_metadata(item);
+    if ((metadata.attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+        throw identity_error("source contains a reparse point or provider alias");
     JsonObject result;
     result.SetNamedValue(L"id", JsonValue::CreateStringValue(id));
     result.SetNamedValue(L"name", JsonValue::CreateStringValue(item.Name()));
     result.SetNamedValue(L"identity", JsonValue::CreateStringValue(id));
-    result.SetNamedValue(L"attributes", JsonValue::CreateNumberValue(attributes));
+    result.SetNamedValue(L"attributes", JsonValue::CreateNumberValue(metadata.attributes));
     if (item.IsOfType(StorageItemTypes::Folder)) {
         result.SetNamedValue(L"kind", JsonValue::CreateStringValue(L"directory"));
-        result.SetNamedValue(L"modified_utc", JsonValue::CreateStringValue(timestamp(item.DateCreated())));
+        result.SetNamedValue(L"modified_utc", JsonValue::CreateStringValue(timestamp(metadata.modified)));
     } else if (item.IsOfType(StorageItemTypes::File)) {
-        auto properties = item.as<StorageFile>().GetBasicPropertiesAsync().get();
         result.SetNamedValue(L"kind", JsonValue::CreateStringValue(L"file"));
-        result.SetNamedValue(L"size", JsonValue::CreateNumberValue(static_cast<double>(properties.Size())));
-        result.SetNamedValue(L"modified_utc", JsonValue::CreateStringValue(timestamp(properties.DateModified())));
+        result.SetNamedValue(L"size", JsonValue::CreateNumberValue(static_cast<double>(metadata.size)));
+        result.SetNamedValue(L"modified_utc", JsonValue::CreateStringValue(timestamp(metadata.modified)));
     } else {
         throw identity_error("provider returned an unsupported storage item");
     }
@@ -192,6 +250,14 @@ void storage_broker_session::dispatch(broker_request const& request) {
             if (limit == 0 || limit > 4096) throw protocol_error("invalid list page size");
             QueryOptions options(CommonFileQuery::DefaultQuery, {});
             options.SortOrder().Append(SortEntry(L"System.ItemNameDisplay", true));
+            // Without prefetch, item_json issues two provider round trips for
+            // every entry. That made a 1,024-file local scan spend roughly a
+            // minute in "Counting files". Providers may still decline a
+            // property; projected_file_attributes then uses its safe opened-
+            // handle fallback.
+            auto prefetched = single_threaded_vector<hstring>();
+            prefetched.Append(L"System.FileAttributes");
+            options.SetPropertyPrefetch(PropertyPrefetchOptions::BasicProperties, prefetched);
             auto query = folder(folder_id).CreateItemQueryWithOptions(options);
             auto page = query.GetItemsAsync(offset, limit).get();
             JsonArray array;

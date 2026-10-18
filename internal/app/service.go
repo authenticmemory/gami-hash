@@ -45,6 +45,7 @@ type StorageLocation struct {
 type ResumeInspection struct {
 	Resumable bool   `json:"resumable"`
 	Root      string `json:"root,omitempty"`
+	Output    string `json:"output,omitempty"`
 	Rows      int64  `json:"rows"`
 	Error     string `json:"error,omitempty"`
 }
@@ -121,7 +122,7 @@ func (s *Service) SelectOutput(ctx context.Context, suggested string) (string, e
 
 func (s *Service) InspectResume(output string) ResumeInspection {
 	st := engine.CheckResume(output)
-	return ResumeInspection{Resumable: st.Resumable, Root: st.Root, Rows: st.RowCount}
+	return ResumeInspection{Resumable: st.Resumable, Root: st.Root, Output: output, Rows: st.RowCount}
 }
 
 func optionsFor(req RunRequest) (engine.Options, error) {

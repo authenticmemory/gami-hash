@@ -5,6 +5,7 @@ package wailsadapter
 import (
 	"context"
 	"errors"
+	"log"
 	"path/filepath"
 	"sync"
 	"syscall"
@@ -73,6 +74,7 @@ func newBrokerBackend() brokerBackend {
 }
 
 func (b *appContainerBroker) restoreSelection() {
+	log.Printf("[Wails adapter] restoring saved folder access")
 	root := make([]uint16, nativeTextCapacity)
 	output := make([]uint16, nativeTextCapacity)
 	errText := make([]uint16, nativeTextCapacity)
@@ -93,6 +95,7 @@ func (b *appContainerBroker) restoreSelection() {
 		if ok == 0 {
 			b.restoreErr = message
 		}
+		log.Printf("[Wails adapter] saved folder access unavailable: %s", message)
 		return
 	}
 	b.root = utf16Text(root)
@@ -101,6 +104,7 @@ func (b *appContainerBroker) restoreSelection() {
 	b.resumable = resumable != 0
 	b.resumeRows = rows
 	b.restoreErr = ""
+	log.Printf("[Wails adapter] saved folder access restored; resumable=%t rows=%d", b.resumable, b.resumeRows)
 }
 
 func (b *appContainerBroker) Events() <-chan app.Event { return b.events }
@@ -165,10 +169,10 @@ func (b *appContainerBroker) InspectResume(output string) app.ResumeInspection {
 	b.restoreOnce.Do(b.restoreSelection)
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if !b.resumable || output != b.output {
+	if !b.resumable || (output != "" && output != b.output) {
 		return app.ResumeInspection{Error: b.restoreErr}
 	}
-	return app.ResumeInspection{Resumable: true, Root: b.root, Rows: b.resumeRows}
+	return app.ResumeInspection{Resumable: true, Root: b.root, Output: b.output, Rows: b.resumeRows}
 }
 
 func (b *appContainerBroker) Preflight(req app.RunRequest) (app.PreflightResult, error) {
@@ -212,7 +216,7 @@ func (b *appContainerBroker) Preflight(req app.RunRequest) (app.PreflightResult,
 			return "Cannot determine"
 		}
 	}
-	resume := app.ResumeInspection{Resumable: resumable, Root: root, Rows: rows}
+	resume := app.ResumeInspection{Resumable: resumable, Root: root, Output: output, Rows: rows}
 	return app.PreflightResult{
 		Root: root, Output: output, Resume: resume, WillResume: req.Mode == app.ModeResume,
 		Source:                 app.StorageLocation{Kind: kindName(sourceKind), Reason: utf16Text(sourceReason), Path: root},
