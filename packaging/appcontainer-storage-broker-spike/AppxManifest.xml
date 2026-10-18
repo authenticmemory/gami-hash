@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+         IgnorableNamespaces="uap uap10">
+  <Identity Name="AuthenticMemory.GAMIHash.StorageBrokerSpike"
+            Publisher="CN=GAMI Hash Storage Broker Spike"
+            Version="0.1.0.0" ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>GAMI Storage Broker Spike</DisplayName>
+    <PublisherDisplayName>Authentic Memory</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Local-first contained storage broker feasibility spike.</Description>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+  <Resources><Resource Language="en-us" /></Resources>
+  <Applications>
+    <Application Id="Caller" Executable="GamiHashBrokerCaller.exe"
+                 EntryPoint="Windows.PartialTrustApplication"
+                 uap10:TrustLevel="appContainer"
+                 uap10:RuntimeBehavior="packagedClassicApp">
+      <uap:VisualElements DisplayName="GAMI Storage Broker Spike"
+                          Description="Contained broker feasibility caller"
+                          BackgroundColor="transparent"
+                          Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png" />
+    </Application>
+    <Application Id="Broker" Executable="GamiHashStorageBrokerSpike.exe"
+                 EntryPoint="GamiHashStorageBrokerSpike.App"
+                 uap10:TrustLevel="appContainer"
+                 uap10:RuntimeBehavior="windowsApp">
+      <uap:VisualElements DisplayName="GAMI Storage Broker"
+                          Description="Contained foreground folder picker"
+                          AppListEntry="none"
+                          BackgroundColor="transparent"
+                          Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png" />
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="gami-hash-storage-spike" />
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities />
+</Package>
