@@ -49,20 +49,20 @@ Azure Login. It does not use the developer's Azure CLI session or local
 
 ## Build and verification order
 
-1. Pass the reusable dependency security workflow for the same commit, build the
-   frontend before Go tests, and run the existing Wails/NSIS build. This produces a temporary unsigned
-   installer and generates Wails' NSIS support files.
-2. Sign and timestamp both `build/bin/gami-hash.exe` (GUI) and
-   `build/windows/installer/gami-hash-cli.exe` (CLI).
+1. Pass the reusable dependency security workflow, run Go tests, and build the
+   native WPF/Go-worker NSIS installer.
+2. Sign and timestamp `build/windows-native/payload/GamiHash.exe` and
+   `build/windows-native/payload/GamiHashEngine.exe`.
 3. Verify their Authenticode status, timestamp presence, and legal organization.
 4. Rerun only NSIS with the signed inputs, replacing the temporary installer.
-   Do not rerun Wails: doing so rebuilds the GUI and loses its signature.
+   Do not rebuild either payload after signing.
 5. Sign and timestamp the final installer, then verify all three files.
 6. Calculate download checksums on the finished signed files, create the dependency
    inventory, and upload the artifacts.
 
-The installed GUI is named `GAMI Hash.exe`; the installed CLI is `gami-hash.exe`.
-Both originate from the signed inputs above. The NSIS-generated uninstaller is
+The installed GUI is `GamiHash.exe`; its private worker is
+`GamiHashEngine.exe`. Both originate from the signed inputs above. The
+NSIS-generated uninstaller is
 not separately signed by this workflow.
 
 ## First run

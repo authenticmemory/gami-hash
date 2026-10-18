@@ -442,6 +442,18 @@ WebView2/browser child process at runtime.
 
 ## Phase 5 — package, sign, and migrate
 
+Native production promotion status (2026-10-19): the accepted WPF frontend
+now lives under `windows/GamiHash.Windows`; its production build emits
+`GamiHash.exe`, `GamiHashEngine.exe`, and a self-contained per-user NSIS
+installer. The installer uses production names and 64-bit uninstall metadata,
+contains no WebView2 payload, and launches only the WPF parent plus the Go
+worker. Local version `0.3.0` built, installed, and launched successfully with
+no new WebView2 process. The Windows CI signing paths now target those two
+native payloads and repackage them without changing their hashes. Linux and
+macOS Wails builds remain separate. Behavioral and visual parity, upgrade
+migration, exact signed-artifact acceptance, and release publication remain
+open.
+
 Tasks:
 
 1. Create a dedicated AppContainer MSIX build path; do not edit the current

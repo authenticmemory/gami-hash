@@ -6,11 +6,11 @@ param(
 $ErrorActionPreference = "Stop"
 $files = @()
 if ($Stage -in @("Payload", "All")) {
-  $files += Join-Path $PSScriptRoot "build/bin/gami-hash.exe"
-  $files += Join-Path $PSScriptRoot "build/windows/installer/gami-hash-cli.exe"
+  $files += Join-Path $PSScriptRoot "build/windows-native/payload/GamiHash.exe"
+  $files += Join-Path $PSScriptRoot "build/windows-native/payload/GamiHashEngine.exe"
 }
 if ($Stage -in @("Installer", "All")) {
-  $installers = @(Get-ChildItem (Join-Path $PSScriptRoot "build/bin") -Filter "*-installer.exe" -File)
+  $installers = @(Get-ChildItem (Join-Path $PSScriptRoot "build/bin") -Filter "gami-hash-windows-*-x64-installer.exe" -File)
   if ($installers.Count -ne 1) { throw "Expected exactly one Windows installer; found $($installers.Count)." }
   $files += $installers[0].FullName
 }

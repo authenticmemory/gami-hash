@@ -100,11 +100,12 @@ uses `tech@authenticmemory.org`; release builds can override this with
 
 ## Building / verifying
 
-Builds are produced from pinned Go, Node, npm lockfiles, and clean CI jobs.
+Windows builds use the native WPF frontend and the existing Go hashing engine.
+Linux and macOS continue to use the web frontend while their native migration
+is evaluated. Builds are produced from pinned toolchains and clean CI jobs.
 See [VERIFY.md](VERIFY.md) for the current verification status and limits.
 
 ```
-.\build-windows.ps1 -Version v1.2.0
 .\build-windows-installer.ps1 -Version v1.2.0
 go test -race ./...   # test suite
 ```

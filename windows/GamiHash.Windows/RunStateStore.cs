@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.IO;
 
-namespace GamiHash.WpfSpike;
+namespace GamiHash.Windows;
 
 internal sealed record SavedRun(string Root, string Output);
 

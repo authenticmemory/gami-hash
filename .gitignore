@@ -17,6 +17,6 @@ dist/
 *.obj
 /frontend/node_modules/
 /frontend/dist/
-/spikes/wpf-parity/GamiHash.WpfSpike/bin/
-/spikes/wpf-parity/GamiHash.WpfSpike/obj/
-/build/native-installer-payload/
+/windows/GamiHash.Windows/bin/
+/windows/GamiHash.Windows/obj/
+/build/windows-native/payload/

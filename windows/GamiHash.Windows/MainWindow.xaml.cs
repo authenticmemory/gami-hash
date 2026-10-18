@@ -5,7 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
-namespace GamiHash.WpfSpike;
+namespace GamiHash.Windows;
 
 public partial class MainWindow : Window
 {

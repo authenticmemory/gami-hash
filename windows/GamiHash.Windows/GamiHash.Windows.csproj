@@ -5,8 +5,13 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>GamiHash.WpfSpike</AssemblyName>
-    <RootNamespace>GamiHash.WpfSpike</RootNamespace>
+    <AssemblyName>GamiHash</AssemblyName>
+    <RootNamespace>GamiHash.Windows</RootNamespace>
+    <ApplicationIcon>Assets\gami-logo.ico</ApplicationIcon>
+    <AssemblyTitle>GAMI Hash</AssemblyTitle>
+    <Product>GAMI Hash</Product>
+    <Company>Authentic Memory</Company>
+    <Copyright>Copyright (c) 2026 Authentic Memory</Copyright>
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Assets\Fonts\*.ttf" />

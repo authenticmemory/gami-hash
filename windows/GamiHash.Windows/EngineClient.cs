@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace GamiHash.WpfSpike;
+namespace GamiHash.Windows;
 
 internal sealed class EngineClient : IAsyncDisposable
 {

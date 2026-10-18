@@ -3,8 +3,8 @@
 ## Requirements
 
 - The Go toolchain version pinned in `go.mod`.
-- Node.js and npm for compiling the embedded TypeScript frontend.
-- Native Wails/WebView build dependencies for the target operating system.
+- .NET 8 SDK and NSIS for the native Windows frontend and installer.
+- Node.js, npm, and Wails dependencies for Linux and macOS GUI builds.
 
 A GUI release must be built and tested on its target OS. Plain Go
 cross-compilation is not sufficient.
@@ -14,15 +14,15 @@ cross-compilation is not sufficient.
 ```powershell
 git clone https://github.com/authenticmemory/gami-hash.git
 cd gami-hash
-.\build-windows.ps1 -Version v1.0.0
+.\build-windows-installer.ps1 -Version v1.0.0
 ```
 
-The result is written to `build/bin/gami-hash.exe` and its SHA-256 digest is
-printed after a successful build.
+The native WPF GUI and Go worker are written under
+`build/windows-native/payload`; the self-contained installer is written under
+`build/bin`. SHA-256 digests are printed after a successful build.
 
-The script runs `npm ci`, builds the embedded frontend, and compiles with the
-required Wails `desktop,production` tags. A Wails binary built without those
-tags intentionally refuses to start.
+The Windows build does not compile or package Wails or WebView2. Linux and
+macOS retain their existing Wails build paths.
 
 `-trimpath`, an empty Go build ID, and disabled VCS stamping remove common
 sources of build-path variation. This is preparation for reproducibility, not

@@ -1,16 +1,22 @@
 Unicode true
-
 !include "MUI2.nsh"
-
-!define PRODUCT_NAME "GAMI Hash Native Test"
-!define PRODUCT_VERSION "0.2.0.0"
+!ifndef PRODUCT_VERSION
+  !define PRODUCT_VERSION "0.1.0.0"
+!endif
+!ifndef PAYLOAD_DIR
+  !error "PAYLOAD_DIR is required"
+!endif
+!ifndef OUTPUT_FILE
+  !error "OUTPUT_FILE is required"
+!endif
+!define PRODUCT_NAME "GAMI Hash"
 !define PRODUCT_PUBLISHER "Authentic Memory"
-!define PRODUCT_EXE "GamiHash.WpfSpike.exe"
-!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\GAMIHashNativeTest"
-
+!define PRODUCT_EXE "GamiHash.exe"
+!define WORKER_EXE "GamiHashEngine.exe"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\GAMIHash"
 Name "${PRODUCT_NAME}"
-OutFile "..\..\build\bin\gami-hash-native-test-0.2.0-x64-installer.exe"
-InstallDir "$LOCALAPPDATA\Programs\Authentic Memory\GAMI Hash Native Test"
+OutFile "${OUTPUT_FILE}"
+InstallDir "$LOCALAPPDATA\Programs\Authentic Memory\GAMI Hash"
 RequestExecutionLevel user
 ManifestDPIAware true
 VIProductVersion "${PRODUCT_VERSION}"
@@ -19,13 +25,12 @@ VIAddVersionKey "ProductName" "${PRODUCT_NAME}"
 VIAddVersionKey "FileDescription" "${PRODUCT_NAME} Installer"
 VIAddVersionKey "FileVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"
-
-!define MUI_ICON "GamiHash.WpfSpike\Assets\gami-logo.ico"
-!define MUI_UNICON "GamiHash.WpfSpike\Assets\gami-logo.ico"
+VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 Authentic Memory"
+!define MUI_ICON "..\..\windows\GamiHash.Windows\Assets\gami-logo.ico"
+!define MUI_UNICON "..\..\windows\GamiHash.Windows\Assets\gami-logo.ico"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${PRODUCT_EXE}"
 !define MUI_FINISHPAGE_RUN_TEXT "Run GAMI Hash now"
-
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -33,32 +38,31 @@ VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
-
 Section "Application" SEC_APP
   SetOutPath "$INSTDIR"
-  File "..\..\build\native-installer-payload\GamiHash.WpfSpike.exe"
-  File "..\..\build\native-installer-payload\GamiHashEngine.exe"
+  File "${PAYLOAD_DIR}\${PRODUCT_EXE}"
+  File "${PAYLOAD_DIR}\${WORKER_EXE}"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-
   CreateDirectory "$SMPROGRAMS\Authentic Memory"
   CreateShortcut "$SMPROGRAMS\Authentic Memory\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}"
   CreateShortcut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}"
-
+  SetRegView 64
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "${PRODUCT_NAME}"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "0.2.0"
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\${PRODUCT_EXE}"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" '$INSTDIR\Uninstall.exe'
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1
 SectionEnd
-
 Section "Uninstall"
+  SetRegView 64
   Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
   Delete "$SMPROGRAMS\Authentic Memory\${PRODUCT_NAME}.lnk"
   RMDir "$SMPROGRAMS\Authentic Memory"
-  Delete "$INSTDIR\GamiHash.WpfSpike.exe"
-  Delete "$INSTDIR\GamiHashEngine.exe"
+  Delete "$INSTDIR\${PRODUCT_EXE}"
+  Delete "$INSTDIR\${WORKER_EXE}"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
   RMDir "$LOCALAPPDATA\Programs\Authentic Memory"

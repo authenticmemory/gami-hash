@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace GamiHash.WpfSpike;
+namespace GamiHash.Windows;
 
 public partial class App : Application
 {
