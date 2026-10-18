@@ -14,6 +14,7 @@
 #include <atomic>
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -37,6 +38,21 @@ constexpr wchar_t destination_token[] = L"gami-destination";
 constexpr wchar_t output_setting[] = L"output-name";
 constexpr wchar_t schema_setting[] = L"state-schema";
 constexpr int32_t state_schema = 1;
+
+void native_log(wchar_t const* message) noexcept {
+  try {
+    wchar_t local_app_data[32768]{};
+    auto length = GetEnvironmentVariableW(
+        L"LOCALAPPDATA", local_app_data, static_cast<DWORD>(std::size(local_app_data)));
+    if (length == 0 || length >= std::size(local_app_data)) return;
+    auto directory = std::filesystem::path(local_app_data) /
+        L"AuthenticMemory" / L"GAMIHash" / L"Logs";
+    std::filesystem::create_directories(directory);
+    std::wofstream stream(directory / L"native.log", std::ios::app);
+    if (stream) stream << message << L"\n";
+  } catch (...) {
+  }
+}
 
 HWND app_window() {
   struct search { DWORD pid; HWND found; } value{GetCurrentProcessId(), nullptr};
@@ -143,13 +159,19 @@ extern "C" __declspec(dllexport) int __stdcall GamiSelectFolder(
     int select_source, wchar_t* path, unsigned path_capacity,
     wchar_t* error, unsigned error_capacity) {
   try {
+    native_log(L"GamiSelectFolder entered");
     init_apartment(apartment_type::multi_threaded);
+    native_log(L"COM apartment initialized");
     FolderPicker picker;
     picker.FileTypeFilter().Append(L"*");
+    native_log(L"FolderPicker created");
     auto window = app_window();
     if (!window) throw std::runtime_error("cannot locate the application window");
+    native_log(L"application window located");
     check_hresult(picker.as<IInitializeWithWindow>()->Initialize(window));
+    native_log(L"FolderPicker attached to application window");
     auto selected = picker.PickSingleFolderAsync().get();
+    native_log(L"FolderPicker completed");
     if (!selected) return -1;
     // Classification opens the stable directory identity now. A provider that
     // only supplies a display path is rejected before the frontend advances.
@@ -165,7 +187,10 @@ extern "C" __declspec(dllexport) int __stdcall GamiSelectFolder(
         schema_setting, box_value(state_schema));
     copy_text(selected.Path().c_str(), path, path_capacity);
     return 1;
-  } catch (std::exception const& e) { return fail(e, error, error_capacity); }
+  } catch (std::exception const& e) {
+    native_log(L"GamiSelectFolder returned a handled error");
+    return fail(e, error, error_capacity);
+  }
 }
 
 extern "C" __declspec(dllexport) int __stdcall GamiSetOutputName(

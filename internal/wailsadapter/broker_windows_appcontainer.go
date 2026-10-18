@@ -112,6 +112,7 @@ func (b *appContainerBroker) Events() <-chan app.Event { return b.events }
 func utf16Text(buffer []uint16) string { return syscall.UTF16ToString(buffer) }
 
 func (b *appContainerBroker) pick(source bool) (string, error) {
+	log.Printf("[Wails adapter] folder picker call begin; source=%t", source)
 	path := make([]uint16, nativeTextCapacity)
 	errText := make([]uint16, nativeTextCapacity)
 	which := uintptr(0)
@@ -119,6 +120,7 @@ func (b *appContainerBroker) pick(source bool) (string, error) {
 		which = 1
 	}
 	ok, _, callErr := b.selectDir.Call(which, uintptr(unsafe.Pointer(&path[0])), uintptr(len(path)), uintptr(unsafe.Pointer(&errText[0])), uintptr(len(errText)))
+	log.Printf("[Wails adapter] folder picker call returned; source=%t result=%d", source, ok)
 	if ok == ^uintptr(0) {
 		return "", nil
 	}
