@@ -1,3 +1,4 @@
+// Production C ABI boundary between the Wails host and WinRT storage broker.
 #include "../windows-appcontainer/storage_consent.h"
 #include "../windows-appcontainer/worker_launcher.h"
 
@@ -7,11 +8,14 @@
 #include <winrt/Windows.Storage.h>
 #include <winrt/Windows.Storage.AccessCache.h>
 #include <winrt/Windows.Storage.Pickers.h>
+#include <winrt/Windows.Storage.Streams.h>
 #include <winrt/Windows.System.h>
 #include <atomic>
+#include <algorithm>
 #include <filesystem>
 #include <mutex>
 #include <string>
+#include <vector>
 
 using namespace winrt;
 using namespace Windows::Storage;
@@ -30,6 +34,8 @@ std::atomic_bool running{false};
 constexpr wchar_t source_token[] = L"gami-source";
 constexpr wchar_t destination_token[] = L"gami-destination";
 constexpr wchar_t output_setting[] = L"output-name";
+constexpr wchar_t schema_setting[] = L"state-schema";
+constexpr int32_t state_schema = 1;
 
 HWND app_window() {
   struct search { DWORD pid; HWND found; } value{GetCurrentProcessId(), nullptr};
@@ -70,6 +76,37 @@ bool item_exists(StorageFolder const& folder, std::wstring const& name) {
     return false;
   }
 }
+
+std::wstring validate_output_name(wchar_t const* name) {
+  std::filesystem::path parsed(name ? name : L"");
+  auto leaf = parsed.filename().wstring();
+  if (leaf.size() < 5 || _wcsicmp(parsed.extension().c_str(), L".csv") != 0 ||
+      leaf.find_first_of(L"\\/:*?\"<>|\r\n") != std::wstring::npos)
+    throw std::runtime_error("the result name must be a valid CSV filename");
+  return leaf;
+}
+
+long long count_manifest_rows(StorageFile const& manifest) {
+  using namespace Windows::Storage::Streams;
+  auto stream = manifest.OpenAsync(FileAccessMode::Read).get();
+  constexpr uint32_t chunk_size = 1024 * 1024;
+  uint64_t position = 0;
+  long long lines = 0;
+  while (position < stream.Size()) {
+    auto input = stream.GetInputStreamAt(position);
+    DataReader reader(input);
+    auto requested = static_cast<uint32_t>(
+        std::min<uint64_t>(chunk_size, stream.Size() - position));
+    auto loaded = reader.LoadAsync(requested).get();
+    if (loaded == 0) break;
+    std::vector<uint8_t> bytes(loaded);
+    reader.ReadBytes(bytes);
+    for (auto byte : bytes) if (byte == '\n') ++lines;
+    position += loaded;
+  }
+  stream.Close();
+  return lines > 0 ? lines - 1 : 0;
+}
 }
 
 extern "C" __declspec(dllexport) int __stdcall GamiSelectFolder(
@@ -94,6 +131,8 @@ extern "C" __declspec(dllexport) int __stdcall GamiSelectFolder(
     }
     StorageApplicationPermissions::FutureAccessList().AddOrReplace(
         select_source ? source_token : destination_token, selected);
+    ApplicationData::Current().LocalSettings().Values().Insert(
+        schema_setting, box_value(state_schema));
     copy_text(selected.Path().c_str(), path, path_capacity);
     return 1;
   } catch (std::exception const& e) { return fail(e, error, error_capacity); }
@@ -102,21 +141,47 @@ extern "C" __declspec(dllexport) int __stdcall GamiSelectFolder(
 extern "C" __declspec(dllexport) int __stdcall GamiSetOutputName(
     wchar_t const* name, wchar_t* error, unsigned error_capacity) {
   try {
-    std::filesystem::path parsed(name ? name : L"");
-    auto leaf = parsed.filename().wstring();
-    if (leaf.size() < 5 || _wcsicmp(parsed.extension().c_str(), L".csv") != 0 ||
-        leaf.find_first_of(L"\\/:*?\"<>|\r\n") != std::wstring::npos)
-      throw std::runtime_error("the result name must be a valid CSV filename");
+    auto leaf = validate_output_name(name);
     std::scoped_lock guard(state_lock);
     output_name = std::move(leaf);
     ApplicationData::Current().LocalSettings().Values().Insert(
         output_setting, box_value(output_name));
+    ApplicationData::Current().LocalSettings().Values().Insert(
+        schema_setting, box_value(state_schema));
+    return 1;
+  } catch (std::exception const& e) { return fail(e, error, error_capacity); }
+}
+
+extern "C" __declspec(dllexport) int __stdcall GamiPreflight(
+    int* source_kind, wchar_t* source_reason, unsigned source_reason_capacity,
+    int* destination_kind, wchar_t* destination_reason,
+    unsigned destination_reason_capacity, int* requires_consent,
+    wchar_t* error, unsigned error_capacity) {
+  try {
+    StorageFolder run_source{nullptr}, run_destination{nullptr};
+    {
+      std::scoped_lock guard(state_lock);
+      run_source = source;
+      run_destination = destination;
+    }
+    if (!run_source || !run_destination)
+      throw std::runtime_error("source and destination are required");
+    auto source_class = gami::storage::classify_storage_folder(run_source);
+    auto destination_class = gami::storage::classify_storage_folder(run_destination);
+    if (source_kind) *source_kind = static_cast<int>(source_class.kind);
+    if (destination_kind) *destination_kind = static_cast<int>(destination_class.kind);
+    copy_text(source_class.reason, source_reason, source_reason_capacity);
+    copy_text(destination_class.reason, destination_reason,
+              destination_reason_capacity);
+    if (requires_consent)
+      *requires_consent = gami::storage::requires_explicit_consent(
+          source_class, destination_class) ? 1 : 0;
     return 1;
   } catch (std::exception const& e) { return fail(e, error, error_capacity); }
 }
 
 extern "C" __declspec(dllexport) int __stdcall GamiRun(
-    int resume, wchar_t* error, unsigned error_capacity) {
+    int resume, int storage_approved, wchar_t* error, unsigned error_capacity) {
   if (running.exchange(true)) {
     copy_text(L"a hashing run is already active", error, error_capacity);
     return 0;
@@ -137,10 +202,9 @@ extern "C" __declspec(dllexport) int __stdcall GamiRun(
       throw std::runtime_error("source, destination, and result name are required");
     auto source_class = gami::storage::classify_storage_folder(run_source);
     auto destination_class = gami::storage::classify_storage_folder(run_destination);
-    if (gami::storage::requires_explicit_consent(source_class, destination_class))
-      throw std::runtime_error("this spike gate accepts local storage only");
     auto authorization = gami::storage::authorize_storage(
-        std::move(source_class), std::move(destination_class), true);
+        std::move(source_class), std::move(destination_class),
+        storage_approved != 0);
     auto result = gami::storage::run_storage_worker(
         module_sibling(L"GamiHashContainedWorker.exe"), run_source,
         run_destination, authorization, run_name, resume != 0,
@@ -218,15 +282,19 @@ extern "C" __declspec(dllexport) int __stdcall GamiRestoreState(
     init_apartment(apartment_type::multi_threaded);
     auto access = StorageApplicationPermissions::FutureAccessList();
     auto values = ApplicationData::Current().LocalSettings().Values();
+    if (values.HasKey(schema_setting) &&
+        unbox_value_or<int32_t>(values.Lookup(schema_setting), 0) != state_schema)
+      throw std::runtime_error(
+          "saved folder access was created by an incompatible version");
     if (!access.ContainsItem(source_token) ||
         !access.ContainsItem(destination_token) ||
         !values.HasKey(output_setting))
       return -1;
     auto restored_source = access.GetFolderAsync(source_token).get();
     auto restored_destination = access.GetFolderAsync(destination_token).get();
-    auto restored_name = std::wstring(
+    auto stored_name = std::wstring(
         unbox_value_or<hstring>(values.Lookup(output_setting), L""));
-    if (restored_name.empty()) return -1;
+    auto restored_name = validate_output_name(stored_name.c_str());
     // Revalidate both identities before restoring authority to the bridge.
     (void)gami::storage::classify_storage_folder(restored_source);
     (void)gami::storage::classify_storage_folder(restored_destination);
@@ -246,8 +314,7 @@ extern "C" __declspec(dllexport) int __stdcall GamiRestoreState(
       *rows = 0;
       if (can_resume) {
         auto manifest = restored_destination.GetFileAsync(restored_name).get();
-        auto lines = FileIO::ReadLinesAsync(manifest).get();
-        if (lines.Size() > 0) *rows = static_cast<long long>(lines.Size() - 1);
+        *rows = count_manifest_rows(manifest);
       }
     }
     return 1;

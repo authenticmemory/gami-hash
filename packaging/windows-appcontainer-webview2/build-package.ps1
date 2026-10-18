@@ -1,6 +1,7 @@
 param(
-    [string]$Version = '0.1.0.0',
+    [string]$Version = '1.6.0.0',
     [string]$Go = 'go',
+    [string]$Publisher = 'CN=GAMI Hash Windows Development',
     [string]$DevCertificateThumbprint = '',
     [switch]$SkipFrontendBuild
 )
@@ -12,7 +13,7 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $sdk = '10.0.22621.0'
 $makeAppx = "C:\Program Files (x86)\Windows Kits\10\bin\$sdk\x64\makeappx.exe"
 $signTool = "C:\Program Files (x86)\Windows Kits\10\bin\$sdk\x64\signtool.exe"
-$out = Join-Path $repo "build/bin/appcontainer-webview2-spike/$Version"
+$out = Join-Path $repo "build/bin/windows-appcontainer-webview2/$Version"
 $stage = Join-Path $out 'stage'
 $assets = Join-Path $stage 'Assets'
 
@@ -34,20 +35,20 @@ if ($SkipFrontendBuild) {
 }
 
 New-Item -ItemType Directory -Force -Path $assets | Out-Null
-$exe = Join-Path $stage 'GamiHashWebView2Spike.exe'
-$ldflags = '-w -s -buildid= -H windowsgui -X github.com/authenticmemory/gami-hash/internal/engine.Version=webview2-appcontainer-spike'
+$exe = Join-Path $stage 'GamiHash.exe'
+$ldflags = "-w -s -buildid= -H windowsgui -X github.com/authenticmemory/gami-hash/internal/engine.Version=$Version"
 Push-Location $repo
 try {
-    & $goCommand.Source build -trimpath -buildvcs=false -tags 'desktop,production,appcontainer_webview2_spike' -ldflags $ldflags -o $exe .
-    if ($LASTEXITCODE -ne 0) { throw 'Spike executable build failed' }
+    & $goCommand.Source build -trimpath -buildvcs=false -tags 'desktop,production,windows_appcontainer' -ldflags $ldflags -o $exe .
+    if ($LASTEXITCODE -ne 0) { throw 'Windows AppContainer executable build failed' }
 } finally { Pop-Location }
 
 # Slice 3 reuses the product broker unchanged behind a narrow C ABI DLL. The
 # DLL retains WinRT StorageFolder grants; the Go/WebView layer sees display
 # strings only and never turns those strings back into filesystem authority.
-$components = Join-Path $repo 'build/bin/appcontainer-webview2-spike-components'
+$components = Join-Path $repo 'build/bin/windows-appcontainer-webview2-components'
 & (Join-Path $repo 'packaging/windows-appcontainer/build-product-components.ps1') `
-    -OutputDirectory $components -Version "webview2-appcontainer-spike-$Version" | Out-Null
+    -OutputDirectory $components -Version $Version | Out-Null
 $vc = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat'
 $cppwinrt = "C:\Program Files (x86)\Windows Kits\10\Include\$sdk\cppwinrt"
 $bridge = Join-Path $stage 'GamiHashStorageBridge.dll'
@@ -61,6 +62,7 @@ Copy-Item -LiteralPath (Join-Path $components 'GamiHashContainedWorker.exe') -De
 
 [xml]$manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'AppxManifest.xml') -Raw
 $manifest.Package.Identity.Version = $Version
+$manifest.Package.Identity.Publisher = $Publisher
 $manifest.Save((Join-Path $stage 'AppxManifest.xml'))
 
 Add-Type -AssemblyName System.Drawing
@@ -78,7 +80,7 @@ try {
     }
 } finally { $source.Dispose() }
 
-$package = Join-Path $out "gami-hash-webview2-appcontainer-spike-$Version-x64.msix"
+$package = Join-Path $out "gami-hash-windows-$Version-x64.msix"
 & $makeAppx pack /d $stage /p $package /o | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'MSIX packaging failed' }
 
@@ -91,7 +93,7 @@ if (-not $resolvedUnpacked.StartsWith($resolvedOut, [StringComparison]::OrdinalI
 if (Test-Path -LiteralPath $resolvedUnpacked) { Remove-Item -LiteralPath $resolvedUnpacked -Recurse -Force }
 & $makeAppx unpack /p $package /d $unpacked /o | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'MSIX unpack verification failed' }
-foreach ($relativePath in @('AppxManifest.xml', 'GamiHashWebView2Spike.exe', 'GamiHashStorageBridge.dll', 'GamiHashContainedWorker.exe')) {
+foreach ($relativePath in @('AppxManifest.xml', 'GamiHash.exe', 'GamiHashStorageBridge.dll', 'GamiHashContainedWorker.exe')) {
     $stagedHash = (Get-FileHash -LiteralPath (Join-Path $stage $relativePath) -Algorithm SHA256).Hash
     $packedHash = (Get-FileHash -LiteralPath (Join-Path $unpacked $relativePath) -Algorithm SHA256).Hash
     if ($stagedHash -ne $packedHash) { throw "Packaged payload differs from staging: $relativePath" }
@@ -100,8 +102,8 @@ foreach ($relativePath in @('AppxManifest.xml', 'GamiHashWebView2Spike.exe', 'Ga
 if ($DevCertificateThumbprint) {
     if (-not (Test-Path -LiteralPath $signTool)) { throw "SignTool not found: $signTool" }
     $certificate = Get-Item -LiteralPath ("Cert:\CurrentUser\My\" + $DevCertificateThumbprint)
-    if ($certificate.Subject -ne 'CN=GAMI Hash WebView2 AppContainer Spike' -or -not $certificate.HasPrivateKey) {
-        throw 'The development certificate subject/private key does not match this spike.'
+    if ($certificate.Subject -ne $Publisher -or -not $certificate.HasPrivateKey) {
+        throw 'The signing certificate subject/private key does not match the package publisher.'
     }
     & $signTool sign /fd SHA256 /sha1 $certificate.Thumbprint $package | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'MSIX signing failed' }
@@ -111,7 +113,7 @@ if ($DevCertificateThumbprint) {
 param([string]`$Directory = `$PSScriptRoot)
 `$ErrorActionPreference = 'Stop'
 `$certificate = Join-Path `$Directory 'development-certificate.cer'
-`$package = Join-Path `$Directory 'gami-hash-webview2-appcontainer-spike-$Version-x64.msix'
+`$package = Join-Path `$Directory 'gami-hash-windows-$Version-x64.msix'
 if (-not (Test-Path -LiteralPath `$certificate) -or -not (Test-Path -LiteralPath `$package)) {
     throw 'Keep the certificate, MSIX, and installer together in one directory.'
 }
@@ -121,7 +123,7 @@ if (-not `$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administr
 }
 Import-Certificate -FilePath `$certificate -CertStoreLocation Cert:\LocalMachine\TrustedPeople | Out-Null
 Add-AppxPackage -Path `$package -ForceApplicationShutdown
-Get-AppxPackage -Name AuthenticMemory.GAMIHash.WebView2AppContainerSpike |
+Get-AppxPackage -Name AuthenticMemory.GAMIHash.Windows |
     Select-Object Name, PackageFullName, PackageFamilyName, InstallLocation
 "@
     Set-Content -LiteralPath (Join-Path $out 'install-in-vm.ps1') -Value $installer -Encoding UTF8
@@ -137,9 +139,9 @@ if ($manifestText -match 'runFullTrust|internetClient|internetClientServer|priva
 }
 
 $report = [ordered]@{
-    prototype = $true
+    prototype = $false
     release = $false
-    slice = 3
+    product = 'windows-appcontainer-webview2'
     version = $Version
     package = $package
     sha256 = (Get-FileHash -LiteralPath $package -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -148,7 +150,7 @@ $report = [ordered]@{
     payloadRoundTripVerified = $true
     certificateSubject = if ($DevCertificateThumbprint) { $certificate.Subject } else { $null }
     certificateThumbprint = if ($DevCertificateThumbprint) { $certificate.Thumbprint } else { $null }
-    frontend = 'unchanged embedded frontend/dist'
+    frontend = 'embedded frontend/dist'
     trustLevel = 'appContainer'
     capabilities = @()
 }

@@ -1,4 +1,4 @@
-//go:build !cli && !appcontainer_webview2_spike
+//go:build !cli && !windows_appcontainer
 
 package main
 

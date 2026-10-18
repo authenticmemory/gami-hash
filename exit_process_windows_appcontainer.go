@@ -1,4 +1,4 @@
-//go:build windows && appcontainer_webview2_spike
+//go:build windows && windows_appcontainer
 
 package main
 

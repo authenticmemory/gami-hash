@@ -1,5 +1,5 @@
 param(
-    [string]$OutputDirectory = 'C:\Users\Public\Documents\GamiWebView2AppContainerSpike',
+    [string]$OutputDirectory = 'C:\Users\Public\Documents\GamiHashAppContainerEvidence',
     [int]$LookbackHours = 4
 )
 
@@ -26,8 +26,8 @@ $events = @(Get-WinEvent -FilterHashtable @{
     Id = 1, 5
     StartTime = $start
 } -ErrorAction Stop | Where-Object {
-    $_.Message -like '*GamiHashWebView2Spike*' -or
-    $_.Message -like '*webview2appcontainerspike*'
+    $_.Message -like '*GamiHash.exe*' -or
+    $_.Message -like '*AuthenticMemory.GAMIHash.Windows*'
 } | ForEach-Object { Convert-Event $_ })
 
 [ordered]@{

@@ -34,7 +34,6 @@ func runGUI() error {
 		},
 		OnStartup: func(ctx context.Context) {
 			wailsadapter.OnStartup(backend)(ctx)
-			launchAppContainerNetworkProbe()
 		},
 		OnShutdown: wailsadapter.OnShutdown(backend),
 		Bind:       []interface{}{backend},

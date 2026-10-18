@@ -29,23 +29,34 @@ const (
 )
 
 type RunRequest struct {
-	Root    string  `json:"root"`
-	Output  string  `json:"output"`
-	Workers int     `json:"workers"`
-	Mode    RunMode `json:"mode"`
+	Root            string  `json:"root"`
+	Output          string  `json:"output"`
+	Workers         int     `json:"workers"`
+	Mode            RunMode `json:"mode"`
+	StorageApproved bool    `json:"storageApproved,omitempty"`
+}
+
+type StorageLocation struct {
+	Kind   string `json:"kind"`
+	Reason string `json:"reason"`
+	Path   string `json:"path"`
 }
 
 type ResumeInspection struct {
 	Resumable bool   `json:"resumable"`
 	Root      string `json:"root,omitempty"`
 	Rows      int64  `json:"rows"`
+	Error     string `json:"error,omitempty"`
 }
 
 type PreflightResult struct {
-	Root       string           `json:"root"`
-	Output     string           `json:"output"`
-	Resume     ResumeInspection `json:"resume"`
-	WillResume bool             `json:"willResume"`
+	Root                   string           `json:"root"`
+	Output                 string           `json:"output"`
+	Resume                 ResumeInspection `json:"resume"`
+	WillResume             bool             `json:"willResume"`
+	Source                 StorageLocation  `json:"source"`
+	Destination            StorageLocation  `json:"destination"`
+	RequiresStorageConsent bool             `json:"requiresStorageConsent"`
 }
 
 type EventKind string

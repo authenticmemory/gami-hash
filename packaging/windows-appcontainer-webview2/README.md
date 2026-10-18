@@ -1,20 +1,20 @@
-# WebView2 inside AppContainer spike
+# Windows WebView2 AppContainer package
 
-This development-only package implements the bounded three-slice
+This production-owned package is based on the bounded three-slice
 [feasibility assessment](../../docs/WINDOWS-APPCONTAINER-WEBVIEW2-FEASIBILITY.md).
 It reuses the current embedded frontend and Wails host under a separately
-named AppContainer identity. It is not a release candidate.
+named AppContainer identity. Release acceptance is tracked separately.
 
 Build an unsigned structural-check package:
 
 ```powershell
-./packaging/appcontainer-webview2-spike/build-spike.ps1 `
-  -Go 'C:\path\to\go.exe' -Version 0.1.0.0
+./packaging/windows-appcontainer-webview2/build-package.ps1 `
+  -Go 'C:\path\to\go.exe' -Version 1.6.0.0
 ```
 
 For a VM-installable package, pass the thumbprint of a development
 code-signing certificate whose subject is exactly
-`CN=GAMI Hash WebView2 AppContainer Spike`. Trust that certificate only in the
+the `Publisher` passed to the build. Trust development certificates only in a
 disposable VM.
 
 The signed build directory contains `development-certificate.cer` and
@@ -22,17 +22,17 @@ The signed build directory contains `development-certificate.cer` and
 the standard test user. It imports only the public certificate into that
 user's `TrustedPeople` store before installing the package.
 
-After installation, start **GAMI Hash WebView2 Spike**, leave it at the welcome
+After installation, start **GAMI Hash**, leave it at the welcome
 screen, and run:
 
 ```powershell
-./packaging/appcontainer-webview2-spike/inspect-process-tree.ps1 -DurationSeconds 30
+./packaging/windows-appcontainer-webview2/inspect-process-tree.ps1 -DurationSeconds 30
 ```
 
 Run the repository's existing Sysmon/process-creation capture over the same
 window. The polling script records live descendants and their tokens, but it
 cannot prove that a short-lived or reparented crash-handler process never
-existed. Reconcile every process-creation event rooted at the spike host with
+existed. Reconcile every process-creation event rooted at the packaged host with
 the token inventory before passing the gate.
 
 Capture the welcome screen, then click **Choose folder**. A rendered picker or

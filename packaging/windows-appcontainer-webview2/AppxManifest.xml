@@ -3,26 +3,26 @@
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
          xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
          IgnorableNamespaces="uap uap10">
-  <Identity Name="AuthenticMemory.GAMIHash.WebView2AppContainerSpike"
-            Publisher="CN=GAMI Hash WebView2 AppContainer Spike"
+  <Identity Name="AuthenticMemory.GAMIHash.Windows"
+            Publisher="CN=GAMI Hash Windows Development"
             Version="0.1.0.0" ProcessorArchitecture="x64" />
   <Properties>
-    <DisplayName>GAMI Hash WebView2 AppContainer Spike</DisplayName>
+    <DisplayName>GAMI Hash</DisplayName>
     <PublisherDisplayName>Authentic Memory</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
-    <Description>Disposable WebView2 inside AppContainer feasibility spike.</Description>
+    <Description>Create SHA-256 manifests inside a Windows AppContainer.</Description>
   </Properties>
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
   <Resources><Resource Language="en-us" /></Resources>
   <Applications>
-    <Application Id="Spike" Executable="GamiHashWebView2Spike.exe"
+    <Application Id="GamiHash" Executable="GamiHash.exe"
                  EntryPoint="Windows.PartialTrustApplication"
                  uap10:TrustLevel="appContainer"
                  uap10:RuntimeBehavior="packagedClassicApp">
-      <uap:VisualElements DisplayName="GAMI Hash WebView2 Spike"
-                          Description="Disposable WebView2 feasibility test"
+      <uap:VisualElements DisplayName="GAMI Hash"
+                          Description="Create SHA-256 manifests"
                           BackgroundColor="transparent"
                           Square150x150Logo="Assets\Square150x150Logo.png"
                           Square44x44Logo="Assets\Square44x44Logo.png" />

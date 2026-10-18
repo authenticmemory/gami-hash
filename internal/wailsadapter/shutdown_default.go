@@ -1,4 +1,4 @@
-//go:build !appcontainer_webview2_spike
+//go:build !windows_appcontainer
 
 package wailsadapter
 

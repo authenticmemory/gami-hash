@@ -57,6 +57,9 @@ export function installDemoBackendIfNeeded(): void {
           output: request.output,
           resume: { resumable: recordedRows > 0, root: demoRoot, rows: recordedRows },
           willResume: request.mode === "resume" && recordedRows > 0,
+          source: { kind: "Local", reason: "demo local folder", path: request.root },
+          destination: { kind: "Local", reason: "demo local folder", path: request.output },
+          requiresStorageConsent: false,
         }),
         Start: async () => {
           cancel = false;

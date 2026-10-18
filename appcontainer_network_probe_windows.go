@@ -1,4 +1,4 @@
-//go:build windows && appcontainer_webview2_spike
+//go:build windows && windows_appcontainer && appcontainer_network_probe
 
 package main
 
@@ -22,7 +22,7 @@ type networkAttempt struct {
 	Result    string `json:"result"`
 }
 
-func spikeDataDirectory() (string, error) {
+func diagnosticDataDirectory() (string, error) {
 	root := os.Getenv("LOCALAPPDATA")
 	if root == "" {
 		var err error
@@ -31,7 +31,7 @@ func spikeDataDirectory() (string, error) {
 			return "", err
 		}
 	}
-	dir := filepath.Join(root, "AuthenticMemory", "GAMIHashWebView2Spike")
+	dir := filepath.Join(root, "AuthenticMemory", "GAMIHash", "Diagnostics")
 	return dir, os.MkdirAll(dir, 0o700)
 }
 
@@ -47,7 +47,7 @@ func runAppContainerNetworkProbeIfRequested(args []string) (bool, int) {
 	if len(args) != 1 || args[0] != appContainerNetworkProbeArgument {
 		return false, 0
 	}
-	dir, err := spikeDataDirectory()
+	dir, err := diagnosticDataDirectory()
 	if err != nil {
 		return true, 2
 	}

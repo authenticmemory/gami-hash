@@ -1,4 +1,4 @@
-//go:build windows && appcontainer_webview2_spike
+//go:build windows && windows_appcontainer
 
 package wailsadapter
 
@@ -21,6 +21,7 @@ type appContainerBroker struct {
 	dll         *syscall.LazyDLL
 	selectDir   *syscall.LazyProc
 	setName     *syscall.LazyProc
+	preflight   *syscall.LazyProc
 	run         *syscall.LazyProc
 	getProgress *syscall.LazyProc
 	getResult   *syscall.LazyProc
@@ -37,6 +38,7 @@ type appContainerBroker struct {
 	active      bool
 	resumable   bool
 	resumeRows  int64
+	restoreErr  string
 }
 
 type nativeProgress struct {
@@ -58,6 +60,7 @@ func newBrokerBackend() brokerBackend {
 		dll:         dll,
 		selectDir:   dll.NewProc("GamiSelectFolder"),
 		setName:     dll.NewProc("GamiSetOutputName"),
+		preflight:   dll.NewProc("GamiPreflight"),
 		run:         dll.NewProc("GamiRun"),
 		getProgress: dll.NewProc("GamiGetProgress"),
 		getResult:   dll.NewProc("GamiGetResult"),
@@ -75,7 +78,7 @@ func (b *appContainerBroker) restoreSelection() {
 	errText := make([]uint16, nativeTextCapacity)
 	var resumable int32
 	var rows int64
-	ok, _, _ := b.restore.Call(
+	ok, _, callErr := b.restore.Call(
 		uintptr(unsafe.Pointer(&root[0])), uintptr(len(root)),
 		uintptr(unsafe.Pointer(&output[0])), uintptr(len(output)),
 		uintptr(unsafe.Pointer(&resumable)),
@@ -83,6 +86,13 @@ func (b *appContainerBroker) restoreSelection() {
 		uintptr(unsafe.Pointer(&errText[0])), uintptr(len(errText)),
 	)
 	if ok != 1 {
+		message := utf16Text(errText)
+		if message == "" && ok == 0 {
+			message = callErr.Error()
+		}
+		if ok == 0 {
+			b.restoreErr = message
+		}
 		return
 	}
 	b.root = utf16Text(root)
@@ -90,6 +100,7 @@ func (b *appContainerBroker) restoreSelection() {
 	b.destination = filepath.Dir(b.output)
 	b.resumable = resumable != 0
 	b.resumeRows = rows
+	b.restoreErr = ""
 }
 
 func (b *appContainerBroker) Events() <-chan app.Event { return b.events }
@@ -121,6 +132,7 @@ func (b *appContainerBroker) SelectFolder(context.Context) (string, error) {
 	if err == nil && path != "" {
 		b.mu.Lock()
 		b.root = path
+		b.restoreErr = ""
 		b.mu.Unlock()
 	}
 	return path, err
@@ -144,6 +156,7 @@ func (b *appContainerBroker) SelectOutput(_ context.Context, suggested string) (
 	output := filepath.Join(destination, name)
 	b.mu.Lock()
 	b.destination, b.output = destination, output
+	b.restoreErr = ""
 	b.mu.Unlock()
 	return output, nil
 }
@@ -153,14 +166,14 @@ func (b *appContainerBroker) InspectResume(output string) app.ResumeInspection {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if !b.resumable || output != b.output {
-		return app.ResumeInspection{}
+		return app.ResumeInspection{Error: b.restoreErr}
 	}
 	return app.ResumeInspection{Resumable: true, Root: b.root, Rows: b.resumeRows}
 }
 
 func (b *appContainerBroker) Preflight(req app.RunRequest) (app.PreflightResult, error) {
 	b.mu.Lock()
-	root, output, resumable, rows := b.root, b.output, b.resumable, b.resumeRows
+	root, destination, output, resumable, rows := b.root, b.destination, b.output, b.resumable, b.resumeRows
 	b.mu.Unlock()
 	if req.Mode != app.ModeFresh && req.Mode != app.ModeResume {
 		return app.PreflightResult{}, errors.New("unsupported run mode")
@@ -171,13 +184,50 @@ func (b *appContainerBroker) Preflight(req app.RunRequest) (app.PreflightResult,
 	if req.Mode == app.ModeResume && !resumable {
 		return app.PreflightResult{}, errors.New("no valid resumable run exists for this output")
 	}
+	sourceReason := make([]uint16, nativeTextCapacity)
+	destinationReason := make([]uint16, nativeTextCapacity)
+	errText := make([]uint16, nativeTextCapacity)
+	var sourceKind, destinationKind, requiresConsent int32
+	ok, _, callErr := b.preflight.Call(
+		uintptr(unsafe.Pointer(&sourceKind)),
+		uintptr(unsafe.Pointer(&sourceReason[0])), uintptr(len(sourceReason)),
+		uintptr(unsafe.Pointer(&destinationKind)),
+		uintptr(unsafe.Pointer(&destinationReason[0])), uintptr(len(destinationReason)),
+		uintptr(unsafe.Pointer(&requiresConsent)),
+		uintptr(unsafe.Pointer(&errText[0])), uintptr(len(errText)),
+	)
+	if ok == 0 {
+		if message := utf16Text(errText); message != "" {
+			return app.PreflightResult{}, errors.New(message)
+		}
+		return app.PreflightResult{}, callErr
+	}
+	kindName := func(kind int32) string {
+		switch kind {
+		case 0:
+			return "Local"
+		case 1:
+			return "Network/cloud"
+		default:
+			return "Cannot determine"
+		}
+	}
 	resume := app.ResumeInspection{Resumable: resumable, Root: root, Rows: rows}
-	return app.PreflightResult{Root: root, Output: output, Resume: resume, WillResume: req.Mode == app.ModeResume}, nil
+	return app.PreflightResult{
+		Root: root, Output: output, Resume: resume, WillResume: req.Mode == app.ModeResume,
+		Source:                 app.StorageLocation{Kind: kindName(sourceKind), Reason: utf16Text(sourceReason), Path: root},
+		Destination:            app.StorageLocation{Kind: kindName(destinationKind), Reason: utf16Text(destinationReason), Path: destination},
+		RequiresStorageConsent: requiresConsent != 0,
+	}, nil
 }
 
 func (b *appContainerBroker) Start(req app.RunRequest) error {
-	if _, err := b.Preflight(req); err != nil {
+	preflight, err := b.Preflight(req)
+	if err != nil {
 		return err
+	}
+	if preflight.RequiresStorageConsent && !req.StorageApproved {
+		return errors.New("network, cloud, or uncertain storage requires approval")
 	}
 	b.mu.Lock()
 	if b.active {
@@ -186,11 +236,11 @@ func (b *appContainerBroker) Start(req app.RunRequest) error {
 	}
 	b.active = true
 	b.mu.Unlock()
-	go b.runAndReport(req.Mode == app.ModeResume)
+	go b.runAndReport(req.Mode == app.ModeResume, req.StorageApproved)
 	return nil
 }
 
-func (b *appContainerBroker) runAndReport(resume bool) {
+func (b *appContainerBroker) runAndReport(resume bool, storageApproved bool) {
 	done := make(chan struct{})
 	go func() {
 		ticker := time.NewTicker(100 * time.Millisecond)
@@ -216,7 +266,11 @@ func (b *appContainerBroker) runAndReport(resume bool) {
 	if resume {
 		resumeArg = 1
 	}
-	ok, _, callErr := b.run.Call(resumeArg, uintptr(unsafe.Pointer(&errText[0])), uintptr(len(errText)))
+	approvedArg := uintptr(0)
+	if storageApproved {
+		approvedArg = 1
+	}
+	ok, _, callErr := b.run.Call(resumeArg, approvedArg, uintptr(unsafe.Pointer(&errText[0])), uintptr(len(errText)))
 	close(done)
 	b.mu.Lock()
 	b.active = false
@@ -254,6 +308,27 @@ func (b *appContainerBroker) Cancel() error {
 	}
 	b.cancel.Call()
 	return nil
+}
+
+func (b *appContainerBroker) Shutdown(timeout time.Duration) error {
+	b.mu.Lock()
+	active := b.active
+	b.mu.Unlock()
+	if !active {
+		return nil
+	}
+	b.cancel.Call()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		time.Sleep(50 * time.Millisecond)
+		b.mu.Lock()
+		active = b.active
+		b.mu.Unlock()
+		if !active {
+			return nil
+		}
+	}
+	return errors.New("timed out waiting for the hashing worker to checkpoint and stop")
 }
 
 func (b *appContainerBroker) OpenOutputFolder(context.Context) error {

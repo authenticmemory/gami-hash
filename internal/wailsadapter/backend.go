@@ -7,6 +7,7 @@ import (
 	"log"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -53,7 +54,9 @@ func OnShutdown(b *Backend) func(context.Context) {
 	return func(context.Context) {
 		log.Printf("[Wails adapter] shutdown begin")
 		if b.broker != nil {
-			_ = b.broker.Cancel()
+			if err := b.broker.Shutdown(15 * time.Second); err != nil {
+				log.Printf("[Wails adapter] broker shutdown: %v", err)
+			}
 		} else {
 			_ = b.service.Cancel()
 		}
@@ -165,6 +168,7 @@ type brokerBackend interface {
 	Start(app.RunRequest) error
 	Cancel() error
 	OpenOutputFolder(context.Context) error
+	Shutdown(time.Duration) error
 }
 
 type wailsDialogs struct{}

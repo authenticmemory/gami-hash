@@ -13,6 +13,6 @@ dist/
 /build/windows/installer/*
 !/build/windows/installer/project.nsi
 !/build/windows/info.json
-/*.obj
+*.obj
 /frontend/node_modules/
 /frontend/dist/
