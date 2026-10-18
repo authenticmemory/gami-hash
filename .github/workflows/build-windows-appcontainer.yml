@@ -1,6 +1,9 @@
 name: Build signed Windows AppContainer candidate
 
 on:
+  push:
+    tags:
+      - 'test-v*'
   workflow_dispatch:
     inputs:
       version:
@@ -30,6 +33,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve MSIX version
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'push') {
+            $value = '${{ github.ref_name }}' -replace '^test-v', ''
+            if ($value -match '^\d+\.\d+\.\d+$') { $value += '.0' }
+          } else {
+            $value = '${{ inputs.version }}'
+          }
+          if ($value -notmatch '^\d+\.\d+\.\d+\.0$') { throw "Invalid MSIX version: $value" }
+          "value=$value" >> $env:GITHUB_OUTPUT
+
       - name: Check signing configuration
         shell: pwsh
         env:
@@ -40,7 +56,6 @@ jobs:
           foreach ($name in @('AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_SUBSCRIPTION_ID')) {
             if (-not [Environment]::GetEnvironmentVariable($name)) { throw "Missing $name in windows-signing." }
           }
-          if ('${{ inputs.version }}' -notmatch '^\d+\.\d+\.\d+\.0$') { throw 'Invalid MSIX version.' }
 
       - uses: actions/setup-go@v7
         with:
@@ -57,7 +72,7 @@ jobs:
         shell: pwsh
         run: |
           ./packaging/windows-appcontainer-webview2/build-package.ps1 `
-            -Version '${{ inputs.version }}' `
+            -Version '${{ steps.version.outputs.value }}' `
             -Publisher $env:RELEASE_PUBLISHER `
             -Release
 
@@ -74,14 +89,14 @@ jobs:
           endpoint: https://neu.codesigning.azure.net
           signing-account-name: authenticmemorysigning
           certificate-profile-name: gami-public-signing
-          files: ${{ github.workspace }}\build\bin\windows-appcontainer-webview2\${{ inputs.version }}\gami-hash-windows-${{ inputs.version }}-x64.msix
+          files: ${{ github.workspace }}\build\bin\windows-appcontainer-webview2\${{ steps.version.outputs.value }}\gami-hash-windows-${{ steps.version.outputs.value }}-x64.msix
           exclude-environment-credential: true
 
       - name: Verify signature, identity, capabilities, and checksum
         shell: pwsh
         run: |
-          $directory = Join-Path $PWD 'build/bin/windows-appcontainer-webview2/${{ inputs.version }}'
-          $package = Join-Path $directory 'gami-hash-windows-${{ inputs.version }}-x64.msix'
+          $directory = Join-Path $PWD 'build/bin/windows-appcontainer-webview2/${{ steps.version.outputs.value }}'
+          $package = Join-Path $directory 'gami-hash-windows-${{ steps.version.outputs.value }}-x64.msix'
           $signature = Get-AuthenticodeSignature -LiteralPath $package
           if ($signature.Status -ne 'Valid') { throw "Invalid MSIX signature: $($signature.StatusMessage)" }
           if ($signature.SignerCertificate.Subject -ne $env:RELEASE_PUBLISHER) { throw 'MSIX signer does not match the manifest publisher.' }
@@ -98,7 +113,7 @@ jobs:
           [ordered]@{
             release = $true
             runtimeTested = $false
-            version = '${{ inputs.version }}'
+            version = '${{ steps.version.outputs.value }}'
             package = [IO.Path]::GetFileName($package)
             sha256 = $sha256
             signed = $true
@@ -113,13 +128,13 @@ jobs:
       - name: Upload exact signed candidate
         uses: actions/upload-artifact@v4
         with:
-          name: gami-hash-windows-appcontainer-${{ inputs.version }}
+          name: gami-hash-windows-appcontainer-${{ steps.version.outputs.value }}
           path: |
-            build/bin/windows-appcontainer-webview2/${{ inputs.version }}/gami-hash-windows-${{ inputs.version }}-x64.msix
-            build/bin/windows-appcontainer-webview2/${{ inputs.version }}/SHA256SUMS.txt
-            build/bin/windows-appcontainer-webview2/${{ inputs.version }}/release-report.json
-            build/bin/windows-appcontainer-webview2/${{ inputs.version }}/RUNBOOK.md
-            build/bin/windows-appcontainer-webview2/${{ inputs.version }}/inspect-process-tree.ps1
-            build/bin/windows-appcontainer-webview2/${{ inputs.version }}/collect-sysmon-processes.ps1
+            build/bin/windows-appcontainer-webview2/${{ steps.version.outputs.value }}/gami-hash-windows-${{ steps.version.outputs.value }}-x64.msix
+            build/bin/windows-appcontainer-webview2/${{ steps.version.outputs.value }}/SHA256SUMS.txt
+            build/bin/windows-appcontainer-webview2/${{ steps.version.outputs.value }}/release-report.json
+            build/bin/windows-appcontainer-webview2/${{ steps.version.outputs.value }}/RUNBOOK.md
+            build/bin/windows-appcontainer-webview2/${{ steps.version.outputs.value }}/inspect-process-tree.ps1
+            build/bin/windows-appcontainer-webview2/${{ steps.version.outputs.value }}/collect-sysmon-processes.ps1
           if-no-files-found: error
           retention-days: 14
