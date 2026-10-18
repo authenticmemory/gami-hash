@@ -1,20 +1,15 @@
 name: Build AppContainer storage broker spike
-
 on:
   push:
     tags: ['test-v*-broker-spike']
-
 permissions:
   contents: read
-
 jobs:
   build:
     runs-on: windows-latest
     timeout-minutes: 15
     outputs:
       version: ${{ steps.version.outputs.value }}
-    env:
-      RELEASE_PUBLISHER: 'CN=Authentic Memory gemeinnÃ¼tzige UG (haftungsbeschrÃ¤nkt), O=Authentic Memory gemeinnÃ¼tzige UG (haftungsbeschrÃ¤nkt), STREET=Wendelsteinstr. 3, L=Muenchen, S=Bavaria, C=DE, PostalCode=81541'
     steps:
       - uses: actions/checkout@v4
       - name: Resolve version
@@ -28,15 +23,17 @@ jobs:
       - name: Build and validate networkless spike
         shell: pwsh
         run: |
+          $publisher = 'CN=Authentic Memory gemeinn' + [char]0x00FC + 'tzige UG (haftungsbeschr' +
+            [char]0x00E4 + 'nkt), O=Authentic Memory gemeinn' + [char]0x00FC +
+            'tzige UG (haftungsbeschr' + [char]0x00E4 +
+            'nkt), STREET=Wendelsteinstr. 3, L=Muenchen, S=Bavaria, C=DE, PostalCode=81541'
           ./packaging/appcontainer-storage-broker-spike/build-spike.ps1 `
-            -Version '${{ steps.version.outputs.value }}' `
-            -Publisher $env:RELEASE_PUBLISHER
+            -Version '${{ steps.version.outputs.value }}' -Publisher $publisher
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-storage-broker-spike
           path: build/bin/appcontainer-storage-broker-spike/${{ steps.version.outputs.value }}
           retention-days: 7
-
   sign:
     needs: build
     runs-on: windows-latest
@@ -45,8 +42,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      RELEASE_PUBLISHER: 'CN=Authentic Memory gemeinnÃ¼tzige UG (haftungsbeschrÃ¤nkt), O=Authentic Memory gemeinnÃ¼tzige UG (haftungsbeschrÃ¤nkt), STREET=Wendelsteinstr. 3, L=Muenchen, S=Bavaria, C=DE, PostalCode=81541'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -68,10 +63,14 @@ jobs:
       - name: Verify exact package
         shell: pwsh
         run: |
+          $publisher = 'CN=Authentic Memory gemeinn' + [char]0x00FC + 'tzige UG (haftungsbeschr' +
+            [char]0x00E4 + 'nkt), O=Authentic Memory gemeinn' + [char]0x00FC +
+            'tzige UG (haftungsbeschr' + [char]0x00E4 +
+            'nkt), STREET=Wendelsteinstr. 3, L=Muenchen, S=Bavaria, C=DE, PostalCode=81541'
           $package = '${{ github.workspace }}\candidate\gami-storage-broker-spike-${{ needs.build.outputs.version }}-x64.msix'
           $signature = Get-AuthenticodeSignature -LiteralPath $package
           if ($signature.Status -ne 'Valid') { throw "Invalid signature: $($signature.StatusMessage)" }
-          if ($signature.SignerCertificate.Subject -ne $env:RELEASE_PUBLISHER) { throw 'Signer mismatch' }
+          if ($signature.SignerCertificate.Subject -ne $publisher) { throw 'Signer mismatch' }
           if (-not $signature.TimeStamperCertificate) { throw 'Missing timestamp' }
           $manifest = Get-Content -LiteralPath '${{ github.workspace }}\candidate\unpacked-check\AppxManifest.xml' -Raw
           if ($manifest -match 'runFullTrust|internetClient|internetClientServer|privateNetworkClientServer') { throw 'Forbidden capability' }
