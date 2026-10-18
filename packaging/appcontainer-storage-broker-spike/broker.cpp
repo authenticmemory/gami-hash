@@ -49,9 +49,13 @@ struct broker_app : implements<broker_app, IFrameworkViewSource, IFrameworkView>
 
   fire_and_forget activated(CoreApplicationView const&, IActivatedEventArgs const& args) {
     auto lifetime = get_strong();
-    window.Activate();
-    auto settings = ApplicationData::Current().LocalSettings().Values();
     try {
+      // C++/WinRT fire_and_forget terminates the process when an exception
+      // escapes. Keep activation, package storage, and picker setup within the
+      // same boundary so a platform failure becomes evidence the caller can
+      // display instead of an unexplained broker crash.
+      window.Activate();
+      auto settings = ApplicationData::Current().LocalSettings().Values();
       if (args.Kind() != ActivationKind::Protocol) {
         settings.Insert(L"broker.status", box_value(L"wrong-activation"));
         CoreApplication::Exit();
@@ -78,9 +82,21 @@ struct broker_app : implements<broker_app, IFrameworkViewSource, IFrameworkView>
       }
       settings.Insert(L"broker.status", box_value(L"ok"));
     } catch (hresult_error const& error) {
-      settings.Insert(L"broker.status", box_value(L"error"));
-      settings.Insert(L"broker.hresult", box_value(error.code().value));
-      settings.Insert(L"broker.message", box_value(error.message()));
+      // LocalSettings might itself be the operation that failed. Attempting
+      // the diagnostic write must therefore have its own non-throwing guard.
+      try {
+        auto settings = ApplicationData::Current().LocalSettings().Values();
+        settings.Insert(L"broker.status", box_value(L"error"));
+        settings.Insert(L"broker.hresult", box_value(error.code().value));
+        settings.Insert(L"broker.message", box_value(error.message()));
+      } catch (...) {
+      }
+    } catch (...) {
+      try {
+        auto settings = ApplicationData::Current().LocalSettings().Values();
+        settings.Insert(L"broker.status", box_value(L"unknown-error"));
+      } catch (...) {
+      }
     }
     CoreApplication::Exit();
   }
