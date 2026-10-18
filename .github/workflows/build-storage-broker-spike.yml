@@ -2,7 +2,7 @@ name: Build AppContainer storage broker spike
 
 on:
   push:
-    tags: ['broker-spike-v*']
+    tags: ['test-v*-broker-spike']
 
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $value = '${{ github.ref_name }}' -replace '^broker-spike-v', ''
+          $value = '${{ github.ref_name }}' -replace '^test-v', '' -replace '-broker-spike$', ''
           if ($value -match '^\d+\.\d+\.\d+$') { $value += '.0' }
           if ($value -notmatch '^\d+\.\d+\.\d+\.0$') { throw "Invalid version: $value" }
           "value=$value" >> $env:GITHUB_OUTPUT

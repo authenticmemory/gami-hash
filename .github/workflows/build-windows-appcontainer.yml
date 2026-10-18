@@ -19,10 +19,11 @@ permissions:
 
 jobs:
   security:
-    if: startsWith(github.ref, 'refs/tags/test-v')
+    if: startsWith(github.ref, 'refs/tags/test-v') && !endsWith(github.ref, '-broker-spike')
     uses: ./.github/workflows/security-checks.yml
 
   build:
+    if: github.event_name != 'push' || !endsWith(github.ref, '-broker-spike')
     runs-on: windows-latest
     timeout-minutes: 30
     outputs:
@@ -73,7 +74,7 @@ jobs:
           retention-days: 14
 
   sign:
-    if: startsWith(github.ref, 'refs/tags/test-v')
+    if: startsWith(github.ref, 'refs/tags/test-v') && !endsWith(github.ref, '-broker-spike')
     needs: [security, build]
     runs-on: windows-latest
     timeout-minutes: 15
