@@ -1,7 +1,8 @@
 # Windows AppContainer GUI implementation plan
 
-Status: **Phase 3 engineering gate passed on the tested Windows 11 VM;
-release acceptance remains open**.
+Status: **Phase 3 engineering gate and the bounded WebView2-inside-
+AppContainer feasibility gate passed on the tested Windows 11 VM; release
+acceptance remains open**.
 The [architecture decision](decisions/0001-windows-appcontainer-storage-adapter.md)
 directed Phase 2 toward a contained storage adapter. The production integration
 host, contained worker, and brokered engine adapter pass the tested Phase 2
@@ -10,7 +11,16 @@ consent enforcement. The native product wizard and release acceptance work
 remain, and no released Windows GUI yet meets the assurance gates.
 The signed v1.5.0 GUI still uses WebView2 and [failed the no-independent-network
 claim](evidence/2026-10-16-windows-v1.5.0/README.md). This plan is for its
-successor, not a retroactive certification of v1.5.0.
+successor, not a retroactive certification of v1.5.0. A development-only
+WebView2 AppContainer spike has since rendered the unchanged frontend, passed
+contained network controls, and produced an oracle-matching manifest through
+the brokered worker with every observed process contained. The prototype also
+passed cancel/resume in one session, persisted and revalidated picker grants
+for resume after process exit, completed a restored 2 GiB run, and passed a
+close/relaunch lifecycle check. See the
+[feasibility decision](WINDOWS-APPCONTAINER-WEBVIEW2-FEASIBILITY.md). The
+native wizard remains a fallback while the proven WebView2 route is
+productized.
 
 ## Platform scope
 
@@ -21,7 +31,7 @@ network evidence must be designed and released separately for each OS.
 
 | Platform | Current GUI and release state | Separate assurance path |
 | --- | --- | --- |
-| Windows | Wails/WebView2; signed v1.5.0 network test failed. | Native GUI in a real networkless AppContainer; this plan. |
+| Windows | Wails/WebView2; signed v1.5.0 network test failed. | Productize the proven Wails/WebView2 AppContainer plus broker boundary, retaining the native wizard as fallback; then test the exact signed artifact. |
 | macOS | Wails uses system WebKit. The current preview ZIP is ad hoc signed; production notarization and runtime network assurance are open. | Prototype a signed macOS App Sandbox build without outgoing-network entitlement. Test user-selected source/output access, network/cloud storage, WebKit child processes, cancel/resume, and source-write rights. Keep the web UI only if the full process tree meets the claim; otherwise use a native UI. Then notarize and test the exact artifact. |
 | Linux | Wails uses WebKitGTK. The current `.deb`/`.rpm` packages declare GTK/WebKit dependencies and do not establish an app network sandbox; CI only smoke-tests launch. | Prototype a sandboxed distribution such as Flatpak with no `--share=network`, using file chooser/document portals for selected folders. Prove whole-tree reads, output, resume, and network-storage behavior. Treat ordinary `.deb`/`.rpm` builds as a separate, weaker assurance tier unless an enforceable sandbox is shipped and verified. |
 
@@ -363,6 +373,16 @@ engine preflight read or output write can bypass the gate; local flow remains
 one-click after selection. Do not claim perfect remote-source detection.
 
 ## Phase 4 — build the native Windows wizard
+
+Implementation status (2026-10-16): native package candidate `0.4.4.0` is
+built and development-signed. It replaces the diagnostic host with native
+Win32 welcome, collection, result-file, review/consent, progress, canceled,
+failure, and completed screens. Progress and terminal result data now cross
+the bounded native/Go storage protocol; persisted state is limited to
+FutureAccessList tokens and the CSV name. Static PE inspection shows no
+WebView2, WinHTTP, WinINet, Winsock, URLMon, or browser dependency. Runtime
+and non-developer usability acceptance remain open until the candidate is
+installed and exercised in the standard-user VM.
 
 Tasks:
 

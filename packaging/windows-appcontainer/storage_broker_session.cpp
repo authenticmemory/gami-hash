@@ -94,15 +94,18 @@ void verify_destination_outside_source(StorageFolder const& source,
         CloseHandle(handle);
         if (identity.identity == destination_identity)
             throw identity_error("selected destination is inside the selected source");
-        QueryOptions options(CommonFileQuery::DefaultQuery, {});
-        auto query = current.CreateItemQueryWithOptions(options);
+        // Containment depends on folder identity. Enumerating every file here
+        // duplicates the worker's later source scan and can make cloud-backed
+        // collections appear to stall before hashing begins. Walk directories
+        // only; files are still validated when the worker lists and opens them.
+        QueryOptions options(CommonFolderQuery::DefaultQuery);
+        auto query = current.CreateFolderQueryWithOptions(options);
         std::uint32_t offset{};
         for (;;) {
-            auto page = query.GetItemsAsync(offset, 256).get();
+            auto page = query.GetFoldersAsync(offset, 256).get();
             for (auto const& child : page) {
                 require_ordinary_item(child);
-                if (child.IsOfType(StorageItemTypes::Folder))
-                    pending.push_back(child.as<StorageFolder>());
+                pending.push_back(child);
             }
             if (page.Size() < 256) break;
             offset += page.Size();
@@ -137,13 +140,15 @@ JsonObject item_json(IStorageItem const& item, std::wstring const& id) {
 storage_broker_session::storage_broker_session(StorageFolder const& source,
     StorageFolder const& destination, storage_authorization const& authorization,
     std::wstring output_name, bool resume,
-    HANDLE worker_process, HANDLE worker_requests, HANDLE broker_responses)
+    HANDLE worker_process, HANDLE worker_requests, HANDLE broker_responses,
+    std::function<void(storage_progress const&)> progress)
     : source_(source), destination_(destination),
       source_identity_(source), destination_identity_(destination),
       output_name_(std::move(output_name)),
       checkpoint_name_(output_name_ + L".part.json"),
       error_name_(output_name_.substr(0, output_name_.find_last_of(L'.')) + L"_errors.log"),
-      resume_(resume), worker_process_(worker_process), protocol_(worker_requests, broker_responses) {
+      resume_(resume), worker_process_(worker_process), protocol_(worker_requests, broker_responses),
+      progress_(std::move(progress)) {
     if (!worker_process_) throw identity_error("worker process is unavailable");
     validate_authorization(authorization,
         classify_storage_folder(source_), classify_storage_folder(destination_));
@@ -320,12 +325,34 @@ void storage_broker_session::dispatch(broker_request const& request) {
             return;
         }
         if (request.operation == L"progress") {
+            storage_progress update{
+                static_cast<int>(request.payload.GetNamedNumber(L"phase", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"files_done", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"files_total", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"bytes_done", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"bytes_total", 0)),
+            };
+            if (progress_) progress_(update);
             JsonObject result;
             result.SetNamedValue(L"cancel_requested", JsonValue::CreateBooleanValue(cancel_requested_.load()));
             protocol_.write_success(request.request_id, result);
             return;
         }
         if (request.operation == L"complete") {
+            summary_ = {
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"files_hashed", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"files_resumed", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"files_failed", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"skipped", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"warnings", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"bytes_hashed", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"files_total", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"bytes_total", 0)),
+                static_cast<std::int64_t>(request.payload.GetNamedNumber(L"elapsed_nanos", 0)),
+                std::wstring(request.payload.GetNamedString(L"output", L"")),
+                std::wstring(request.payload.GetNamedString(L"error_log", L"")),
+                request.payload.GetNamedBoolean(L"canceled", false),
+            };
             protocol_.write_success(request.request_id, JsonObject{});
             return;
         }

@@ -8,10 +8,14 @@
 package main
 
 import (
+	"log"
 	"os"
 )
 
 func main() {
+	if handled, code := runAppContainerNetworkProbeIfRequested(os.Args[1:]); handled {
+		exitProcess(code)
+	}
 	if handled, code := runContainedWorkerIfRequested(os.Args[1:]); handled {
 		os.Exit(code)
 	}
@@ -20,6 +24,7 @@ func main() {
 		os.Exit(runCLI(os.Args[1:]))
 	}
 	if err := runGUI(); err != nil {
+		log.Printf("GUI stopped: %v", err)
 		os.Exit(1)
 	}
 }

@@ -82,7 +82,8 @@ worker_result run_storage_worker(std::wstring const& worker_executable,
     winrt::Windows::Storage::StorageFolder const& source,
     winrt::Windows::Storage::StorageFolder const& destination,
     storage_authorization const& authorization,
-    std::wstring const& output_name, bool resume, std::atomic_bool const* cancel_requested) {
+    std::wstring const& output_name, bool resume, std::atomic_bool const* cancel_requested,
+    std::function<void(storage_progress const&)> progress) {
     // Reclassify and compare stable identities before creating the worker. The
     // broker repeats this after launch, closing both selection-time and
     // launch-time substitution windows.
@@ -130,7 +131,7 @@ worker_result run_storage_worker(std::wstring const& worker_executable,
     error_log = owned_handle{};
 
     storage_broker_session session(source, destination, authorization, output_name, resume,
-        process_handle.value, broker_read.value, broker_write.value);
+        process_handle.value, broker_read.value, broker_write.value, std::move(progress));
     std::atomic_bool monitor_done{false};
     std::thread monitor;
     if (cancel_requested) {
@@ -167,7 +168,7 @@ worker_result run_storage_worker(std::wstring const& worker_executable,
     DWORD exit_code{};
     if (!GetExitCodeProcess(process_handle.value, &exit_code))
         throw std::runtime_error("cannot read contained worker exit status");
-    return {process_id, exit_code};
+    return {process_id, exit_code, session.summary()};
 }
 
 } // namespace gami::storage

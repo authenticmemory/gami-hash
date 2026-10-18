@@ -63,9 +63,10 @@ bool safe_single_link(opened_identity const& value) noexcept {
 
 selected_folder_identity::selected_folder_identity(StorageFolder const& folder) {
     if (auto access = folder.try_as<IStorageItemHandleAccess>()) {
-        check_hresult(access->Create(HAO_READ_ATTRIBUTES,
+        auto const result = access->Create(HAO_READ_ATTRIBUTES,
             HSO_SHARE_READ | HSO_SHARE_WRITE | HSO_SHARE_DELETE,
-            HO_NONE, nullptr, &handle_));
+            HO_NONE, nullptr, &handle_);
+        if (FAILED(result)) handle_ = INVALID_HANDLE_VALUE;
     }
     if (!handle_ || handle_ == INVALID_HANDLE_VALUE) {
         auto const path = std::wstring(folder.Path());
@@ -75,7 +76,8 @@ selected_folder_identity::selected_folder_identity(StorageFolder const& folder) 
             OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
     }
     if (handle_ == INVALID_HANDLE_VALUE) {
-        throw identity_error("selected provider does not expose a stable folder handle");
+        throw hresult_error(HRESULT_FROM_WIN32(GetLastError()),
+            L"cannot open the selected folder identity");
     }
     try {
         auto const opened = query_identity(handle_);

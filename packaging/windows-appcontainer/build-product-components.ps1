@@ -15,8 +15,8 @@ if (-not (Test-Path -LiteralPath $go)) {
     $go = Join-Path $repo 'build/bin/go-toolchain/go/bin/go.exe'
 }
 if (-not (Test-Path -LiteralPath $go)) { throw 'Pinned Go toolchain was not found' }
-$env:GOCACHE = Join-Path $repo 'build/gocache'
-$env:GOMODCACHE = Join-Path $repo 'build/gomodcache'
+if (-not $env:GOCACHE) { $env:GOCACHE = Join-Path $repo 'build/gocache' }
+if (-not $env:GOMODCACHE) { $env:GOMODCACHE = Join-Path $repo 'build/gomodcache' }
 & $go build -trimpath -ldflags "-X github.com/authenticmemory/gami-hash/internal/engine.Version=$Version" `
     -o (Join-Path $OutputDirectory 'GamiHashContainedWorker.exe') $repo
 if ($LASTEXITCODE -ne 0) { throw 'Contained Go worker build failed' }
@@ -63,7 +63,7 @@ $artifacts = Get-ChildItem -LiteralPath $OutputDirectory -File |
 $report = [pscustomobject]@{
     prototype = $false
     release = $false
-    phase = 3
+    phase = 4
     version = $Version
     sourceCommit = (git -c "safe.directory=$repo" -C $repo rev-parse HEAD)
     artifacts = $artifacts
