@@ -391,6 +391,15 @@ has not been exercised, `1.6.7.0` is signed with a disposable development
 certificate, and process containment plus network capture must be repeated
 against the exact organization-signed release artifact.
 
+Signed-candidate follow-up (2026-10-18): organization-signed `1.6.10.0`
+(SHA-256 `4b9b9e10e11b682b18e5814106edb86456995d399bf5706121c4525753911f84`)
+passed process containment plus idle, local, UNC SMB, and cached Google Drive
+captures. All observed GAMI/WebView2 processes were AppContainer-contained;
+Sysmon attributed no network or DNS events to that process tree in the captured
+windows; and every output manifest independently matched its fixture. See
+`docs/evidence/2026-10-18-windows-appcontainer-signed-1.6.10/`. The exact-build
+socket negative control and a genuine online-only placeholder remain open.
+
 Implementation status (2026-10-16): native package candidate `0.4.4.0` is
 built and development-signed. It replaces the diagnostic host with native
 Win32 welcome, collection, result-file, review/consent, progress, canceled,

@@ -1,0 +1,9 @@
+﻿{
+    "rows":  1024,
+    "files":  1024,
+    "uniquePaths":  1024,
+    "mismatches":  [
+
+                   ],
+    "manifestSha256":  "5af7439cef4613c4ae8e07267d8b817b2e05f27b58bd5efd27c3609fe50a9c1e"
+}

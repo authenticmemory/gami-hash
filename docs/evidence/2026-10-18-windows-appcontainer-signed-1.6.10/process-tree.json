@@ -1,0 +1,81 @@
+﻿{
+    "collectedUtc":  "2026-10-18T05:25:04.3626721Z",
+    "packageFullName":  "AuthenticMemory.GAMIHash.Windows_1.6.10.0_x64__gvy2j2522dmkc",
+    "packageFamilyName":  "AuthenticMemory.GAMIHash.Windows_gvy2j2522dmkc",
+    "installLocation":  "C:\\Program Files\\WindowsApps\\AuthenticMemory.GAMIHash.Windows_1.6.10.0_x64__gvy2j2522dmkc",
+    "processes":  [
+                      {
+                          "observedUtc":  "2026-10-18T05:24:50.1518412Z",
+                          "name":  "GamiHash.exe",
+                          "pid":  4532,
+                          "parentPid":  5580,
+                          "executablePath":  "C:\\Program Files\\WindowsApps\\AuthenticMemory.GAMIHash.Windows_1.6.10.0_x64__gvy2j2522dmkc\\GamiHash.exe",
+                          "commandLine":  "\"C:\\Program Files\\WindowsApps\\AuthenticMemory.GAMIHash.Windows_1.6.10.0_x64__gvy2j2522dmkc\\GamiHash.exe\" ",
+                          "isAppContainer":  true,
+                          "tokenError":  null
+                      },
+                      {
+                          "observedUtc":  "2026-10-18T05:24:50.1783993Z",
+                          "name":  "msedgewebview2.exe",
+                          "pid":  1124,
+                          "parentPid":  4532,
+                          "executablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe",
+                          "commandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe\" --embedded-browser-webview=1 --webview-exe-name=GamiHash.exe --user-data-dir=\"C:\\Users\\gami_runner\\AppData\\Local\\Packages\\authenticmemory.gamihash.windows_gvy2j2522dmkc\\AC\\AuthenticMemory\\GAMIHash\\WebView2\\EBWebView\" --noerrdialogs --embedded-browser-webview-dpi-awareness=1 --disable-features=msSmartScreenProtection --mojo-named-platform-channel-pipe=4532.1792.11183120924927991507 /pfhostedapp:1388854a4616bce06b73eac62f6d3cde83d0d961",
+                          "isAppContainer":  true,
+                          "tokenError":  null
+                      },
+                      {
+                          "observedUtc":  "2026-10-18T05:24:50.1902484Z",
+                          "name":  "msedgewebview2.exe",
+                          "pid":  5396,
+                          "parentPid":  1124,
+                          "executablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe",
+                          "commandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe\" --type=crashpad-handler --user-data-dir=C:\\Users\\gami_runner\\AppData\\Local\\Packages\\authenticmemory.gamihash.windows_gvy2j2522dmkc\\AC\\AuthenticMemory\\GAMIHash\\WebView2\\EBWebView /prefetch:4 /pfhostedapp:1388854a4616bce06b73eac62f6d3cde83d0d961 --monitor-self-annotation=ptype=crashpad-handler --database=C:\\Users\\gami_runner\\AppData\\Local\\Packages\\authenticmemory.gamihash.windows_gvy2j2522dmkc\\AC\\AuthenticMemory\\GAMIHash\\WebView2\\EBWebView\\Crashpad --annotation=IsOfficialBuild=1 --annotation=channel= --annotation=chromium-version=155.0.8059.80 \"--annotation=exe=C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe\" --annotation=plat=Win64 \"--annotation=prod=Edge WebView2\" --annotation=ver=155.0.4283.60 --initial-client-data=0x178,0x17c,0x180,0x154,0x188,0x7ffc3bd383e0,0x7ffc3bd383f0,0x7ffc3bd38400",
+                          "isAppContainer":  true,
+                          "tokenError":  null
+                      },
+                      {
+                          "observedUtc":  "2026-10-18T05:24:50.1902484Z",
+                          "name":  "msedgewebview2.exe",
+                          "pid":  5988,
+                          "parentPid":  1124,
+                          "executablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe",
+                          "commandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe\" --type=gpu-process --gpu-recent-crash-count=0 --noerrdialogs --user-data-dir=\"C:\\Users\\gami_runner\\AppData\\Local\\Packages\\authenticmemory.gamihash.windows_gvy2j2522dmkc\\AC\\AuthenticMemory\\GAMIHash\\WebView2\\EBWebView\" --webview-exe-name=GamiHash.exe --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=1 --gpu-preferences=WAAAAAAAAADgAAAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAAEAAAAAIAAAABAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --startup-read-main-dll --metrics-shmem-handle=1668,i,4650157355497173527,15627395126155063741,262144 --field-trial-handle=1980,i,2727631639971980131,3216376798177883486,262144 --disable-features=msSmartScreenProtection --variations-seed-version --pseudonymization-salt-handle=1984,i,4236916800193458610,7515940100870579525,4 --trace-process-track-uuid=3190708988185955192 --mojo-platform-channel-handle=1976 /prefetch:2 /pfhostedapp:1388854a4616bce06b73eac62f6d3cde83d0d961",
+                          "isAppContainer":  true,
+                          "tokenError":  null
+                      },
+                      {
+                          "observedUtc":  "2026-10-18T05:24:50.1902484Z",
+                          "name":  "msedgewebview2.exe",
+                          "pid":  2208,
+                          "parentPid":  1124,
+                          "executablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe",
+                          "commandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe\" --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --noerrdialogs --user-data-dir=\"C:\\Users\\gami_runner\\AppData\\Local\\Packages\\authenticmemory.gamihash.windows_gvy2j2522dmkc\\AC\\AuthenticMemory\\GAMIHash\\WebView2\\EBWebView\" --webview-exe-name=GamiHash.exe --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=1 --startup-read-main-dll --metrics-shmem-handle=1828,i,4547659642348664051,2907322746511618065,524288 --field-trial-handle=1980,i,2727631639971980131,3216376798177883486,262144 --disable-features=msSmartScreenProtection --variations-seed-version --pseudonymization-salt-handle=1984,i,4236916800193458610,7515940100870579525,4 --trace-process-track-uuid=3190708989122997041 --mojo-platform-channel-handle=2028 /prefetch:11 /pfhostedapp:1388854a4616bce06b73eac62f6d3cde83d0d961",
+                          "isAppContainer":  true,
+                          "tokenError":  null
+                      },
+                      {
+                          "observedUtc":  "2026-10-18T05:24:50.1902484Z",
+                          "name":  "msedgewebview2.exe",
+                          "pid":  7356,
+                          "parentPid":  1124,
+                          "executablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe",
+                          "commandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe\" --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --noerrdialogs --user-data-dir=\"C:\\Users\\gami_runner\\AppData\\Local\\Packages\\authenticmemory.gamihash.windows_gvy2j2522dmkc\\AC\\AuthenticMemory\\GAMIHash\\WebView2\\EBWebView\" --webview-exe-name=GamiHash.exe --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=1 --startup-read-main-dll --metrics-shmem-handle=2412,i,3902042067800241946,6262051895153355404,524288 --field-trial-handle=1980,i,2727631639971980131,3216376798177883486,262144 --disable-features=msSmartScreenProtection --variations-seed-version --pseudonymization-salt-handle=1984,i,4236916800193458610,7515940100870579525,4 --trace-process-track-uuid=3190708990060038890 --mojo-platform-channel-handle=2544 /prefetch:13 /pfhostedapp:1388854a4616bce06b73eac62f6d3cde83d0d961",
+                          "isAppContainer":  true,
+                          "tokenError":  null
+                      },
+                      {
+                          "observedUtc":  "2026-10-18T05:24:50.1902484Z",
+                          "name":  "msedgewebview2.exe",
+                          "pid":  10964,
+                          "parentPid":  1124,
+                          "executablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe",
+                          "commandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.60\\msedgewebview2.exe\" --type=renderer --noerrdialogs --user-data-dir=\"C:\\Users\\gami_runner\\AppData\\Local\\Packages\\authenticmemory.gamihash.windows_gvy2j2522dmkc\\AC\\AuthenticMemory\\GAMIHash\\WebView2\\EBWebView\" --webview-exe-name=GamiHash.exe --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=1 --disable-gpu-compositing --video-capture-use-gpu-memory-buffer --lang=en-US --js-flags --device-scale-factor=1 --num-raster-threads=1 --renderer-client-id=5 --ram-no-pressure-read-main-dll --launch-time-ticks=175889428 --metrics-shmem-handle=3568,i,5326064325532995928,15233149988901639586,1048576 --field-trial-handle=1980,i,2727631639971980131,3216376798177883486,262144 --disable-features=msSmartScreenProtection --variations-seed-version --pseudonymization-salt-handle=1984,i,4236916800193458610,7515940100870579525,4 --trace-process-track-uuid=3190708990997080739 --mojo-platform-channel-handle=3588 /pfhostedapp:1388854a4616bce06b73eac62f6d3cde83d0d961 /prefetch:1",
+                          "isAppContainer":  true,
+                          "tokenError":  null
+                      }
+                  ],
+    "allObservedProcessesContained":  true,
+    "appLogPath":  null,
+    "appLog":  null
+}
