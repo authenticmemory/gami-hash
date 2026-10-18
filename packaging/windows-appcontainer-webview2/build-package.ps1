@@ -13,9 +13,18 @@ if ($Release -and $DevCertificateThumbprint) { throw 'Release packages must be s
 if ($Release -and $Publisher -eq 'CN=GAMI Hash Windows Development') { throw 'Release packages require the organization signing publisher.' }
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-$sdk = '10.0.22621.0'
-$makeAppx = "C:\Program Files (x86)\Windows Kits\10\bin\$sdk\x64\makeappx.exe"
-$signTool = "C:\Program Files (x86)\Windows Kits\10\bin\$sdk\x64\signtool.exe"
+$windowsKits = 'C:\Program Files (x86)\Windows Kits\10'
+$sdk = Get-ChildItem -LiteralPath (Join-Path $windowsKits 'bin') -Directory |
+    Where-Object {
+        $_.Name -match '^\d+\.\d+\.\d+\.\d+$' -and
+        (Test-Path -LiteralPath (Join-Path $_.FullName 'x64\makeappx.exe')) -and
+        (Test-Path -LiteralPath (Join-Path $windowsKits "Include\$($_.Name)\cppwinrt"))
+    } |
+    Sort-Object { [version]$_.Name } -Descending |
+    Select-Object -First 1 -ExpandProperty Name
+if (-not $sdk) { throw 'No Windows SDK with MakeAppx and C++/WinRT headers was found.' }
+$makeAppx = Join-Path $windowsKits "bin\$sdk\x64\makeappx.exe"
+$signTool = Join-Path $windowsKits "bin\$sdk\x64\signtool.exe"
 $out = Join-Path $repo "build/bin/windows-appcontainer-webview2/$Version"
 $stage = Join-Path $out 'stage'
 $assets = Join-Path $stage 'Assets'
@@ -53,7 +62,7 @@ $components = Join-Path $repo 'build/bin/windows-appcontainer-webview2-component
 & (Join-Path $repo 'packaging/windows-appcontainer/build-product-components.ps1') `
     -OutputDirectory $components -Version $Version | Out-Null
 $vc = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat'
-$cppwinrt = "C:\Program Files (x86)\Windows Kits\10\Include\$sdk\cppwinrt"
+$cppwinrt = Join-Path $windowsKits "Include\$sdk\cppwinrt"
 $bridge = Join-Path $stage 'GamiHashStorageBridge.dll'
 $bridgeBuild = 'call "' + $vc + '" >nul && cl /nologo /std:c++20 /EHsc /MD /LD /DUNICODE /D_UNICODE /I "' + `
     $cppwinrt + '" /I "' + (Join-Path $repo 'packaging/windows-appcontainer') + '" "' + `
