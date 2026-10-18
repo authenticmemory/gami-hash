@@ -56,7 +56,11 @@ $exe = Join-Path $stage 'GamiHash.exe'
 $ldflags = "-w -s -buildid= -H windowsgui -X github.com/authenticmemory/gami-hash/internal/engine.Version=$Version"
 Push-Location $repo
 try {
-    & $goCommand.Source build -trimpath -buildvcs=false -tags 'desktop,production,windows_appcontainer' -ldflags $ldflags -o $exe .
+    # Keep the bounded socket diagnostic in the exact release binary. It is
+    # reachable only through an explicit command-line argument and lets release
+    # acceptance test the installed package's real AppContainer token instead
+    # of substituting a separately built probe with merely similar policy.
+    & $goCommand.Source build -trimpath -buildvcs=false -tags 'desktop,production,windows_appcontainer,appcontainer_network_probe' -ldflags $ldflags -o $exe .
     if ($LASTEXITCODE -ne 0) { throw 'Windows AppContainer executable build failed' }
 } finally { Pop-Location }
 
