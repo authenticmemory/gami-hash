@@ -18,7 +18,16 @@ if ([IO.Path]::GetFileName($packagePath) -ne $expectedPackageName) {
 if (-not $OutputDirectory) { $OutputDirectory = Split-Path -Parent $packagePath }
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $outputPath = [IO.Path]::GetFullPath((Join-Path $OutputDirectory "gami-hash-windows-$Version-x64-installer.exe"))
-$makeNSISCommand = Get-Command $MakeNSIS -ErrorAction Stop
+$makeNSISCommand = Get-Command $MakeNSIS -ErrorAction SilentlyContinue
+if (-not $makeNSISCommand) {
+    $installedNSIS = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+    if (Test-Path -LiteralPath $installedNSIS) {
+        $MakeNSIS = $installedNSIS
+        $makeNSISCommand = Get-Command $MakeNSIS -ErrorAction Stop
+    } else {
+        throw 'MakeNSIS was not found on PATH or in the standard NSIS installation directory.'
+    }
+}
 $script = Join-Path $PSScriptRoot 'installer.nsi'
 
 & $makeNSISCommand.Source /V2 `
