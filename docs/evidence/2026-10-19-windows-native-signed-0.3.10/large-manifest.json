@@ -1,0 +1,11 @@
+﻿{
+    "schema":  1,
+    "candidateTag":  "test-v0.3.10",
+    "installerSha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+    "scenario":  "large-manifest",
+    "result":  "pass",
+    "manifestRows":  10000,
+    "manifestBytes":  1549021,
+    "manifestSha256":  "eef30e3c3441b7e9b68e74aabc53ea43a58aa0f1f970bc9e05404fd79f31f5f8",
+    "completedUtc":  "2026-10-19T12:06:00.2603428Z"
+}

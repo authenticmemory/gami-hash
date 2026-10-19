@@ -1,0 +1,33 @@
+﻿{
+    "scenario":  "unc-smb",
+    "startUtc":  "2026-10-19T05:30:35.9498788-07:00",
+    "endUtc":  "2026-10-19T05:36:29.9101205-07:00",
+    "artifactIdentity":  {
+                             "schema":  1,
+                             "installer":  "gami-hash-windows-0.3.10-x64-installer.exe",
+                             "bytes":  67636832,
+                             "sha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+                             "candidateTag":  "test-v0.3.10",
+                             "commit":  "579cedd65dbc6878fb454ad14fe66660f6f604f8"
+                         },
+    "packetCaptureBytes":  97980,
+    "sysmonGamiEvents":  2,
+    "gamiNetworkEvents":  0,
+    "gamiDnsEvents":  0,
+    "processes":  [
+                      {
+                          "ProcessId":  1388,
+                          "ParentProcessId":  4708,
+                          "Name":  "GamiHash.exe",
+                          "ExecutablePath":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHash.exe",
+                          "CommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHash.exe\" "
+                      },
+                      {
+                          "ProcessId":  1212,
+                          "ParentProcessId":  1388,
+                          "Name":  "GamiHashEngine.exe",
+                          "ExecutablePath":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHashEngine.exe",
+                          "CommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHashEngine.exe\" --native-ui-worker"
+                      }
+                  ]
+}

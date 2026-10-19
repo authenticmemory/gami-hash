@@ -1,0 +1,60 @@
+﻿[
+    {
+        "TimeCreated":  "2026-10-19T12:37:00.4366575Z",
+        "Id":  1,
+        "Data":  {
+                     "ParentCommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHash.exe\" ",
+                     "Description":  "-",
+                     "CommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHashEngine.exe\" --native-ui-worker",
+                     "CurrentDirectory":  "C:\\projects\\gami-hash\\",
+                     "Hashes":  "SHA256=85D5646CEA40520C340B18A1DBE2DD20DCDD5E80B82F27407309313AD667BF12",
+                     "Image":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHashEngine.exe",
+                     "UtcTime":  "2026-10-19 12:37:00.431",
+                     "ProcessGuid":  "{5a8a72b4-0eec-6ad6-d101-000000001800}",
+                     "ParentUser":  "Gami-Hash-VM\\gami_runner",
+                     "Company":  "-",
+                     "IntegrityLevel":  "High",
+                     "FileVersion":  "-",
+                     "User":  "Gami-Hash-VM\\gami_runner",
+                     "RuleName":  "-",
+                     "Product":  "-",
+                     "LogonId":  "0x50a39",
+                     "ProcessId":  "8840",
+                     "OriginalFileName":  "-",
+                     "LogonGuid":  "{5a8a72b4-07eb-6ad6-390a-050000000000}",
+                     "TerminalSessionId":  "1",
+                     "ParentProcessGuid":  "{5a8a72b4-0eeb-6ad6-d001-000000001800}",
+                     "ParentProcessId":  "8584",
+                     "ParentImage":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHash.exe"
+                 }
+    },
+    {
+        "TimeCreated":  "2026-10-19T12:36:59.8469372Z",
+        "Id":  1,
+        "Data":  {
+                     "ParentCommandLine":  "\"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -ExecutionPolicy Bypass -File C:\\Users\\gami_runner\\Documents\\GamiHashNativeAcceptance\\start-capture.ps1 -Scenario mapped-drive",
+                     "Description":  "Authentic Memory Hashing Tool",
+                     "CommandLine":  "\"C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHash.exe\" ",
+                     "CurrentDirectory":  "C:\\projects\\gami-hash\\",
+                     "Hashes":  "SHA256=D28649E32E505ED42CDA2906E94B86907F943D95ED8B22751D4F8BD2224FA5C8",
+                     "Image":  "C:\\Users\\gami_runner\\AppData\\Local\\Programs\\Authentic Memory\\GAMI Hash\\GamiHash.exe",
+                     "UtcTime":  "2026-10-19 12:36:59.842",
+                     "ProcessGuid":  "{5a8a72b4-0eeb-6ad6-d001-000000001800}",
+                     "ParentUser":  "Gami-Hash-VM\\gami_runner",
+                     "Company":  "Authentic Memory",
+                     "IntegrityLevel":  "High",
+                     "FileVersion":  "0.3.10.0",
+                     "User":  "Gami-Hash-VM\\gami_runner",
+                     "RuleName":  "-",
+                     "Product":  "Authentic Memory Hashing Tool",
+                     "LogonId":  "0x50a39",
+                     "ProcessId":  "8584",
+                     "OriginalFileName":  "GamiHash.dll",
+                     "LogonGuid":  "{5a8a72b4-07eb-6ad6-390a-050000000000}",
+                     "TerminalSessionId":  "1",
+                     "ParentProcessGuid":  "{5a8a72b4-0eeb-6ad6-cc01-000000001800}",
+                     "ParentProcessId":  "3204",
+                     "ParentImage":  "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+                 }
+    }
+]

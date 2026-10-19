@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][ValidateSet('idle','local-hash')][string]$Scenario)
+param([Parameter(Mandatory)][ValidateSet('idle','local-hash','unc-smb','mapped-drive','cloud-cached','cloud-online-only')][string]$Scenario)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $evidence = Join-Path $root "evidence-$Scenario"

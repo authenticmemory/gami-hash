@@ -1,0 +1,13 @@
+﻿{
+    "schema":  1,
+    "candidateTag":  "test-v0.3.10",
+    "installerSha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+    "scenario":  "changed-file-after-cancel-before-resume",
+    "result":  "pass",
+    "oldHash":  "sha256:88c9f0a365abeb4c73a232b090e3fbbc7a2e38975a8700061dbc9f879a351dd7",
+    "finalManifestHash":  "sha256:a96a8a81058b532052f7e9094e8ef7159471da6436a4ce7b3545101b228ceb15",
+    "actualSourceHash":  "sha256:a96a8a81058b532052f7e9094e8ef7159471da6436a4ce7b3545101b228ceb15",
+    "manifestSha256":  "ee667ee3e62ccfe25387d2e9d00da5cf6fa12ebd335f863f609a3ad29855853d",
+    "manifestRows":  2,
+    "completedUtc":  "2026-10-19T12:01:36.4419625Z"
+}

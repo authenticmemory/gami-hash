@@ -1,0 +1,26 @@
+﻿{
+    "schema":  1,
+    "candidateTag":  "test-v0.3.10",
+    "commit":  "579cedd65dbc6878fb454ad14fe66660f6f604f8",
+    "installerSha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+    "result":  "pass",
+    "checks":  [
+                   {
+                       "scenario":  "unc-smb",
+                       "rows":  5,
+                       "mismatches":  [
+
+                                      ],
+                       "manifestSha256":  "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232"
+                   },
+                   {
+                       "scenario":  "mapped-drive",
+                       "rows":  5,
+                       "mismatches":  [
+
+                                      ],
+                       "manifestSha256":  "44d3e7b354d57772404877970963f8de2974dfa9d02f5c9a39f7b3980a076232"
+                   }
+               ],
+    "verifiedUtc":  "2026-10-19T12:53:16.9266599Z"
+}
