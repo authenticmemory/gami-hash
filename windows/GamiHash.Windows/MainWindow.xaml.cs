@@ -22,6 +22,9 @@ public partial class MainWindow : Window
     private bool _closeAfterCancel;
     private bool _allowClose;
     private bool _requiresStorageConsent;
+    private DateTime _lastProgressAt;
+    private long _lastProgressBytes;
+    private double _bytesPerSecond;
     private DateTime _startedAt;
     private readonly DispatcherTimer _elapsedTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
@@ -126,12 +129,18 @@ public partial class MainWindow : Window
         ProgressView.Visibility = Visibility.Visible;
         ProgressOutput.Text = _output;
         ProgressBar.IsIndeterminate = true;
+        ProgressBar.Value = 0;
         ProgressTitle.Text = "Counting files";
         ProgressDetail.Text = "Counting files…";
         FilesText.Text = "0 of 0";
         BytesText.Text = "0 B of 0 B";
         _startedAt = DateTime.Now;
+        _lastProgressAt = _startedAt;
+        _lastProgressBytes = 0;
+        _bytesPerSecond = 0;
         ElapsedText.Text = "0 sec";
+        CancelButton.IsEnabled = true;
+        CancelButton.Content = "Cancel";
         _elapsedTimer.Start();
         RunStateStore.Write(_root, _output);
         _runActive = true;
@@ -164,11 +173,20 @@ public partial class MainWindow : Window
             ProgressBar.IsIndeterminate = scanning;
             if (!scanning)
             {
+                var now = DateTime.Now;
+                if (progress.BytesDone > _lastProgressBytes && now > _lastProgressAt)
+                {
+                    var instant = (progress.BytesDone - _lastProgressBytes) / (now - _lastProgressAt).TotalSeconds;
+                    _bytesPerSecond = _bytesPerSecond > 0 ? _bytesPerSecond * 0.75 + instant * 0.25 : instant;
+                    _lastProgressBytes = progress.BytesDone;
+                    _lastProgressAt = now;
+                }
                 var ratio = progress.BytesTotal > 0 ? (double)progress.BytesDone / progress.BytesTotal :
                     progress.FilesTotal > 0 ? (double)progress.FilesDone / progress.FilesTotal : 0;
                 ProgressBar.Value = Math.Clamp(ratio * 100, 0, 100);
                 ProgressTitle.Text = $"{ProgressBar.Value:F1}%";
-                ProgressDetail.Text = "Hashing files…";
+                var secondsRemaining = _bytesPerSecond > 0 ? (progress.BytesTotal - progress.BytesDone) / _bytesPerSecond : 0;
+                ProgressDetail.Text = secondsRemaining > 0 ? $"About {FormatRemaining(secondsRemaining)} remaining" : "Hashing files…";
             }
             FilesText.Text = $"{progress.FilesDone:N0} of {progress.FilesTotal:N0}";
             BytesText.Text = $"{FormatBytes(progress.BytesDone)} of {FormatBytes(progress.BytesTotal)}";
@@ -222,10 +240,14 @@ public partial class MainWindow : Window
         OpenFolderButton.Visibility = result.Canceled ? Visibility.Collapsed : Visibility.Visible;
         ResultOutputCard.Visibility = result.Canceled ? Visibility.Collapsed : Visibility.Visible;
         ResultWarning.Visibility = Visibility.Collapsed;
+        ResultInstruction.Visibility = result.Canceled ? Visibility.Collapsed : Visibility.Visible;
         ResultHomeButton.Content = "Close";
+        ResultIconCircle.Background = result.Canceled ? (System.Windows.Media.Brush)FindResource("Surface2") : (System.Windows.Media.Brush)FindResource("GreenBg");
+        ResultIcon.Foreground = result.Canceled ? (System.Windows.Media.Brush)FindResource("InkFaint") : (System.Windows.Media.Brush)FindResource("Green");
+        ResultIcon.Text = result.Canceled ? "Ⅱ" : "✓";
         ResultTitle.Text = result.Canceled ? "Stopped. Nothing is lost." : "Done";
         ResultSummary.Text = result.Canceled
-            ? "Your progress is saved. You can close the program and continue later."
+            ? "Your progress is saved. Continue now, or close the program and continue another day: the next start will offer to pick up where you stopped."
             : $"{result.FilesHashed + result.FilesResumed:N0} files ({FormatBytes(result.BytesTotal)}) were recorded.";
         ResultOutput.Text = result.Output;
         var issues = result.FilesFailed + result.Warnings;
@@ -350,6 +372,10 @@ public partial class MainWindow : Window
         ContinueNowButton.Visibility = Visibility.Collapsed;
         OpenFolderButton.Visibility = Visibility.Collapsed;
         ResultHomeButton.Content = "Back to start";
+        ResultInstruction.Visibility = Visibility.Collapsed;
+        ResultIconCircle.Background = (System.Windows.Media.Brush)FindResource("RedBg");
+        ResultIcon.Foreground = (System.Windows.Media.Brush)FindResource("Red");
+        ResultIcon.Text = "!";
     }
 
     private async void ContinueNow_Click(object sender, RoutedEventArgs e)
@@ -395,6 +421,10 @@ public partial class MainWindow : Window
     private static string FormatElapsed(TimeSpan elapsed) => elapsed.TotalHours >= 1
         ? $"{(int)elapsed.TotalHours} hr {elapsed.Minutes} min"
         : elapsed.TotalMinutes >= 1 ? $"{(int)elapsed.TotalMinutes} min {elapsed.Seconds} sec" : $"{elapsed.Seconds} sec";
+
+    private static string FormatRemaining(double seconds) => seconds < 60
+        ? $"{Math.Max(1, (int)Math.Ceiling(seconds))} seconds"
+        : seconds < 3600 ? $"{Math.Ceiling(seconds / 60)} minutes" : $"{Math.Ceiling(seconds / 3600)} hours";
 
     private void Back_Click(object sender, RoutedEventArgs e)
     {

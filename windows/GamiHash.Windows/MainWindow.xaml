@@ -144,12 +144,12 @@
           <TextBlock Text="HASHING" Foreground="{StaticResource Green}" FontSize="11.5" FontWeight="SemiBold" />
           <TextBlock x:Name="ProgressTitle" Text="Counting files" FontSize="26" FontWeight="SemiBold" Margin="0,12,0,8" />
           <TextBlock x:Name="ProgressDetail" Foreground="{StaticResource InkSoft}" FontSize="15" />
-          <ProgressBar x:Name="ProgressBar" Height="8" Margin="0,22,0,18" Minimum="0" Maximum="100" />
+          <ProgressBar x:Name="ProgressBar" Style="{StaticResource GamiProgressBar}" Margin="0,22,0,24" Minimum="0" Maximum="100" />
           <Grid Margin="0,0,0,18">
             <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
-            <StackPanel><TextBlock Text="FILES" Foreground="{StaticResource InkFaint}" FontSize="11" /><TextBlock x:Name="FilesText" FontSize="16" FontWeight="SemiBold" Margin="0,5,0,0" /></StackPanel>
-            <StackPanel Grid.Column="1"><TextBlock Text="DATA READ" Foreground="{StaticResource InkFaint}" FontSize="11" /><TextBlock x:Name="BytesText" FontSize="16" FontWeight="SemiBold" Margin="0,5,0,0" /></StackPanel>
-            <StackPanel Grid.Column="2"><TextBlock Text="ELAPSED" Foreground="{StaticResource InkFaint}" FontSize="11" /><TextBlock x:Name="ElapsedText" FontSize="16" FontWeight="SemiBold" Margin="0,5,0,0" /></StackPanel>
+            <Border Padding="16" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Margin="0,0,10,0"><StackPanel><TextBlock Text="FILES" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="FilesText" FontSize="16" FontWeight="SemiBold" Margin="0,9,0,0" /></StackPanel></Border>
+            <Border Grid.Column="1" Padding="16" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Margin="0,0,10,0"><StackPanel><TextBlock Text="DATA READ" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="BytesText" FontSize="16" FontWeight="SemiBold" Margin="0,9,0,0" /></StackPanel></Border>
+            <Border Grid.Column="2" Padding="16" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10"><StackPanel><TextBlock Text="ELAPSED" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ElapsedText" FontSize="16" FontWeight="SemiBold" Margin="0,9,0,0" /></StackPanel></Border>
           </Grid>
           <Border Padding="16,13" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
             <StackPanel><TextBlock Text="RESULT FILE" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ProgressOutput" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
@@ -163,6 +163,9 @@
       <Border x:Name="ResultView" Visibility="Collapsed" Width="640" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center"
               BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="14" Background="{StaticResource Bg}">
         <StackPanel HorizontalAlignment="Stretch">
+          <Border x:Name="ResultIconCircle" Width="54" Height="54" CornerRadius="27" Background="{StaticResource GreenBg}" HorizontalAlignment="Center" Margin="0,0,0,18">
+            <TextBlock x:Name="ResultIcon" Text="✓" Foreground="{StaticResource Green}" FontSize="29" TextAlignment="Center" VerticalAlignment="Center" />
+          </Border>
           <TextBlock x:Name="ResultTitle" Text="Done" FontSize="26" FontWeight="SemiBold" TextAlignment="Center" />
           <TextBlock x:Name="ResultSummary" Foreground="{StaticResource InkSoft}" FontSize="15" Margin="0,14,0,0" TextAlignment="Center" TextWrapping="Wrap" />
           <Border x:Name="ResultWarning" Visibility="Collapsed" Margin="0,18,0,0" Padding="16,13" BorderBrush="#E7C778" BorderThickness="1" CornerRadius="10" Background="#FFF8E7">
@@ -171,6 +174,7 @@
           <Border x:Name="ResultOutputCard" Margin="0,20" Padding="16,13" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
             <StackPanel><TextBlock Text="RESULT FILE" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ResultOutput" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
           </Border>
+          <TextBlock x:Name="ResultInstruction" Text="Please send the result file to tech@authenticmemory.org." Foreground="{StaticResource InkSoft}" FontSize="15" Margin="0,0,0,20" TextAlignment="Center" />
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="ResultHomeButton" Style="{StaticResource SecondaryButton}" Click="Home_Click" Content="Close" />
             <Button x:Name="ContinueNowButton" Visibility="Collapsed" Style="{StaticResource PillButton}" Click="ContinueNow_Click" Content="Continue now" Margin="10,0,0,0" />
