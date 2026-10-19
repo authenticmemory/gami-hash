@@ -120,8 +120,34 @@ done:
   Push $R0
 FunctionEnd
 
+# Upgrades cannot replace the WPF executable while it is open. WM_CLOSE uses
+# the application's normal shutdown path, which cancels an active hash and
+# waits for its checkpoint before the window closes.
+Function CloseRunningApplication
+  FindWindow $0 "" "Authentic Memory · Hashing Tool"
+  StrCmp $0 0 done
+  DetailPrint "Closing the running GAMI Hash application..."
+  SendMessage $0 ${WM_CLOSE} 0 0
+  StrCpy $1 0
+wait:
+  Sleep 500
+  FindWindow $0 "" "Authentic Memory · Hashing Tool"
+  StrCmp $0 0 closed
+  IntOp $1 $1 + 1
+  IntCmp $1 240 wait wait timeout
+closed:
+  # Allow the child hashing engine to finish exiting and release its image.
+  Sleep 500
+  Goto done
+timeout:
+  MessageBox MB_OK|MB_ICONSTOP "GAMI Hash is still running. Close it, then run this installer again. Your interrupted progress will be preserved."
+  Abort
+done:
+FunctionEnd
+
 Section "GAMI Hash application" SEC_APP
   SectionIn RO
+  Call CloseRunningApplication
   SetOutPath "$INSTDIR"
   File "${PAYLOAD_DIR}\${PRODUCT_EXE}"
   File "${PAYLOAD_DIR}\${WORKER_EXE}"
