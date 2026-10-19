@@ -19,7 +19,9 @@ if (-not $PackageOnly) {
   & dotnet @publish
   if ($LASTEXITCODE -ne 0) { throw 'WPF publish failed.' }
   $ldflags = "-s -w -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=$Version"
-  & $go build -trimpath -buildvcs=false -ldflags $ldflags -o (Join-Path $payload 'GamiHashEngine.exe') $PSScriptRoot
+  # The worker also supplies the optional gami-hash.exe CLI. The cli build tag
+  # keeps its no-argument path in console mode instead of invoking retired Wails.
+  & $go build -tags cli -trimpath -buildvcs=false -ldflags $ldflags -o (Join-Path $payload 'GamiHashEngine.exe') $PSScriptRoot
   if ($LASTEXITCODE -ne 0) { throw 'Go worker build failed.' }
 }
 foreach ($name in @('GamiHash.exe','GamiHashEngine.exe')) {
