@@ -2,9 +2,8 @@
 // CSV manifest. Double-click (no arguments) starts the graphical wizard;
 // any argument switches to command-line mode.
 //
-// The hashing engine opens source files read-only. The current desktop GUI
-// uses a WebView runtime whose network behavior is documented separately;
-// source-code inspection alone does not establish a network-silent process.
+// The hashing engine opens source files read-only. Windows uses the native WPF
+// frontend; Linux and macOS use the Wails frontend.
 package main
 
 import (
@@ -14,12 +13,6 @@ import (
 
 func main() {
 	if handled, code := runNativeUIWorkerIfRequested(os.Args[1:], os.Stdin, os.Stdout); handled {
-		os.Exit(code)
-	}
-	if handled, code := runAppContainerNetworkProbeIfRequested(os.Args[1:]); handled {
-		exitProcess(code)
-	}
-	if handled, code := runContainedWorkerIfRequested(os.Args[1:]); handled {
 		os.Exit(code)
 	}
 	if len(os.Args) > 1 || cliHandlesNoArgs() {

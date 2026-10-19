@@ -1,81 +1,25 @@
-# Creating checksums for GAMI, step by step
+﻿# Creating checksums for Authentic Memory
 
-*This guide is written for archivists and historians. You do not need any
-technical knowledge. The whole process is: download, double-click, and three
-choices. You cannot damage anything. The program only reads your files. It
-changes nothing, deletes nothing, and does not use the internet.*
+The Windows application is installed as **Authentic Memory Hashing Tool**. It reads your collection and creates a CSV checksum list. It does not upload your files or change them.
 
-*(Before sending this out as a PDF: insert screenshots at the spots marked
-with a camera icon.)*
+## Create a checksum list
 
-## 1. Download
+1. Open **Authentic Memory Hashing Tool** from the Start menu.
+2. Select **Choose folder** and pick the collection folder, drive, network share, or cloud-synced folder.
+3. Choose where to save the result. Save it outside the collection being scanned.
+4. Review both locations and select **Start**. If the app warns that a source or destination may use network or cloud storage, continue only when that storage access is expected.
+5. Keep the source available while hashing. You may continue using the computer.
+6. Select **Cancel** to stop safely. Open the application later and select **Continue** to resume.
+7. On the Done screen, select **Open folder** and send the CSV to `tech@authenticmemory.org`.
 
-Open the download page from our email and click the button for your system
-(usually Windows). A single program file is downloaded. There is nothing to
-install.
+## If files cannot be read
 
-📷 *Screenshot: download page with the Windows button*
+The run completes with a warning and creates an `_errors.log` next to the CSV. Send both files. Successfully read files remain in the manifest.
 
-Easiest is to move the downloaded file to your desktop so you can find it
-again later.
+## What the application writes
 
-On macOS and Linux the download is a small archive. Double-click it to
-extract, and you get the program file.
+It writes the selected CSV, an error log when needed, and temporary resume state for an unfinished run. It never intentionally writes into the selected source folder.
 
-## 2. Start
+## CLI
 
-Double-click the file.
-
-If Windows shows a blue warning ("Windows protected your PC"): this is a
-standard message for new software from small publishers, not a sign of a
-problem. Click "More info", then "Run anyway". Your IT department can check
-the authenticity of the file at any time using the checksum we publish (see
-the accompanying sheet for IT).
-
-📷 *Screenshot: SmartScreen message with "More info" highlighted*
-
-## 3. Follow the three steps
-
-The program walks you through three choices:
-
-1. Choose the folder (or external drive) whose contents should be recorded
-   for GAMI.
-2. Choose where to save the result file. The program suggests your desktop
-   and a file name. Just click Save.
-3. The program shows both choices once more. Click Start.
-
-📷 *Screenshot: start confirmation*
-
-## 4. Wait, or simply keep working
-
-A progress bar shows how far along the run is and roughly how long it will
-take. For large collections this can take hours. You can keep using the
-computer normally the whole time. If the computer goes to sleep, the run
-continues afterwards. Please keep external drives connected.
-
-You do not have to wait for it to finish. Click Cancel any time, for example
-at the end of the day. Nothing is lost: the next time you start the program,
-it asks right away whether you want to continue, and one click picks up
-exactly where it stopped. The same is true after a crash or a power cut.
-
-## 5. Done. Send the file to GAMI
-
-At the end the program tells you how many files were recorded and offers to
-open the folder with the result file. Send that file (a CSV table with file
-paths and checksums, no file contents!) to tech@authenticmemory.org.
-
-📷 *Screenshot: done message with "Open folder"*
-
-## Common questions
-
-**Can I do something wrong?** No. The program cannot change your files. At
-worst you cancel and start again later.
-
-**Some files could not be read?** The program skips such files and lists
-them in an error log next to the result file. Just send that log along and
-we will look at it together.
-
-**The external drive has a different drive letter after a restart?** Not a
-problem. The program notices, asks you once, and then continues normally.
-
-**Questions?** Contact your GAMI contact person any time.
+The optional CLI component is intended for IT staff. Open a new PowerShell window after installation and run `gami-hash --help`.

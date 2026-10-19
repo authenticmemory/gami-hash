@@ -1,9 +1,0 @@
-<Sysmon schemaversion="4.90">
-  <DnsLookup>false</DnsLookup>
-  <EventFiltering>
-    <ProcessCreate onmatch="exclude" />
-    <ProcessTerminate onmatch="exclude" />
-    <NetworkConnect onmatch="exclude" />
-    <DnsQuery onmatch="exclude" />
-  </EventFiltering>
-</Sysmon>

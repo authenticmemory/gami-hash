@@ -24,8 +24,8 @@ during installation after importing the public key:
 ```sh
 gpg --import gami-linux-public.asc
 sudo rpm --import gami-linux-public.asc
-rpm --checksig --verbose gami-hash-0.2.0-1.x86_64.rpm
-sudo dnf install ./gami-hash-0.2.0-1.x86_64.rpm
+rpm --checksig --verbose gami-hash-1.6.0-1.x86_64.rpm
+sudo dnf install ./gami-hash-1.6.0-1.x86_64.rpm
 ```
 
 The desktop downloads and their checksum list also have detached OpenPGP signatures.
@@ -37,5 +37,5 @@ checks that the installed application opens a window under Xvfb. This smoke test
 does not replace interactive acceptance testing of folder selection, hashing,
 cancellation and resume on a real desktop.
 
-The Fedora RPM is currently a CI artifact while Fedora runtime compatibility is
-being tested. It will be added to the public download manifest after that test.
+The Fedora RPM is included in the public download manifest. Its package names
+target Fedora-style WebKitGTK 4.1 dependencies; it is not advertised for RHEL.

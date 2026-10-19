@@ -1,6 +1,0 @@
-﻿relative_path,size_bytes,file_hash,mtime_utc,source_record_id
-duplicate.txt,13,sha256:0b048390db655594c0f25acf8de0975e7d8e34bc2b2550e43626d708c0ed2f21,2026-01-01T00:00:00Z,duplicate.txt
-empty.bin,0,sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855,2026-01-01T00:00:00Z,empty.bin
-hello.txt,13,sha256:0b048390db655594c0f25acf8de0975e7d8e34bc2b2550e43626d708c0ed2f21,2026-01-01T00:00:00Z,hello.txt
-nested folder/Grüße.txt,15,sha256:1dcf790d56e3f41981665007034fe3a114c807035ce3265c83bec4eacc7dc7d5,2026-01-01T00:00:00Z,nested folder/Grüße.txt
-nested folder/pattern.bin,65536,sha256:4b640d85ab3ba30fd02c9fc9db4a8928f416322ad27022ea58a65aaee68a4df2,2026-01-01T00:00:00Z,nested folder/pattern.bin

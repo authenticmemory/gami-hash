@@ -1,8 +1,0 @@
-﻿{
-    "InstallerFile":  "gami-hash-windows-amd64-installer.exe",
-    "SHA256":  "AE0FB30322F923C63D55C43EE3E531BE4F7114AE0CB911ED6524BDB0FEDEA308",
-    "SignatureStatus":  "Valid",
-    "SignerSubject":  "CN=Authentic Memory gemeinnützige UG (haftungsbeschränkt), O=Authentic Memory gemeinnützige UG (haftungsbeschränkt), STREET=Wendelsteinstr. 3, L=Muenchen, S=Bavaria, C=DE, PostalCode=81541",
-    "SignerThumbprint":  "F5E60A566C69A35B3DCF0578B9C198436D850658",
-    "TimeStamperSubject":  "CN=Microsoft Public RSA Time Stamping Authority, OU=nShield TSS ESN:7A00-05E0-D947, OU=Microsoft America Operations, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
-}

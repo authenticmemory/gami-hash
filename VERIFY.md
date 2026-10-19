@@ -1,48 +1,37 @@
-# Verifying a release binary
+﻿# Verifying GAMI Hash
 
-## Requirements
-
-- The Go toolchain version pinned in `go.mod`.
-- .NET 8 SDK and NSIS for the native Windows frontend and installer.
-- Node.js, npm, and Wails dependencies for Linux and macOS GUI builds.
-
-A GUI release must be built and tested on its target OS. Plain Go
-cross-compilation is not sufficient.
-
-## Windows development build
+## Source verification
 
 ```powershell
-git clone https://github.com/authenticmemory/gami-hash.git
-cd gami-hash
-.\build-windows-installer.ps1 -Version v1.0.0
+go test ./...
+node --test scripts/create-download-manifest.test.mjs
+dotnet build .\windows\GamiHash.Windows\GamiHash.Windows.csproj -c Release
 ```
 
-The native WPF GUI and Go worker are written under
-`build/windows-native/payload`; the self-contained installer is written under
-`build/bin`. SHA-256 digests are printed after a successful build.
+Build the Windows installer with:
 
-The Windows build does not compile or package Wails or WebView2. Linux and
-macOS retain their existing Wails build paths.
+```powershell
+.\build-windows-installer.ps1 -Version v1.6.0
+```
 
-`-trimpath`, an empty Go build ID, and disabled VCS stamping remove common
-sources of build-path variation. This is preparation for reproducibility, not
-proof that reproducible signed releases exist.
+It writes the native WPF GUI and Go worker under `build/windows-native/payload` and the NSIS installer under `build/bin`.
 
-## Release status
+## Published v1.6.0
 
-Windows CI builds and tests the frontend and Go code, requires dependency checks,
-signs the GUI/CLI and final installer, and verifies signatures and timestamps.
-Tag runs store the signed artifacts in a draft GitHub Release for review.
-See [Windows signing](docs/windows-signing.md) for configuration.
+Verify the downloaded Windows installer with:
 
-Windows product metadata uses the numeric release version (for example,
-`test-v1.2.3` becomes `1.2.3`); the engine retains the full version string.
+```powershell
+$file = '.\gami-hash-windows-amd64-installer.exe'
+Get-AuthenticodeSignature $file | Format-List Status,SignerCertificate,TimeStamperCertificate
+Get-FileHash $file -Algorithm SHA256
+```
 
-A successful workflow does not establish clean-machine behavior or source safety
-under all storage failures. Complete [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md)
-on the exact signed candidate before publishing its draft release.
-The generated uninstaller is not separately signed. User files and WebView data
-are preserved during uninstall. Reproducible unsigned builds, a formal SBOM,
-independent code review, and runtime network verification remain separate work.
-macOS/Linux artifacts are not covered by Windows acceptance. Do not use the
-legacy `build.sh` for Wails GUI releases.
+Require `Status: Valid`. The v1.6.0 Windows installer hash is `1C6EE47771AE1458F04E7E1D9457038D961398D25D3A6F275C3B816363B97DF6`.
+
+CI verifies the WPF executable, Go worker, and installer signatures and timestamps before creating the candidate. A stable tag must point to the same commit as its accepted `test-vX.Y.Z` tag and promotes those exact bytes.
+
+## Scope of assurance
+
+The engine contains no upload or telemetry feature. Runtime acceptance observed zero GAMI-attributed network or DNS events during tested idle, local, UNC SMB, and mapped-drive scenarios. SMB and cloud providers can still use the network to satisfy filesystem reads. This evidence is an observation of documented scenarios, not an OS-enforced prohibition on all possible network access.
+
+See [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md) for tested behavior and limits.

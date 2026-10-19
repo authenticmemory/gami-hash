@@ -7,8 +7,8 @@ Linux GUI packages are built in GitHub Actions on Ubuntu 24.04.
 The `Build Linux GUI` workflow uploads:
 
 - `gami-hash-linux-amd64-gui.tar.gz`
-- `gami-hash_<version>_amd64.deb`
-- `gami-hash-<version>-1.x86_64.rpm`
+- `gami-hash-linux-amd64-gui.deb` in the public release
+- `gami-hash-linux-amd64-gui.rpm` in the public release
 - `SHA256SUMS-linux-gui.txt`
 
 ## Debian / Ubuntu
@@ -24,7 +24,7 @@ libwebkit2gtk-4.1-0
 Install:
 
 ```bash
-sudo apt install ./gami-hash_<version>_amd64.deb
+sudo apt install ./gami-hash-linux-amd64-gui.deb
 ```
 
 ## Fedora
@@ -40,7 +40,7 @@ webkit2gtk4.1
 Install:
 
 ```bash
-sudo dnf install ./gami-hash-<version>-1.x86_64.rpm
+sudo dnf install ./gami-hash-linux-amd64-gui.rpm
 ```
 
 ## Not yet covered
