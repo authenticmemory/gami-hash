@@ -135,6 +135,12 @@ jobs:
               "$($hash.Hash.ToLower())  $($_.Name)"
             } | Set-Content -Encoding ascii build/bin/SHA256SUMS-windows.txt
 
+      - name: Record signed artifact identity
+        shell: pwsh
+        env:
+          BUILD_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: .\write-windows-release-report.ps1 -Version $env:BUILD_VERSION -Commit $env:GITHUB_SHA
+
       - name: Create dependency inventory
         shell: pwsh
         run: .\release-dependency-inventory.ps1
@@ -182,4 +188,7 @@ jobs:
           fi
           mapfile -d '' assets < <(find release -type f -print0)
           test "${#assets[@]}" -gt 0
-          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          # A candidate tag names one immutable byte sequence. If assets already
+          # exist, fail instead of silently replacing the artifact that may
+          # already be under acceptance testing.
+          gh release upload "$RELEASE_TAG" "${assets[@]}"

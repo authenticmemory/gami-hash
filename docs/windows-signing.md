@@ -1,8 +1,11 @@
 # Automatic Windows signing
 
 The `Build signed Windows installer` workflow runs manually or on `test-v*` tags.
-Stable `vX.Y.Z` tags invoke it through `Publish signed downloads`, which waits for
-both Windows and Linux signing before publishing and triggering Netlify. See
+Stable `vX.Y.Z` tags promote the already accepted, immutable Windows artifact
+from the matching `test-vX.Y.Z` draft release. The stable tag and test tag must
+point to the same commit. The stable workflow verifies the recorded SHA-256,
+Authenticode signature, timestamp, and commit before publishing, then waits for
+the Linux builds and triggers Netlify. See
 [release deployment](RELEASE-DOWNLOADS.md). Windows test tags create draft releases.
 Published releases are never overwritten by reruns. Signing is mandatory: missing configuration or an invalid
 signature fails the job before upload.
@@ -73,6 +76,11 @@ Alternatively push a new matching tag; that starts the workflow automatically.
 Download `gami-hash-windows`. Check the installer signature, install on a test
 machine, and check signatures on both installed executables. Compare the download
 against `SHA256SUMS-windows.txt`.
+
+Run acceptance against this test-tag artifact. When it passes, create
+`vX.Y.Z` at the exact commit referenced by `test-vX.Y.Z`. The stable workflow
+promotes the accepted Windows bytes; it does not rebuild or re-sign them. This
+is required because timestamped signing is intentionally nondeterministic.
 
 If Azure Login fails, check the exact federated subject, tenant, client ID, and
 environment name. If signing returns 403, check the service principal's profile

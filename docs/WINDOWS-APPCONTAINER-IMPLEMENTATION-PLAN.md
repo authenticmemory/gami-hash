@@ -1,8 +1,20 @@
 # Windows AppContainer GUI implementation plan
 
-Status: **Phase 3 engineering gate and the bounded WebView2-inside-
-AppContainer feasibility gate passed on the tested Windows 11 VM; release
-acceptance remains open**.
+Status: **Superseded for production by the native WPF frontend and Go worker.**
+The AppContainer work remains an archived architecture investigation. The
+native application preserved the hashing engine and product workflow, removed
+WebView2 from the Windows process tree, passed local installer lifecycle tests,
+and produced zero GAMI-attributed network or DNS events in the recorded idle
+and local-hashing VM captures. Production release acceptance against the exact
+signed installer remains open; follow
+[Windows native installer acceptance](WINDOWS-NATIVE-INSTALLER-ACCEPTANCE.md).
+
+Do not use the later implementation tasks in this document as the current
+production plan. Keep them until the signed native evidence bundle is archived,
+then remove their obsolete build and packaging paths in the release cleanup
+commit while retaining this decision history and its evidence.
+
+Historical AppContainer plan follows.
 The [architecture decision](decisions/0001-windows-appcontainer-storage-adapter.md)
 directed Phase 2 toward a contained storage adapter. The production integration
 host, contained worker, and brokered engine adapter pass the tested Phase 2

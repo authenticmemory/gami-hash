@@ -1,6 +1,6 @@
 param([Parameter(Mandatory)][ValidateSet('idle','local-hash')][string]$Scenario)
 $ErrorActionPreference = 'Stop'
-$root = 'C:\Users\Public\Documents\GamiHashNativeTest'
+$root = $PSScriptRoot
 $evidence = Join-Path $root "evidence-$Scenario"
 $start = [DateTime]::Parse((Get-Content -LiteralPath (Join-Path $evidence 'start-utc.txt')))
 $end = Get-Date
@@ -19,15 +19,16 @@ $events = @(Get-WinEvent -FilterHashtable @{
 })
 $events | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $evidence 'sysmon-all.json') -Encoding UTF8
 $gami = @($events | Where-Object {
-  $_.Data.Image -like '*\GamiHash.WpfSpike.exe' -or $_.Data.Image -like '*\GamiHashEngine.exe' -or
-  $_.Data.ParentImage -like '*\GamiHash.WpfSpike.exe'
+  $_.Data.Image -like '*\GamiHash.exe' -or $_.Data.Image -like '*\GamiHashEngine.exe' -or
+  $_.Data.ParentImage -like '*\GamiHash.exe'
 })
 $gami | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $evidence 'sysmon-gami.json') -Encoding UTF8
 
-$processes = @(Get-CimInstance Win32_Process | Where-Object Name -in @('GamiHash.WpfSpike.exe','GamiHashEngine.exe') |
+$processes = @(Get-CimInstance Win32_Process | Where-Object Name -in @('GamiHash.exe','GamiHashEngine.exe') |
   Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine)
 $summary = [ordered]@{
   scenario=$Scenario; startUtc=$start.ToString('o'); endUtc=$end.ToString('o')
+  artifactIdentity=if (Test-Path -LiteralPath (Join-Path $root 'artifact-identity.json')) { Get-Content -Raw -LiteralPath (Join-Path $root 'artifact-identity.json') | ConvertFrom-Json } else { $null }
   packetCaptureBytes=(Get-Item -LiteralPath (Join-Path $evidence 'network.pcapng')).Length
   sysmonGamiEvents=$gami.Count
   gamiNetworkEvents=@($gami | Where-Object Id -eq 3).Count

@@ -42,3 +42,40 @@ an interrupted run outside the installation directory throughout the matrix.
 
 The final release gate repeats this matrix on a clean supported Windows VM
 using the exact signed installer intended for publication.
+
+## Signed candidate procedure
+
+1. Push one new `test-vX.Y.Z` tag. Do not move or reuse it. The workflow signs
+   the WPF executable and Go worker, embeds those exact files in NSIS, signs the
+   installer, verifies every signature and timestamp, and records hashes in
+   `windows-release-report.json`.
+2. Download the installer from that tag's draft GitHub release. Prepare the VM
+   bundle with:
+
+   ```powershell
+   .\prepare-windows-release-acceptance.ps1 -Installer .\gami-hash-windows-X.Y.Z-x64-installer.exe
+   ```
+
+3. Copy `build\windows-release-acceptance.zip` to the clean VM and extract it.
+   Run `install-in-vm.ps1` first. It refuses any installer whose SHA-256 differs
+   from `artifact-identity.json`.
+4. Run the acceptance matrix plus the idle and hashing captures from the same
+   extracted directory. Each capture summary embeds the signed installer's
+   identity. Archive manifests, screenshots, summaries, Sysmon exports, and
+   packet captures under one evidence directory.
+5. Compare `artifact-identity.json` with the CI `windows-release-report.json`.
+   The installer SHA-256 must match. Create stable tag `vX.Y.Z` on the same
+   commit as `test-vX.Y.Z`. CI promotes those exact accepted Windows bytes;
+   never replace assets on an existing candidate or stable release.
+
+The UI actions, SMB credentials, cloud placeholder state, cancellation timing,
+and clean-machine install lifecycle remain manual because CI cannot faithfully
+exercise those external Windows states. Hash checks, signing checks, packaging,
+fixture generation, event export, and artifact correlation are automated.
+
+## Cleanup gate
+
+Do not delete the AppContainer and broker experiments until the signed native
+candidate's evidence bundle has been archived and reviewed. After that gate,
+remove the obsolete prototype workflows and packaging directories in one
+reviewable cleanup commit. Keep the historical evidence and decision records.

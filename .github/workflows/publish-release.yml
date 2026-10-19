@@ -21,14 +21,46 @@ jobs:
         run: '[[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]'
   windows:
     needs: validate
+    runs-on: windows-latest
     permissions:
-      # The reusable workflow declares a write-enabled test draft-release job.
-      # GitHub validates its permission ceiling even when that job is skipped.
-      # The Windows build job itself still explicitly uses contents: read.
-      contents: write
-      id-token: write
-    uses: ./.github/workflows/build-windows.yml
-    secrets: inherit
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote the accepted immutable Windows candidate
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STABLE_TAG: ${{ github.ref_name }}
+        run: |
+          $candidateTag = "test-$env:STABLE_TAG"
+          $stableCommit = git rev-list -n 1 $env:STABLE_TAG
+          git fetch --no-tags origin "refs/tags/$candidateTag:refs/tags/$candidateTag"
+          if ($LASTEXITCODE -ne 0) { throw "Missing candidate tag: $candidateTag" }
+          $candidateCommit = git rev-list -n 1 $candidateTag 2>$null
+          if (-not $candidateCommit) { throw "Missing candidate tag: $candidateTag" }
+          if ($candidateCommit -ne $stableCommit) { throw "$candidateTag and $env:STABLE_TAG must reference the same commit." }
+          New-Item -ItemType Directory -Force release/windows/bin,release/windows/release-metadata | Out-Null
+          gh release download $candidateTag --pattern 'gami-hash-windows-*-x64-installer.exe' --pattern 'SHA256SUMS-windows.txt' --dir release/windows/bin
+          gh release download $candidateTag --pattern 'windows-release-report.json' --dir release/windows/release-metadata
+          if ($LASTEXITCODE -ne 0) { throw "Failed to download immutable candidate $candidateTag" }
+          $installer = @(Get-ChildItem release/windows/bin/gami-hash-windows-*-x64-installer.exe)
+          if ($installer.Count -ne 1) { throw "Expected one candidate installer; found $($installer.Count)." }
+          $report = Get-Content -Raw release/windows/release-metadata/windows-release-report.json | ConvertFrom-Json
+          if ($report.commit -ne $stableCommit) { throw 'Candidate report commit does not match the stable tag.' }
+          $record = @($report.files | Where-Object name -eq $installer[0].Name)
+          if ($record.Count -ne 1) { throw 'Candidate installer is absent from its release report.' }
+          $actual = (Get-FileHash $installer[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $record[0].sha256) { throw 'Candidate installer hash does not match its release report.' }
+          $line = Get-Content release/windows/bin/SHA256SUMS-windows.txt | Where-Object { $_ -match [regex]::Escape($installer[0].Name) }
+          if (-not $line -or $line.Split(' ',[System.StringSplitOptions]::RemoveEmptyEntries)[0] -ne $actual) { throw 'Candidate checksum file does not match the installer.' }
+          $signature = Get-AuthenticodeSignature $installer[0].FullName
+          if ($signature.Status -ne 'Valid' -or -not $signature.TimeStamperCertificate) { throw 'Candidate installer signature or timestamp is invalid.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gami-hash-windows
+          path: release/windows
+          if-no-files-found: error
+          retention-days: 14
   linux:
     needs: validate
     uses: ./.github/workflows/build-linux-cli.yml

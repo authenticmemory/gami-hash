@@ -1,13 +1,14 @@
 $ErrorActionPreference = 'Stop'
-$root = 'C:\Users\Public\Documents\GamiHashNativeTest'
-$installer = Join-Path $root 'gami-hash-native-test-0.2.0-x64-installer.exe'
-$expected = 'fd92ffe9d996e187b68a710e932b46623cd0267d115463e6f1acac19166602ac'
+$root = $PSScriptRoot
+$identity = Get-Content -Raw -LiteralPath (Join-Path $root 'artifact-identity.json') | ConvertFrom-Json
+$installer = Join-Path $root $identity.installer
+$expected = $identity.sha256
 $actual = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($actual -ne $expected) { throw "Installer hash mismatch: $actual" }
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
-$app = "$env:LOCALAPPDATA\Programs\Authentic Memory\GAMI Hash Native Test\GamiHash.WpfSpike.exe"
-$worker = "$env:LOCALAPPDATA\Programs\Authentic Memory\GAMI Hash Native Test\GamiHashEngine.exe"
+$app = "$env:LOCALAPPDATA\Programs\Authentic Memory\GAMI Hash\GamiHash.exe"
+$worker = "$env:LOCALAPPDATA\Programs\Authentic Memory\GAMI Hash\GamiHashEngine.exe"
 if (-not (Test-Path -LiteralPath $app) -or -not (Test-Path -LiteralPath $worker)) { throw 'Installed payload is incomplete.' }
 [ordered]@{
   installerSha256=$actual
