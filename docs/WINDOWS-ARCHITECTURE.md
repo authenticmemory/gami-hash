@@ -15,6 +15,8 @@ The previous Wails/WebView2 Windows application created browser subprocesses and
 
 The native WPF frontend uses Windows file pickers directly. The Go worker retains the tested hashing, safety, CSV, error, and resume semantics. Runtime captures showed only the WPF parent and Go worker, with zero GAMI-attributed network or DNS events in the tested scenarios.
 
+For a plain-language account of the alternatives that were tested and rejected, see [How the Windows solution evolved](WINDOWS-SOLUTION-JOURNEY.md).
+
 ## Boundaries
 
 - Windows: WPF plus Go worker; no Wails or WebView2.

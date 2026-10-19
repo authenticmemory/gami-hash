@@ -9,6 +9,7 @@
 ## Windows
 
 - [Current architecture](WINDOWS-ARCHITECTURE.md)
+- [How the Windows solution evolved](WINDOWS-SOLUTION-JOURNEY.md)
 - [Release acceptance](WINDOWS-ACCEPTANCE.md)
 - [Installer acceptance and immutable promotion](WINDOWS-NATIVE-INSTALLER-ACCEPTANCE.md)
 - [Signing](windows-signing.md)
