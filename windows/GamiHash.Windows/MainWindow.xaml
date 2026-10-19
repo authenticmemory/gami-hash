@@ -6,7 +6,7 @@
         MinWidth="760" MinHeight="560" WindowStartupLocation="CenterScreen"
         WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource Bg}">
   <shell:WindowChrome.WindowChrome>
-    <shell:WindowChrome CaptionHeight="52" ResizeBorderThickness="6" CornerRadius="0" GlassFrameThickness="0" />
+    <shell:WindowChrome CaptionHeight="52" ResizeBorderThickness="6" CornerRadius="10" GlassFrameThickness="0" />
   </shell:WindowChrome.WindowChrome>
   <Grid Background="{StaticResource Bg}">
     <Grid.RowDefinitions>

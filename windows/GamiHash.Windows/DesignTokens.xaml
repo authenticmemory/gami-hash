@@ -30,8 +30,10 @@
   <SolidColorBrush x:Key="Red" Color="{StaticResource RedColor}" />
   <SolidColorBrush x:Key="RedBg" Color="{StaticResource RedBgColor}" />
 
-  <FontFamily x:Key="SansFont">pack://application:,,,/Assets/Fonts/#Inter</FontFamily>
-  <FontFamily x:Key="MonoFont">pack://application:,,,/Assets/Fonts/#JetBrains Mono</FontFamily>
+  <!-- These names match the fonts' internal family metadata. Relative pack
+       URIs are required for resources embedded in this WPF assembly. -->
+  <FontFamily x:Key="SansFont">./Assets/Fonts/#Inter</FontFamily>
+  <FontFamily x:Key="MonoFont">./Assets/Fonts/#JetBrains Mono</FontFamily>
 
   <Style TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource SansFont}" />
