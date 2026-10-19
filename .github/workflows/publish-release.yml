@@ -34,7 +34,7 @@ jobs:
         run: |
           $candidateTag = "test-$env:STABLE_TAG"
           $stableCommit = git rev-list -n 1 $env:STABLE_TAG
-          git fetch --no-tags origin "refs/tags/$candidateTag:refs/tags/$candidateTag"
+          git fetch --no-tags origin "refs/tags/${candidateTag}:refs/tags/${candidateTag}"
           if ($LASTEXITCODE -ne 0) { throw "Missing candidate tag: $candidateTag" }
           $candidateCommit = git rev-list -n 1 $candidateTag 2>$null
           if (-not $candidateCommit) { throw "Missing candidate tag: $candidateTag" }
