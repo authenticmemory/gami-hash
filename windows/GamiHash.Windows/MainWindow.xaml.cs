@@ -3,8 +3,10 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+#if DEBUG
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+#endif
 using System.Windows.Threading;
 
 namespace GamiHash.Windows;
@@ -47,7 +49,9 @@ public partial class MainWindow : Window
         {
             if (_engine is not null) await _engine.DisposeAsync();
         };
+#if DEBUG
         ContentRendered += (_, _) => CaptureIfRequested();
+#endif
     }
 
     private async Task ConnectGoBackendAsync()
@@ -438,6 +442,7 @@ public partial class MainWindow : Window
         SelectedView.Visibility = Visibility.Visible;
     }
 
+#if DEBUG
     private void CaptureIfRequested()
     {
         var index = Array.IndexOf(_args, "--capture");
@@ -453,6 +458,7 @@ public partial class MainWindow : Window
         using var stream = File.Create(path);
         encoder.Save(stream);
     }
+#endif
 
     private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     private void Maximize_Click(object sender, RoutedEventArgs e) =>
