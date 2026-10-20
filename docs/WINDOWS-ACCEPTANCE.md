@@ -33,6 +33,8 @@ The same native WPF and Go-worker architecture passed the broader acceptance mat
 
 Idle, local, UNC SMB, and mapped-drive captures reported zero GAMI-attributed network and DNS events. The Windows application process tree contained only `GamiHash.exe` and `GamiHashEngine.exe`.
 
+Those captures used the accepted native architecture build identified internally as `test-v0.3.10`. The exact signed `test-v1.6.0` candidate, whose bytes became the public v1.6.0 installer, passed installation and functional smoke testing. An idle capture against that exact public installer remains to be added; until then, the network evidence is architecture-level rather than exact-release evidence.
+
 This supports the scoped statement that no GAMI-owned process made a network or DNS connection in the tested scenarios. It does not prove an OS-enforced prohibition. Windows SMB and cloud providers can transfer data to implement the filesystem operation requested by the user.
 
 ## Release gate for future versions
