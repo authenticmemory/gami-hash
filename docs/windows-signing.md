@@ -1,96 +1,42 @@
-# Automatic Windows signing
+﻿# Automatic Windows signing
 
-The `Build signed Windows installer` workflow runs manually or on `test-v*` tags.
-Stable `vX.Y.Z` tags invoke it through `Publish signed downloads`, which waits for
-both Windows and Linux signing before publishing and triggering Netlify. See
-[release deployment](RELEASE-DOWNLOADS.md). Windows test tags create draft releases.
-Published releases are never overwritten by reruns. Signing is mandatory: missing configuration or an invalid
-signature fails the job before upload.
+The `Build signed Windows installer` workflow runs for manual test builds and `test-v*` tags. It requires Azure Artifact Signing through the protected `windows-signing` GitHub environment.
 
-## One-time Azure and GitHub setup
+## Required GitHub environment values
 
-1. In Microsoft Entra ID, create a single-tenant app registration named
-   `gami-hash-github-signing`. Record its Application (client) ID and Directory
-   (tenant) ID. No client secret is needed.
-2. In its **Certificates & secrets > Federated credentials**, add a credential
-   for **GitHub Actions deploying Azure resources**:
-   - Organization: `authenticmemory`
-   - Repository: `gami-hash`
-   - Entity type: **Environment**
-   - Environment: `windows-signing`
-   - Issuer: `https://token.actions.githubusercontent.com`
-   - Subject: `repo:authenticmemory/gami-hash:environment:windows-signing`
-   - Audience: `api://AzureADTokenExchange`
-3. On the existing `gami-public-signing` certificate profile in the
-   `authenticmemorysigning` account, assign **Artifact Signing Certificate Profile
-   Signer** to the new application's service principal. Scope the assignment to
-   that profile. The developer's existing signing permission does not grant the
-   workflow access. Do not grant the workflow subscription Contributor or Owner.
-4. In GitHub repository **Settings > Environments**, create `windows-signing`.
-   Configure selected deployment branches/tags: permit the trusted release branch
-   for manual runs and the `test-v*` and `v*` tag patterns. Protect those tags with
-   repository rules so only authorized maintainers can create them. Azure's
-   environment-based federation trusts this environment, so these restrictions
-   determine which source revisions can obtain signing access. Optional required
-   reviewers add a release approval gate if the repository plan supports it.
-5. Add these **environment variables** (not credentials or client secrets):
+Variables:
 
-   | Variable | Value |
-   | --- | --- |
-   | `AZURE_CLIENT_ID` | Application ID from step 1 |
-   | `AZURE_TENANT_ID` | Directory ID from step 1 |
-   | `AZURE_SUBSCRIPTION_ID` | Subscription containing the signing account |
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
 
-The workflow uses the existing North Europe endpoint
-`https://neu.codesigning.azure.net`, account `authenticmemorysigning`, and profile
-`gami-public-signing`. It authenticates with short-lived OIDC credentials through
-Azure Login. It does not use the developer's Azure CLI session or local
-`metadata.json`.
+The federated Azure identity must have Artifact Signing Certificate Profile Signer access to account `authenticmemorysigning`, profile `gami-public-signing`, at the North Europe endpoint.
 
-## Build and verification order
+## Build order
 
-1. Pass the reusable dependency security workflow for the same commit, build the
-   frontend before Go tests, and run the existing Wails/NSIS build. This produces a temporary unsigned
-   installer and generates Wails' NSIS support files.
-2. Sign and timestamp both `build/bin/gami-hash.exe` (GUI) and
-   `build/windows/installer/gami-hash-cli.exe` (CLI).
-3. Verify their Authenticode status, timestamp presence, and legal organization.
-4. Rerun only NSIS with the signed inputs, replacing the temporary installer.
-   Do not rerun Wails: doing so rebuilds the GUI and loses its signature.
-5. Sign and timestamp the final installer, then verify all three files.
-6. Calculate download checksums on the finished signed files, create the dependency
-   inventory, and upload the artifacts.
+1. Run dependency checks and Go tests.
+2. Build the native WPF GUI and Go worker.
+3. Sign and timestamp `GamiHash.exe` and `GamiHashEngine.exe`.
+4. Verify both payload signatures.
+5. Package NSIS without rebuilding either payload.
+6. Sign and timestamp the final installer.
+7. Verify all signatures, timestamp certificates, expected organization, and hashes.
+8. Write `windows-release-report.json`, checksums, and dependency inventories.
+9. Store test-tag assets in an immutable draft release.
 
-The installed GUI is named `GAMI Hash.exe`; the installed CLI is `gami-hash.exe`.
-Both originate from the signed inputs above. The NSIS-generated uninstaller is
-not separately signed by this workflow.
+The NSIS-generated uninstaller is not separately signed.
 
-## First run
+## Promotion
 
-After merging/pushing the workflow and configuring the environment, run it from
-**Actions > Build signed Windows installer > Run workflow** on the allowed branch and enter a version such as `test-v0.1.4`.
-Alternatively push a new matching tag; that starts the workflow automatically.
-Download `gami-hash-windows`. Check the installer signature, install on a test
-machine, and check signatures on both installed executables. Compare the download
-against `SHA256SUMS-windows.txt`.
+Run acceptance against a fresh `test-vX.Y.Z` candidate. Create `vX.Y.Z` only at the same commit after it passes. The stable publisher validates the candidate report, checksum, signature, timestamp, and commit, then republishes the same installer bytes under the stable filename.
 
-If Azure Login fails, check the exact federated subject, tenant, client ID, and
-environment name. If signing returns 403, check the service principal's profile
-Signer role and allow time for role propagation. Neither failure should be worked
-around by uploading unsigned artifacts.
+Do not reuse test tags, move stable tags, overwrite published assets, upload unsigned binaries, or rebuild Windows between acceptance and publication.
 
-## References
+## Troubleshooting
 
-- [Microsoft signing action](https://github.com/Azure/artifact-signing-action)
-- [GitHub OIDC with Azure](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure)
-- [Artifact Signing roles](https://learn.microsoft.com/en-us/azure/artifact-signing/tutorial-assign-roles)
+- Azure Login failure: verify the federated subject, tenant, client ID, tag/environment policy, and audience.
+- Signing 403: verify the service principal role on the certificate profile.
+- Missing timestamp or invalid Authenticode status: fail the release.
+- Candidate tag fetch or report mismatch: fix the workflow and rerun validation; do not bypass the immutable artifact checks.
 
-## Release acceptance and retention
-
-CI artifacts expire after 14 days; test-tag draft release assets are the durable
-candidate archive. Complete [Windows acceptance](WINDOWS-ACCEPTANCE.md) on the test
-build before pushing a stable version tag. The stable release workflow publishes
-both signed platforms automatically. Review its generated release notes before
-announcing the release. Keep earlier installers and checksums for rollback.
-Do not move a published tag. A rollback uses an earlier signed installer and must
-preserve user manifests; manifest/checkpoint version compatibility still applies.
+See [Windows acceptance](WINDOWS-ACCEPTANCE.md) and [release publishing](RELEASE-DOWNLOADS.md).

@@ -1,113 +1,45 @@
-param(
-  [string]$Version = "0.1.0",
-  [ValidateSet("user", "machine")]
-  [string]$InstallScope = "user",
-  [string]$Wails = "wails",
-  [string]$Go = "go"
-)
-
-$ErrorActionPreference = "Stop"
-if ($Version -notmatch '^(?:test-)?v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
-  throw "Version must be a numeric release version, such as v1.2.3 or test-v1.2.3."
+param([string]$Version = '0.1.0', [switch]$FrameworkDependent, [switch]$PackageOnly)
+$ErrorActionPreference = 'Stop'
+if ($Version -notmatch '^(?:test-)?v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'Invalid version.' }
+$numeric = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
+$windowsVersion = "$numeric.0"
+$versionParts = $numeric.Split('.')
+$installDate = Get-Date -Format 'yyyyMMdd'
+foreach ($part in $numeric.Split('.')) { if ([long]$part -gt 65535) { throw 'Version component exceeds 65535.' } }
+$project = Join-Path $PSScriptRoot 'windows/GamiHash.Windows/GamiHash.Windows.csproj'
+$payload = Join-Path $PSScriptRoot 'build/windows-native/payload'
+$dist = Join-Path $PSScriptRoot 'build/bin'
+$installer = Join-Path $dist "gami-hash-windows-$numeric-x64-installer.exe"
+$go = if (Get-Command go -ErrorAction SilentlyContinue) { (Get-Command go).Source } else { 'C:\Program Files\Go\bin\go.exe' }
+$makensis = if (Get-Command makensis -ErrorAction SilentlyContinue) { (Get-Command makensis).Source } else { 'C:\Program Files (x86)\NSIS\makensis.exe' }
+if (-not (Test-Path -LiteralPath $go)) { throw 'Go is not installed.' }
+if (-not (Test-Path -LiteralPath $makensis)) { throw 'NSIS is not installed.' }
+New-Item -ItemType Directory -Force $payload,$dist | Out-Null
+if (-not $PackageOnly) {
+  $publish = @('publish',$project,'-c','Release','-r','win-x64','-o',$payload,"/p:Version=$numeric","/p:FileVersion=$windowsVersion","/p:AssemblyVersion=$windowsVersion",'/p:PublishSingleFile=true','/p:IncludeNativeLibrariesForSelfExtract=true','/p:DebugType=None')
+  if (-not $FrameworkDependent) { $publish += @('--self-contained','true') }
+  & dotnet @publish
+  if ($LASTEXITCODE -ne 0) { throw 'WPF publish failed.' }
+  $ldflags = "-s -w -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=$Version"
+  # The worker also supplies the optional gami-hash.exe CLI. The cli build tag
+  # keeps its no-argument path in console mode instead of invoking retired Wails.
+  & $go build -tags cli -trimpath -buildvcs=false -ldflags $ldflags -o (Join-Path $payload 'GamiHashEngine.exe') $PSScriptRoot
+  if ($LASTEXITCODE -ne 0) { throw 'Go worker build failed.' }
 }
-$numericVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
-foreach ($part in $numericVersion.Split('.')) {
-  if ([long]$part -gt 65535) { throw "Windows version components must be at most 65535." }
+foreach ($name in @('GamiHash.exe','GamiHashEngine.exe')) {
+  if (-not (Test-Path -LiteralPath (Join-Path $payload $name))) { throw "Missing payload: $name" }
 }
-
-$project = $PSScriptRoot
-$frontend = Join-Path $project "frontend"
-$dist = Join-Path $project "build/bin"
-$windowsBuild = Join-Path $project "build/windows"
-$installerBuild = Join-Path $windowsBuild "installer"
-
-function Resolve-CommandPath([string]$Name, [string[]]$Fallbacks) {
-  $cmd = Get-Command $Name -ErrorAction SilentlyContinue
-  if ($cmd) { return $cmd.Source }
-  foreach ($path in $Fallbacks) {
-    if (Test-Path -LiteralPath $path) { return $path }
-  }
-  throw "$Name was not found. Install NSIS or pass a Wails/NSIS environment where $Name is on PATH."
-}
-
-$goCompiler = Resolve-CommandPath $Go @(
-  "C:\Users\STUDENT\projects\auth-mem\.tools\go1.27.0\go\bin\go.exe",
-  "$env:USERPROFILE\go\bin\go.exe"
-)
-$env:PATH = "$(Split-Path -Parent $goCompiler);$env:PATH"
-
-$makensis = Resolve-CommandPath "makensis" @(
-  "C:\Program Files (x86)\NSIS\makensis.exe",
-  "C:\Program Files (x86)\NSIS\Bin\makensis.exe",
-  "C:\Program Files\NSIS\makensis.exe",
-  "C:\Program Files\NSIS\Bin\makensis.exe"
-)
-$env:PATH = "$(Split-Path -Parent $makensis);$env:PATH"
-
-Push-Location $frontend
-try {
-  npm ci
-  if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
-  npm run build
-  if ($LASTEXITCODE -ne 0) { throw "frontend build failed" }
-} finally {
-  Pop-Location
+$payloadBytes = (Get-ChildItem -LiteralPath $payload -File | Measure-Object -Property Length -Sum).Sum
+$cliBytes = (Get-Item -LiteralPath (Join-Path $payload 'GamiHashEngine.exe')).Length
+$installedSizeKB = [math]::Ceiling(($payloadBytes + $cliBytes) / 1KB)
+Push-Location (Join-Path $PSScriptRoot 'packaging/windows-native')
+try { & $makensis "/DPRODUCT_VERSION=$windowsVersion" "/DVERSION_MAJOR=$($versionParts[0])" "/DVERSION_MINOR=$($versionParts[1])" "/DINSTALL_DATE=$installDate" "/DINSTALLED_SIZE_KB=$installedSizeKB" "/DPAYLOAD_DIR=$payload" "/DOUTPUT_FILE=$installer" 'installer.nsi' } finally { Pop-Location }
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $installer)) { throw 'NSIS build failed.' }
+$guiVersion = (Get-Item -LiteralPath (Join-Path $payload 'GamiHash.exe')).VersionInfo
+if ($guiVersion.ProductName -ne 'Authentic Memory Hashing Tool') { throw "Incorrect GUI product metadata: $($guiVersion.ProductName)" }
+$installerVersion = (Get-Item -LiteralPath $installer).VersionInfo
+if ($installerVersion.ProductName -ne 'Authentic Memory Hashing Tool') { throw "Incorrect installer product metadata: $($installerVersion.ProductName)" }
+foreach ($file in @((Join-Path $payload 'GamiHash.exe'),(Join-Path $payload 'GamiHashEngine.exe'),$installer)) {
+  [pscustomobject]@{ Path=$file; Bytes=(Get-Item $file).Length; SHA256=(Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() }
 }
 
-$configPath = Join-Path $project "wails.json"
-$configBytes = [IO.File]::ReadAllBytes($configPath)
-$config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
-$config.info.productVersion = $numericVersion
-Push-Location $project
-try {
-  [IO.File]::WriteAllText($configPath, ($config | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding($false)))
-  New-Item -ItemType Directory -Force $dist | Out-Null
-  New-Item -ItemType Directory -Force $installerBuild | Out-Null
-  Remove-Item -LiteralPath (Join-Path $windowsBuild "icon.ico") -Force -ErrorAction SilentlyContinue
-  $ldflags = "-w -s -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=$Version"
-  $cliBinary = Join-Path $installerBuild "gami-hash-cli.exe"
-  & $goCompiler build `
-    -trimpath `
-    -buildvcs=false `
-    -tags cli `
-    -ldflags $ldflags `
-    -o $cliBinary `
-    .
-  if ($LASTEXITCODE -ne 0) { throw "CLI build failed" }
-
-  & $Wails build `
-    -clean `
-    -nsis `
-    -compiler $goCompiler `
-    -installscope $InstallScope `
-    -webview2 error `
-    -trimpath `
-    -tags "desktop,production" `
-    -ldflags $ldflags
-  if ($LASTEXITCODE -ne 0) { throw "Wails NSIS build failed" }
-
-  $installers = Get-ChildItem $dist -File |
-    Where-Object { $_.Name -like "*installer*.exe" -or $_.Name -like "*setup*.exe" }
-  if (-not $installers) {
-    throw "Wails completed but did not produce an NSIS installer in $dist"
-  }
-
-  # Check the actual PE resources, not just the configuration used to build them.
-  $versionedFiles = @((Join-Path $dist "gami-hash.exe")) + @($installers.FullName)
-  foreach ($file in $versionedFiles) {
-    $info = (Get-Item -LiteralPath $file).VersionInfo
-    $actualFile = "$($info.FileMajorPart).$($info.FileMinorPart).$($info.FileBuildPart)"
-    $actualProduct = "$($info.ProductMajorPart).$($info.ProductMinorPart).$($info.ProductBuildPart)"
-    if ($actualFile -ne $numericVersion -or $actualProduct -ne $numericVersion) {
-      throw "Version metadata mismatch in ${file}: file=$actualFile product=$actualProduct expected=$numericVersion"
-    }
-  }
-
-  $installers | ForEach-Object {
-    Get-Item $_.FullName | Select-Object FullName, Length, LastWriteTime
-    Get-FileHash $_.FullName -Algorithm SHA256
-  }
-} finally {
-  [IO.File]::WriteAllBytes($configPath, $configBytes)
-  Pop-Location
-}

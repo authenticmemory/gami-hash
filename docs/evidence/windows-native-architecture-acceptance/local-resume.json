@@ -1,0 +1,14 @@
+﻿{
+    "schema":  1,
+    "candidateTag":  "test-v0.3.10",
+    "installerSha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+    "scenario":  "local-cancel-close-restart-resume",
+    "source":  "C:\\Users\\STUDENT\\Downloads",
+    "result":  "pass",
+    "reportedBy":  "interactive acceptance operator",
+    "manifestName":  "checksums_Downloads_2026-10-19.csv",
+    "manifestSha256":  "c09a836cc4b2e9919e1127e9fffd4b2db2d6fd4269d103de34f39355aab0359f",
+    "manifestRows":  565,
+    "manifestBytes":  101928,
+    "completedUtc":  "2026-10-19T11:35:56.8263588Z"
+}

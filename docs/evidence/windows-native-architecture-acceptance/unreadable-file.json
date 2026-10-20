@@ -1,0 +1,12 @@
+﻿{
+    "schema":  1,
+    "candidateTag":  "test-v0.3.10",
+    "installerSha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+    "scenario":  "unreadable-file-partial-success",
+    "result":  "pass",
+    "manifestRows":  1,
+    "manifestSha256":  "de9be338a740c74e0bce82b26b6068758486e225b59cc596f88779345c1f31b7",
+    "errorLogSha256":  "6187efc7162526f4ee210df61dc1dd8c11bbaef13dbb73a93c543a21ce15574d",
+    "errorLog":  "2026-10-19T12:02:17.4184249Z\tERROR\tFILE_READ_FAILED\t\"access-denied.txt\"\topen C:\\Users\\STUDENT\\projects\\auth-mem\\gami-hash\\build\\acceptance-fixtures\\failure-source\\access-denied.txt: Access is denied.",
+    "completedUtc":  "2026-10-19T12:02:52.9437725Z"
+}

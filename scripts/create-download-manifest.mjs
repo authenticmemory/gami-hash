@@ -12,13 +12,13 @@ for (const platform of ['windows-x64', 'linux-x64', 'linux-x64-gui']) {
   const linux = platform.startsWith('linux-');
   const gui = platform === 'linux-x64-gui';
   const source = gui ? join(root, 'linux-gui') : join(root, linux ? 'linux' : 'windows', 'bin');
-  // GitHub normalizes spaces in uploaded filenames. Publish a stable ASCII name
-  // and update its checksum entry without changing the signed executable bytes.
-  const originalInstaller = 'Authentic Memory Hashing Tool-amd64-installer.exe';
+  // Publish a stable download name without changing the signed executable bytes.
+  const originalInstaller = linux ? null : readdirSync(source).find(name => /^gami-hash-windows-\d+\.\d+\.\d+-x64-installer\.exe$/.test(name));
+  if (!linux && !originalInstaller) throw new Error('Missing signed Windows installer');
   const archive = gui ? 'gami-hash-linux-amd64-gui.deb' : linux ? 'gami-hash-linux-amd64.tar.gz' : 'gami-hash-windows-amd64-installer.exe';
   const checksum = gui ? 'SHA256SUMS-linux-gui.txt' : linux ? `${archive}.sha256` : 'SHA256SUMS-windows.txt';
   const signature = linux ? `${archive}.asc` : null;
-  const names = linux ? [archive, checksum, signature, `${checksum}.asc`] : [archive, 'gami-hash.exe', checksum];
+  const names = linux ? [archive, checksum, signature, `${checksum}.asc`] : [archive, checksum];
   let sourceRpm;
   if (gui) {
     sourceRpm = readdirSync(source).find(name => /^gami-hash-.*\.x86_64\.rpm$/.test(name));

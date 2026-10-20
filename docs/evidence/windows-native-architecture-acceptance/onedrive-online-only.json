@@ -1,0 +1,14 @@
+﻿{
+    "schema":  1,
+    "candidateTag":  "test-v0.3.10",
+    "installerSha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+    "scenario":  "onedrive-online-only-source-local-output",
+    "result":  "pass",
+    "reportedBy":  "interactive acceptance operator",
+    "manifestName":  "checksums_gami-test_2026-10-19.csv",
+    "manifestSha256":  "5e2f25165fe5cdbb21f338b6b402bb82e77a551735f445a6eaa97048c3935e27",
+    "manifestRows":  502,
+    "onlineOnlyControlRows":  1,
+    "manifestBytes":  64701,
+    "completedUtc":  "2026-10-19T11:57:11.4598577Z"
+}

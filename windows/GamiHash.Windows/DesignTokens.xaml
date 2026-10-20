@@ -1,0 +1,155 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Direct translations of frontend/src/style.css :root tokens. -->
+  <Color x:Key="BgColor">#FFFFFF</Color>
+  <Color x:Key="Surface2Color">#FAFBFC</Color>
+  <Color x:Key="Surface3Color">#F4F6F8</Color>
+  <Color x:Key="InkColor">#152035</Color>
+  <Color x:Key="InkSoftColor">#475569</Color>
+  <Color x:Key="InkFaintColor">#64748B</Color>
+  <Color x:Key="InkFaintestColor">#94A3B8</Color>
+  <Color x:Key="RuleColor">#ECEFF3</Color>
+  <Color x:Key="GreenColor">#2D6A4F</Color>
+  <Color x:Key="GreenDeepColor">#1F5D3A</Color>
+  <Color x:Key="GreenBgColor">#E7F0EB</Color>
+  <Color x:Key="GreenFaintColor">#F5F8F6</Color>
+  <Color x:Key="RedColor">#9F1239</Color>
+  <Color x:Key="RedBgColor">#FDF5F7</Color>
+
+  <SolidColorBrush x:Key="Bg" Color="{StaticResource BgColor}" />
+  <SolidColorBrush x:Key="Surface2" Color="{StaticResource Surface2Color}" />
+  <SolidColorBrush x:Key="Ink" Color="{StaticResource InkColor}" />
+  <SolidColorBrush x:Key="InkSoft" Color="{StaticResource InkSoftColor}" />
+  <SolidColorBrush x:Key="InkFaint" Color="{StaticResource InkFaintColor}" />
+  <SolidColorBrush x:Key="InkFaintest" Color="{StaticResource InkFaintestColor}" />
+  <SolidColorBrush x:Key="Rule" Color="{StaticResource RuleColor}" />
+  <SolidColorBrush x:Key="Green" Color="{StaticResource GreenColor}" />
+  <SolidColorBrush x:Key="GreenDeep" Color="{StaticResource GreenDeepColor}" />
+  <SolidColorBrush x:Key="GreenBg" Color="{StaticResource GreenBgColor}" />
+  <SolidColorBrush x:Key="GreenFaint" Color="{StaticResource GreenFaintColor}" />
+  <SolidColorBrush x:Key="Red" Color="{StaticResource RedColor}" />
+  <SolidColorBrush x:Key="RedBg" Color="{StaticResource RedBgColor}" />
+
+  <!-- These names match the fonts' internal family metadata. Relative pack
+       URIs are required for resources embedded in this WPF assembly. -->
+  <FontFamily x:Key="SansFont">./Assets/Fonts/#Inter</FontFamily>
+  <FontFamily x:Key="MonoFont">./Assets/Fonts/#JetBrains Mono</FontFamily>
+
+  <Style TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource SansFont}" />
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+    <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+  </Style>
+
+  <Style x:Key="PillButton" TargetType="Button">
+    <Setter Property="MinWidth" Value="120" />
+    <Setter Property="Height" Value="42" />
+    <Setter Property="Padding" Value="26,0" />
+    <Setter Property="FontFamily" Value="{StaticResource SansFont}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="{StaticResource Ink}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Ink}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ContentTemplate">
+      <Setter.Value>
+        <DataTemplate>
+          <TextBlock Text="{Binding}" Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                     FontFamily="{StaticResource SansFont}" FontSize="14" FontWeight="SemiBold" />
+        </DataTemplate>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Border" Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="21">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Margin="{TemplateBinding Padding}" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Border" Property="Background" Value="#24324D" />
+              <Setter TargetName="Border" Property="BorderBrush" Value="#24324D" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Border" Property="Opacity" Value="0.86" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PillButton}">
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+    <Setter Property="Background" Value="{StaticResource Bg}" />
+    <Setter Property="BorderBrush" Value="{StaticResource InkFaintest}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Border" Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="21">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Margin="{TemplateBinding Padding}" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Border" Property="Background" Value="{StaticResource Surface2}" />
+              <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Ink}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="GamiProgressBar" TargetType="ProgressBar">
+    <Setter Property="Height" Value="10" />
+    <Setter Property="Background" Value="{StaticResource Rule}" />
+    <Setter Property="Foreground" Value="{StaticResource Green}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <Style x:Key="CaptionButton" TargetType="Button">
+    <Setter Property="Width" Value="31" /><Setter Property="Height" Value="31" />
+    <Setter Property="Margin" Value="2,10" /><Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{StaticResource InkFaint}" />
+    <Setter Property="FontFamily" Value="Segoe UI Symbol" /><Setter Property="FontSize" Value="13" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Border" Background="{TemplateBinding Background}" CornerRadius="8">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Border" Property="Background" Value="#0D152035" /></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Border" Background="{TemplateBinding Background}" CornerRadius="8">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Border" Property="Background" Value="{StaticResource RedBg}" />
+              <Setter Property="Foreground" Value="{StaticResource Red}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+</ResourceDictionary>

@@ -1,72 +1,47 @@
-# GAMI Hashing Tool: information for IT staff
+﻿# Authentic Memory Hashing Tool: IT summary
 
-*One page.*
+## Current Windows release
 
-## What it is
+Version **1.6.0** uses a native WPF frontend and a private Go hashing worker. It does not include WebView2, Wails, AppContainer, MSIX, an updater, telemetry, or an upload client. Installation is per-user and self-contained.
 
-A Windows desktop application and separate command-line tool that compute
-SHA-256 checksums for files under a folder chosen by the user and write a CSV
-manifest. They prepare collection handovers to GAMI without shipping the
-source files themselves.
+Installed programs:
 
-## What it does, completely
+- `GamiHash.exe`: native GUI
+- `GamiHashEngine.exe`: private worker
+- `gami-hash.exe`: optional CLI copy of the worker
 
-1. Reads every regular file under the user-chosen folder (opened read-only).
-2. Writes exactly one CSV file to the user-chosen output location, which the
-   program refuses to place inside the scanned folder. Next to it, when
-   needed: an error log and a temporary resume marker.
-3. Remembers an interrupted run in one small JSON file in the user's config
-   folder (two paths, nothing else), so the next start can offer to continue
-   with one click. Removed when the run completes.
-4. Shows a progress bar, and at the end an "Open folder" button that reveals
-   the result file in the system file manager. On Windows, the GUI also starts
-   Microsoft's WebView2 runtime, whose processes made account-related and
-   component-update requests in the v1.5.0 VM test.
+## Data access
 
-## What it does not do
+The engine recursively reads regular files, calculates SHA-256, and writes a five-column CSV outside the source tree. Source opens request read access. Links, reparse points, and special files are skipped. Unreadable files are recorded in a separate error log.
 
-- The hashing code contains no upload, telemetry, account, remote-font,
-  remote-image, or remote-help feature. **The v1.5.0 Windows GUI's WebView2
-  child processes did make external network connections in a VM test.** Do
-  not describe this release as making no internet connections. The
-  [follow-up capture](evidence/2026-10-16-windows-v1.5.0/followup/README.md)
-  identified Microsoft account profile requests with authorization headers
-  and a browser component update request.
-- No writes into the scanned folder. Enforced in code, and every file is
-  opened with read-only flags. You can run it against a read-only share or a
-  write-protected drive.
-- Output paths are resolved before use, including Windows junctions. Output
-  files are built separately and then published without truncating an existing
-  symlink or hard-link target in place.
-- Hashing does not require a GAMI account or install a service or driver.
-  The Windows GUI's WebView2 processes nevertheless sent account-related
-  requests in the tested VM. Windows and macOS releases are packaged as
-  installable/native apps; the CLI artifact remains portable.
-- The output CSV contains five columns: `relative_path`, `size_bytes`,
-  `file_hash` (SHA-256), `mtime_utc`, and `source_record_id`. The last column
-  repeats the relative path for handover compatibility.
+The application stores only manifest output and resume metadata. It installs no service or driver and requires no account.
 
-## Verifying the binary
+## Network statement
 
-The v1.5.0 Windows installer is Authenticode signed and timestamped by
-Authentic Memory. Windows SmartScreen can still warn if the installer has
-little reputation. Check the signature and download hash:
+The application has no feature that sends files, manifests, analytics, or telemetry. In documented acceptance scenarios, no GAMI-owned process generated a Sysmon network or DNS event during idle, local hashing, UNC SMB hashing, or mapped-drive hashing.
 
-```powershell
-$installer = '.\gami-hash-windows-amd64-installer.exe'
-Get-AuthenticodeSignature -LiteralPath $installer | Format-List Status,SignerCertificate,TimeStamperCertificate
-Get-FileHash -LiteralPath $installer -Algorithm SHA256
+This is measured runtime evidence, not an OS-enforced network prohibition. SMB clients and cloud sync providers can communicate independently when Windows satisfies filesystem reads or hydrates an online-only file.
+
+## Manifest schema
+
+```text
+relative_path,size_bytes,file_hash,mtime_utc,source_record_id
 ```
 
-Require a `Valid` signature with the expected publisher, and compare the hash
-with the checksum published for the same release. A valid signature does not
-establish that SmartScreen will suppress a reputation warning. Release
-reproducibility is not claimed; see `VERIFY.md` for current build limits.
+The CSV is UTF-8 with BOM, RFC 4180, CRLF terminated, and deterministically sorted. Absolute source paths and usernames are not included.
 
-## Resource use
+## Verify v1.6.0
 
-Reads files sequentially with 2 parallel workers by default (safe for
-spinning disks and network shares). CPU: one to two cores while hashing.
-Memory: typically well under 200 MB. Runtime: roughly the time needed to
-read the data once. A 4 TB collection on a USB disk takes about a working
-day, and the run can be interrupted and resumed at any time.
+```powershell
+$file = '.\gami-hash-windows-amd64-installer.exe'
+Get-AuthenticodeSignature $file | Format-List Status,SignerCertificate,TimeStamperCertificate
+Get-FileHash $file -Algorithm SHA256
+```
+
+Expected SHA-256:
+
+```text
+1C6EE47771AE1458F04E7E1D9457038D961398D25D3A6F275C3B816363B97DF6
+```
+
+Require a valid signature and timestamp from Authentic Memory. SmartScreen reputation warnings are separate from signature validity.

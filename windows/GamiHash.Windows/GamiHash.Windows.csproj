@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>GamiHash</AssemblyName>
+    <RootNamespace>GamiHash.Windows</RootNamespace>
+    <ApplicationIcon>Assets\gami-logo.ico</ApplicationIcon>
+    <AssemblyTitle>Authentic Memory Hashing Tool</AssemblyTitle>
+    <Product>Authentic Memory Hashing Tool</Product>
+    <Company>Authentic Memory</Company>
+    <Copyright>Copyright (c) 2026 Authentic Memory</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Fonts\*.ttf" />
+    <Resource Include="Assets\gami-logo.ico" />
+  </ItemGroup>
+</Project>

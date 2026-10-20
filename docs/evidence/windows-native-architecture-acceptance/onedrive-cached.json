@@ -1,0 +1,13 @@
+﻿{
+    "schema":  1,
+    "candidateTag":  "test-v0.3.10",
+    "installerSha256":  "13b0675850e2bd6545418cb94c80c619d5be380c64a38467a7b6251a95b99415",
+    "scenario":  "onedrive-cached-source-local-output",
+    "result":  "pass",
+    "reportedBy":  "interactive acceptance operator",
+    "manifestName":  "checksums_Documents_2026-10-19.csv",
+    "manifestSha256":  "c00e31affcc939a2c72c8b80c486930ecc9107fa84b9da7b95452126caf29d8d",
+    "manifestRows":  64,
+    "manifestBytes":  14575,
+    "completedUtc":  "2026-10-19T11:42:52.5601202Z"
+}

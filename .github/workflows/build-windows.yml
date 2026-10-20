@@ -53,7 +53,12 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
 
-      - name: Set up Node.js
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Set up Node.js for legacy-platform Go tests
         uses: actions/setup-node@v4
         with:
           node-version: "24"
@@ -63,11 +68,10 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y --no-progress
 
-      - name: Install pinned Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
-
-      # gui.go embeds frontend/dist, so clean checkouts need this before Go tests.
-      - name: Build frontend assets
+      # The root Go package still embeds these assets for Linux/macOS Wails
+      # builds. Windows does not package them, but clean-checkout Go tests need
+      # the generated directory to compile the shared package.
+      - name: Build legacy-platform frontend test assets
         working-directory: frontend
         run: |
           npm ci
@@ -81,7 +85,7 @@ jobs:
         shell: pwsh
         env:
           BUILD_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-        run: .\build-windows-installer.ps1 -Version $env:BUILD_VERSION -InstallScope user
+        run: .\build-windows-installer.ps1 -Version $env:BUILD_VERSION
 
       - name: Authenticate to Azure using GitHub OIDC
         uses: azure/login@v3
@@ -90,20 +94,22 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Sign GUI and CLI payloads
+      - name: Sign GUI and worker payloads
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: https://neu.codesigning.azure.net
           signing-account-name: authenticmemorysigning
           certificate-profile-name: gami-public-signing
           files: |
-            ${{ github.workspace }}\build\bin\gami-hash.exe
-            ${{ github.workspace }}\build\windows\installer\gami-hash-cli.exe
+            ${{ github.workspace }}\build\windows-native\payload\GamiHash.exe
+            ${{ github.workspace }}\build\windows-native\payload\GamiHashEngine.exe
           exclude-environment-credential: true
 
       - name: Package verified signed payloads
         shell: pwsh
-        run: .\package-signed-windows-installer.ps1
+        env:
+          BUILD_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: .\package-signed-windows-installer.ps1 -Version $env:BUILD_VERSION
 
       - name: Sign finished installer
         uses: azure/artifact-signing-action@v2
@@ -128,6 +134,12 @@ jobs:
               $hash = Get-FileHash $_.FullName -Algorithm SHA256
               "$($hash.Hash.ToLower())  $($_.Name)"
             } | Set-Content -Encoding ascii build/bin/SHA256SUMS-windows.txt
+
+      - name: Record signed artifact identity
+        shell: pwsh
+        env:
+          BUILD_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: .\write-windows-release-report.ps1 -Version $env:BUILD_VERSION -Commit $env:GITHUB_SHA
 
       - name: Create dependency inventory
         shell: pwsh
@@ -176,4 +188,7 @@ jobs:
           fi
           mapfile -d '' assets < <(find release -type f -print0)
           test "${#assets[@]}" -gt 0
-          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          # A candidate tag names one immutable byte sequence. If assets already
+          # exist, fail instead of silently replacing the artifact that may
+          # already be under acceptance testing.
+          gh release upload "$RELEASE_TAG" "${assets[@]}"
