@@ -76,19 +76,18 @@ func (t T) OutputInsideRoot() string {
 // have asked about replacing the file, so the first line calms that down.
 func (t T) ResumeFound(rowCount string) string {
 	return "This file belongs to an interrupted run. " + rowCount + " files are already recorded and will be kept.\n\n" +
-		"\"Continue\" picks up where it stopped.\n" +
-		"\"Start over\" clears the list and records everything again."
+		"\"Continue\" picks up where it stopped. Cancel to choose a new result filename."
 }
 
 func (t T) ResumeDifferentRoot(oldRoot string) string {
 	return "This result file belongs to an interrupted run. Back then the path was:\n\n" + oldRoot + "\n\n" +
 		"If this is the same folder, for example an external drive that now has a different drive letter, choose \"Continue\".\n\n" +
-		"If it is a different folder, choose \"Start over\". The file will then be created fresh."
+		"If it is a different folder, cancel and choose a new result filename."
 }
 func (t T) OverwriteBtn() string { return "Overwrite" }
 
 func (t T) OverwriteExisting() string {
-	return "The chosen file already exists and will be overwritten. Continue?"
+	return "The chosen filename already exists. GAMI Hash will not replace it. Please choose a new filename."
 }
 
 func (t T) ConfirmStart(root, output string) string {

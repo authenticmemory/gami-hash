@@ -31,10 +31,12 @@ if ($ExpectedVersion) { Test-Expected ($entry.DisplayVersion -eq "$ExpectedVersi
 $gui = Join-Path $install 'GamiHash.exe'
 $worker = Join-Path $install 'GamiHashEngine.exe'
 $cli = Join-Path $install 'gami-hash.exe'
+$uninstaller = Join-Path $install 'Uninstall.exe'
 $startShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Authentic Memory\Authentic Memory Hashing Tool.lnk'
 $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Authentic Memory Hashing Tool.lnk'
 Test-Expected (Test-Path -LiteralPath $gui -PathType Leaf) 'GUI executable is missing.'
 Test-Expected (Test-Path -LiteralPath $worker -PathType Leaf) 'Hashing worker is missing.'
+Test-Expected (Test-Path -LiteralPath $uninstaller -PathType Leaf) 'Uninstaller is missing.'
 Test-Expected (Test-Path -LiteralPath $startShortcut -PathType Leaf) 'Start menu shortcut is missing.'
 Test-Expected ((Test-Path -LiteralPath $desktopShortcut -PathType Leaf) -eq $ExpectDesktopShortcut.IsPresent) 'Desktop shortcut selection was not applied.'
 Test-Expected ((Test-Path -LiteralPath $cli -PathType Leaf) -eq $ExpectCli.IsPresent) 'CLI selection was not applied.'
@@ -43,6 +45,9 @@ $environmentKey = $registry.OpenSubKey('Environment')
 $userPath = [string]$environmentKey.GetValue('Path', '', [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
 $pathEntries = @(($userPath -split ';') | ForEach-Object { $_.TrimEnd('\') })
 Test-Expected (($pathEntries -contains $install.TrimEnd('\')) -eq $ExpectCli.IsPresent) 'Persisted user PATH does not match the CLI selection.'
+
+$uninstallerSignature = Get-AuthenticodeSignature -LiteralPath $uninstaller
+Test-Expected ($uninstallerSignature.Status -eq 'Valid' -and $null -ne $uninstallerSignature.TimeStamperCertificate) 'Uninstaller signature or timestamp is invalid.'
 
 $msix = @(Get-AppxPackage -Name AuthenticMemory.GAMIHash.Windows) + @(Get-AppxPackage -Name AuthenticMemory.GAMIHash.Phase2Product)
 Test-Expected ($msix.Count -eq 0) 'A conflicting production-name MSIX remains installed.'

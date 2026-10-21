@@ -89,7 +89,10 @@ public partial class MainWindow : Window
             MessageBox.Show(this, "The GAMI Hash engine is unavailable.", "GAMI Hash", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
-        var baseName = Path.GetFileName(_root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var trimmedRoot = _root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var baseName = Path.GetFileName(trimmedRoot);
+        if (string.IsNullOrWhiteSpace(baseName))
+            baseName = Path.GetPathRoot(_root)?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) ?? "drive";
         foreach (var invalid in Path.GetInvalidFileNameChars().Append(' ')) baseName = baseName.Replace(invalid, '_');
         if (baseName.Length > 60) baseName = baseName[..60];
         var picker = new SaveFileDialog
@@ -98,8 +101,9 @@ public partial class MainWindow : Window
             Filter = "CSV manifest (*.csv)|*.csv",
             DefaultExt = ".csv",
             AddExtension = true,
-            OverwritePrompt = false,
-            FileName = $"checksums_{baseName}_{DateTime.Now:yyyy-MM-dd}.csv"
+            OverwritePrompt = true,
+            CreateTestFile = false,
+            FileName = $"checksums_{baseName}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.csv"
         };
         if (picker.ShowDialog(this) != true) return;
 
@@ -296,19 +300,6 @@ public partial class MainWindow : Window
         ConflictView.Visibility = Visibility.Collapsed;
         SelectedView.Visibility = Visibility.Visible;
         ChooseOutput_Click(sender, e);
-    }
-
-    private async void StartOver_Click(object sender, RoutedEventArgs e)
-    {
-        if (_engine is null) return;
-        try
-        {
-            _mode = "fresh";
-            _conflictingResume = null;
-            ShowReady(await _engine.PreflightAsync(_root, _output, _mode));
-            ConflictView.Visibility = Visibility.Collapsed;
-        }
-        catch (Exception error) { ShowLocationError(error); }
     }
 
     private async void ContinueEarlier_Click(object sender, RoutedEventArgs e)

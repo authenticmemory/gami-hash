@@ -121,6 +121,72 @@ func atomicWriteFile(path string, data []byte, perm fs.FileMode) error {
 	return nil
 }
 
+// writeNewFile creates a sidecar only when the name is unused. It never
+// truncates a file that appeared after validation.
+func writeNewFile(path string, data []byte, perm fs.FileMode) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, perm)
+	if err != nil {
+		return err
+	}
+	ok := false
+	defer func() {
+		_ = f.Close()
+		if !ok {
+			_ = os.Remove(path)
+		}
+	}()
+	if _, err := f.Write(data); err != nil {
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	ok = true
+	return nil
+}
+
+// publishNewFile publishes a completed manifest without replacing an existing
+// directory entry. Hard-linking is atomic and preserves the fully written
+// temporary file. The exclusive-copy fallback supports filesystems without
+// hard links while retaining the no-overwrite guarantee.
+func publishNewFile(workPath, finalPath string) error {
+	if err := os.Link(workPath, finalPath); err == nil {
+		return os.Remove(workPath)
+	} else if errors.Is(err, fs.ErrExist) {
+		return err
+	}
+	src, err := os.Open(workPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+	dst, err := os.OpenFile(finalPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	ok := false
+	defer func() {
+		_ = dst.Close()
+		if !ok {
+			_ = os.Remove(finalPath)
+		}
+	}()
+	if _, err := io.Copy(dst, src); err != nil {
+		return err
+	}
+	if err := dst.Sync(); err != nil {
+		return err
+	}
+	if err := dst.Close(); err != nil {
+		return err
+	}
+	ok = true
+	return os.Remove(workPath)
+}
+
 // publishFile replaces only the destination directory entry. If it was a
 // symlink or hard link, its target remains untouched.
 func publishFile(workPath, finalPath string) error {

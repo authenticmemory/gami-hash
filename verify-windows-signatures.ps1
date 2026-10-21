@@ -8,6 +8,7 @@ $files = @()
 if ($Stage -in @("Payload", "All")) {
   $files += Join-Path $PSScriptRoot "build/windows-native/payload/GamiHash.exe"
   $files += Join-Path $PSScriptRoot "build/windows-native/payload/GamiHashEngine.exe"
+  $files += Join-Path $PSScriptRoot "build/windows-native/payload/Uninstall.exe"
 }
 if ($Stage -in @("Installer", "All")) {
   $installers = @(Get-ChildItem (Join-Path $PSScriptRoot "build/bin") -Filter "gami-hash-windows-*-x64-installer.exe" -File)

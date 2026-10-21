@@ -1,5 +1,5 @@
+using Microsoft.Win32;
 using System.Text.Json;
-using System.IO;
 
 namespace GamiHash.Windows;
 
@@ -7,26 +7,33 @@ internal sealed record SavedRun(string Root, string Output);
 
 internal static class RunStateStore
 {
-    private static readonly string DirectoryPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AuthenticMemory", "GamiHash");
-    private static readonly string FilePath = Path.Combine(DirectoryPath, "last-run.json");
+    private const string KeyPath = @"Software\Authentic Memory\GAMI Hash";
+    private const string ValueName = "LastRun";
 
     public static SavedRun? Read()
     {
-        try { return File.Exists(FilePath) ? JsonSerializer.Deserialize<SavedRun>(File.ReadAllText(FilePath)) : null; }
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(KeyPath);
+            var json = key?.GetValue(ValueName) as string;
+            return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<SavedRun>(json);
+        }
         catch { return null; }
     }
 
     public static void Write(string root, string output)
     {
-        Directory.CreateDirectory(DirectoryPath);
-        var temporary = FilePath + ".tmp";
-        File.WriteAllText(temporary, JsonSerializer.Serialize(new SavedRun(root, output)));
-        File.Move(temporary, FilePath, true);
+        using var key = Registry.CurrentUser.CreateSubKey(KeyPath);
+        key.SetValue(ValueName, JsonSerializer.Serialize(new SavedRun(root, output)), RegistryValueKind.String);
     }
 
     public static void Clear()
     {
-        try { File.Delete(FilePath); } catch { }
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(KeyPath, writable: true);
+            key?.DeleteValue(ValueName, throwOnMissingValue: false);
+        }
+        catch { }
     }
 }

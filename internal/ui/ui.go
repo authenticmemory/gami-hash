@@ -140,8 +140,8 @@ func revealInFileManager(path string) {
 	}
 }
 
-// pickOutput loops until the user has chosen a valid output path and decided
-// about resuming or overwriting. ok=false means the user cancelled.
+// pickOutput loops until the user has chosen a valid, unused output path or a
+// valid interrupted run to resume. ok=false means the user cancelled.
 func pickOutput(t i18n.T, root, today string) (engine.Options, bool) {
 	defaultName := t.DefaultOutputName(filepath.Base(root), today)
 	// Suggest the desktop: non-technical users must be able to find the
@@ -174,16 +174,11 @@ func pickOutput(t i18n.T, root, today string) (engine.Options, bool) {
 			err := zenity.Question(t.ResumeFound(t.FormatInt(st.RowCount)),
 				zenity.Title(t.AppTitle()),
 				zenity.OKLabel(t.ResumeBtn()),
-				zenity.ExtraButton(t.RestartBtn()),
 				zenity.CancelLabel(t.Cancel()))
-			switch {
-			case err == nil:
-				opts.Fresh = false
-			case errors.Is(err, zenity.ErrExtraButton):
-				opts.Fresh = true
-			default:
+			if err != nil {
 				continue // back to the save dialog
 			}
+			opts.Fresh = false
 			return opts, true
 
 		case st.Resumable:
@@ -193,28 +188,16 @@ func pickOutput(t i18n.T, root, today string) (engine.Options, bool) {
 			err := zenity.Question(t.ResumeDifferentRoot(st.Root),
 				zenity.Title(t.AppTitle()),
 				zenity.OKLabel(t.ResumeBtn()),
-				zenity.ExtraButton(t.RestartBtn()),
-				zenity.CancelLabel(t.Cancel()))
-			switch {
-			case err == nil:
-				opts.AllowRootMismatch = true
-			case errors.Is(err, zenity.ErrExtraButton):
-				opts.Fresh = true
-			default:
-				continue
-			}
-			return opts, true
-
-		case exists(output):
-			err := zenity.Question(t.OverwriteExisting(),
-				zenity.Title(t.AppTitle()),
-				zenity.OKLabel(t.OverwriteBtn()),
 				zenity.CancelLabel(t.Cancel()))
 			if err != nil {
 				continue
 			}
-			opts.Fresh = true
+			opts.AllowRootMismatch = true
 			return opts, true
+
+		case exists(output):
+			zenity.Warning(t.OverwriteExisting(), zenity.Title(t.AppTitle()))
+			continue
 
 		default:
 			opts.Fresh = true

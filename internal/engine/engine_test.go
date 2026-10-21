@@ -356,6 +356,90 @@ func TestOutputInsideRootRejected(t *testing.T) {
 	}
 }
 
+func TestIsWithinFilesystemRoot(t *testing.T) {
+	root := filepath.VolumeName(t.TempDir()) + string(filepath.Separator)
+	if root == string(filepath.Separator) && runtime.GOOS == "windows" {
+		t.Fatal("temporary directory has no Windows volume")
+	}
+	path := filepath.Join(root, "somewhere", "manifest.csv")
+	if !isWithin(path, root) {
+		t.Fatalf("%q must be detected inside filesystem root %q", path, root)
+	}
+}
+
+func TestIsWithinWindowsDriveAndShareRoots(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows path semantics")
+	}
+	for _, tc := range []struct {
+		path string
+		root string
+		want bool
+	}{
+		{`E:\manifest.csv`, `E:\`, true},
+		{`E:\folder\manifest.csv`, `E:\`, true},
+		{`F:\manifest.csv`, `E:\`, false},
+		{`\\server\share\manifest.csv`, `\\server\share`, true},
+		{`\\server\share\folder\manifest.csv`, `\\server\share\`, true},
+		{`\\server\other\manifest.csv`, `\\server\share`, false},
+	} {
+		if got := isWithin(tc.path, tc.root); got != tc.want {
+			t.Errorf("isWithin(%q, %q) = %v, want %v", tc.path, tc.root, got, tc.want)
+		}
+	}
+}
+
+func TestFreshRunRefusesExistingArtifacts(t *testing.T) {
+	root := buildTree(t, map[string]string{"a.txt": "x"})
+	for _, existing := range []func(string) string{
+		func(out string) string { return out },
+		CheckpointPath,
+		ErrorLogPath,
+	} {
+		out := filepath.Join(t.TempDir(), "manifest.csv")
+		protected := existing(out)
+		if err := os.WriteFile(protected, []byte("do not replace"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Run(context.Background(), Options{Root: root, Output: out, Fresh: true}, nil); err == nil {
+			t.Fatalf("fresh run accepted existing artifact %s", protected)
+		}
+		if data, err := os.ReadFile(protected); err != nil || string(data) != "do not replace" {
+			t.Fatalf("existing artifact changed: data=%q err=%v", data, err)
+		}
+	}
+}
+
+func TestSafeIssueTextOmitsAbsolutePath(t *testing.T) {
+	abs := filepath.Join(t.TempDir(), "private", "secret.txt")
+	issue := fmt.Errorf("cannot read file: %w", &os.PathError{Op: "open", Path: abs, Err: os.ErrPermission})
+	got := safeIssueText(issue)
+	if strings.Contains(got, abs) {
+		t.Fatalf("diagnostic leaked absolute path: %q", got)
+	}
+	if !strings.Contains(got, "open") || !strings.Contains(got, os.ErrPermission.Error()) {
+		t.Fatalf("diagnostic lost useful error details: %q", got)
+	}
+}
+
+func TestPublishNewFileNeverReplacesExistingDestination(t *testing.T) {
+	dir := t.TempDir()
+	work := filepath.Join(dir, ".gami-work")
+	final := filepath.Join(dir, "manifest.csv")
+	if err := os.WriteFile(work, []byte("new manifest"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(final, []byte("archive file"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := publishNewFile(work, final); err == nil {
+		t.Fatal("publish unexpectedly replaced an existing destination")
+	}
+	if data, err := os.ReadFile(final); err != nil || string(data) != "archive file" {
+		t.Fatalf("existing destination changed: data=%q err=%v", data, err)
+	}
+}
+
 func TestOutputMustBeCSV(t *testing.T) {
 	root := buildTree(t, map[string]string{"a.txt": "x"})
 	for _, name := range []string{"manifest", "manifest.txt", "manifest.xlsx"} {
@@ -634,7 +718,7 @@ func TestLargeFileStreaming(t *testing.T) {
 	}
 }
 
-func TestFreshOutputHardLinkCannotTruncateSource(t *testing.T) {
+func TestFreshOutputHardLinkIsRejectedWithoutChangingSource(t *testing.T) {
 	root := buildTree(t, map[string]string{"precious.bin": "irreplaceable"})
 	source := filepath.Join(root, "precious.bin")
 	out := filepath.Join(t.TempDir(), "manifest.csv")
@@ -642,9 +726,8 @@ func TestFreshOutputHardLinkCannotTruncateSource(t *testing.T) {
 		t.Skipf("hard links unavailable: %v", err)
 	}
 
-	res := runFresh(t, root, out)
-	if res.FilesHashed != 1 {
-		t.Fatalf("unexpected result: %+v", res)
+	if _, err := Run(context.Background(), Options{Root: root, Output: out, Fresh: true}, nil); err == nil {
+		t.Fatal("existing output hard link must be rejected")
 	}
 	data, err := os.ReadFile(source)
 	if err != nil || string(data) != "irreplaceable" {
