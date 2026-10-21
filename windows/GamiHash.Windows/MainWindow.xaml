@@ -129,10 +129,9 @@
           <Border Margin="0,0,0,18" Padding="16,14" BorderBrush="{StaticResource Rule}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Surface2}">
             <StackPanel><TextBlock Text="SELECTED NOW" Foreground="{StaticResource InkFaint}" FontSize="11" FontWeight="SemiBold" /><TextBlock x:Name="ConflictSelectedRoot" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkSoft}" FontSize="12.5" Margin="0,6,0,0" TextWrapping="Wrap" /></StackPanel>
           </Border>
-          <TextBlock Text="Continuing records the earlier folder. Starting over clears the result file and records the newly selected folder instead." Foreground="{StaticResource InkSoft}" FontSize="14" TextWrapping="Wrap" />
+          <TextBlock Text="Continue only if this is the same folder at a new location. Otherwise, choose a new result filename." Foreground="{StaticResource InkSoft}" FontSize="14" TextWrapping="Wrap" />
           <WrapPanel HorizontalAlignment="Right" Margin="0,22,0,0">
             <Button Style="{StaticResource SecondaryButton}" Click="ChooseDifferentOutput_Click" Content="Choose another file" Margin="0,0,10,0" />
-            <Button Style="{StaticResource SecondaryButton}" Click="StartOver_Click" Content="Start over" Margin="0,0,10,0" />
             <Button Style="{StaticResource PillButton}" Click="ContinueEarlier_Click" Content="Continue earlier run" />
           </WrapPanel>
         </StackPanel>

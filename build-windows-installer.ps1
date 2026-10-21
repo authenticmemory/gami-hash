@@ -20,13 +20,32 @@ if (-not $PackageOnly) {
   if (-not $FrameworkDependent) { $publish += @('--self-contained','true') }
   & dotnet @publish
   if ($LASTEXITCODE -ne 0) { throw 'WPF publish failed.' }
-  $ldflags = "-s -w -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=$Version"
+  # Candidate tags identify CI runs; the installed product reports the public
+  # semantic version that will be promoted byte-for-byte.
+  $ldflags = "-s -w -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=v$numeric"
   # The worker also supplies the optional gami-hash.exe CLI. The cli build tag
   # keeps its no-argument path in console mode instead of invoking retired Wails.
   & $go build -tags cli -trimpath -buildvcs=false -ldflags $ldflags -o (Join-Path $payload 'GamiHashEngine.exe') $PSScriptRoot
   if ($LASTEXITCODE -ne 0) { throw 'Go worker build failed.' }
+
+  $uninstaller = Join-Path $payload 'Uninstall.exe'
+  $generator = Join-Path $PSScriptRoot 'packaging/windows-native/uninstaller-generator.exe'
+  $generatedUninstaller = Join-Path $PSScriptRoot 'packaging/windows-native/Uninstall.exe'
+  Push-Location (Join-Path $PSScriptRoot 'packaging/windows-native')
+  try {
+    Remove-Item -LiteralPath $generatedUninstaller -Force -ErrorAction SilentlyContinue
+    & $makensis 'uninstaller-generator.nsi'
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $generator)) { throw 'Uninstaller generator build failed.' }
+    $generatorProcess = Start-Process -FilePath $generator -ArgumentList '/S' -Wait -PassThru -WindowStyle Hidden
+    if ($generatorProcess.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $generatedUninstaller)) { throw 'Uninstaller generation failed.' }
+    Move-Item -LiteralPath $generatedUninstaller -Destination $uninstaller -Force
+  } finally {
+    Remove-Item -LiteralPath $generator -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $generatedUninstaller -Force -ErrorAction SilentlyContinue
+    Pop-Location
+  }
 }
-foreach ($name in @('GamiHash.exe','GamiHashEngine.exe')) {
+foreach ($name in @('GamiHash.exe','GamiHashEngine.exe','Uninstall.exe')) {
   if (-not (Test-Path -LiteralPath (Join-Path $payload $name))) { throw "Missing payload: $name" }
 }
 $payloadBytes = (Get-ChildItem -LiteralPath $payload -File | Measure-Object -Property Length -Sum).Sum

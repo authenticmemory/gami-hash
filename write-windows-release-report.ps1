@@ -11,7 +11,8 @@ if ($installer.Count -ne 1) { throw "Expected exactly one signed installer; foun
 $paths = @(
   $installer[0].FullName,
   (Join-Path $PSScriptRoot 'build/windows-native/payload/GamiHash.exe'),
-  (Join-Path $PSScriptRoot 'build/windows-native/payload/GamiHashEngine.exe')
+  (Join-Path $PSScriptRoot 'build/windows-native/payload/GamiHashEngine.exe'),
+  (Join-Path $PSScriptRoot 'build/windows-native/payload/Uninstall.exe')
 )
 $files = foreach ($path in $paths) {
   $signature = Get-AuthenticodeSignature -LiteralPath $path
@@ -37,6 +38,8 @@ New-Item -ItemType Directory -Force (Split-Path -Parent $target) | Out-Null
   repository = $env:GITHUB_REPOSITORY
   workflowRun = if ($env:GITHUB_SERVER_URL -and $env:GITHUB_REPOSITORY -and $env:GITHUB_RUN_ID) { "$($env:GITHUB_SERVER_URL)/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)" } else { $null }
   generatedUtc = [DateTime]::UtcNow.ToString('o')
+  dotnetSdk = (& dotnet --version)
+  targetFramework = 'net10.0-windows'
   files = $files
 } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $target -Encoding utf8
 Get-Content -LiteralPath $target

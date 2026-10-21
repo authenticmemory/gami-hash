@@ -56,7 +56,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.402'
 
       - name: Set up Node.js for legacy-platform Go tests
         uses: actions/setup-node@v4
@@ -103,6 +103,7 @@ jobs:
           files: |
             ${{ github.workspace }}\build\windows-native\payload\GamiHash.exe
             ${{ github.workspace }}\build\windows-native\payload\GamiHashEngine.exe
+            ${{ github.workspace }}\build\windows-native\payload\Uninstall.exe
           exclude-environment-credential: true
 
       - name: Package verified signed payloads

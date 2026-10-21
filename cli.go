@@ -35,7 +35,7 @@ func runCLIWithIO(args []string, stdin *os.File, stdout, stderr *os.File, intera
 	root := fs.String("root", "", "folder to scan (required)")
 	output := fs.String("output", "", "CSV file to write (required, must be outside -root)")
 	workers := fs.Int("workers", engine.DefaultWorkers, "parallel hashing workers (1-2 for spinning disks, more for SSDs)")
-	fresh := fs.Bool("fresh", false, "start over instead of resuming an interrupted run")
+	fresh := fs.Bool("fresh", false, "start a new run; requires an unused output filename")
 	rehashExisting := fs.Bool("rehash-existing", false, "on resume, verify all existing rows again")
 	quiet := fs.Bool("quiet", false, "no progress output")
 	version := fs.Bool("version", false, "print version and exit")

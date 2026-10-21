@@ -169,9 +169,9 @@ async function chooseCollection(): Promise<void> {
 async function chooseOutput(): Promise<void> {
   try {
     // Same naming convention as the CLI and the archivist guide:
-    // checksums_<folder>_<date>.csv
+    // checksums_<folder>_<local date and time>.csv
     const now = new Date();
-    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}`;
     const base = (root.split(/[\\/]/).filter(Boolean).pop() ?? "folder")
       .replace(/[/\\:*?"<>| ]/g, "_").slice(0, 60);
     const selected = await api.selectOutput(`checksums_${base}_${stamp}.csv`);
@@ -193,12 +193,8 @@ async function chooseOutput(): Promise<void> {
 
 function renderResumeConflict(): void {
   step = "review";
-  shell(`<section class="panel"><span class="eyebrow">Interrupted run</span><h1>This file belongs to a different folder</h1><p>The chosen file already contains ${number.format(resumeConflict?.rows ?? 0)} recorded files from an earlier, interrupted run of the folder below. It will not be mixed with a different folder.</p><div class="path-card"><span>Recorded back then</span><code>${esc(resumeConflict?.root ?? "")}</code></div><div class="path-card"><span>Selected now</span><code>${esc(root)}</code></div><p>Continuing records the earlier folder. Starting over clears the file and records the newly selected folder instead.</p><div class="actions conflict-actions">${button("different", "Choose another file", true)}${button("restart", "Start over", true)}${button("resume-recorded", "Continue earlier run")}</div></section>`);
+  shell(`<section class="panel"><span class="eyebrow">Interrupted run</span><h1>This file belongs to a different folder</h1><p>The chosen file already contains ${number.format(resumeConflict?.rows ?? 0)} recorded files from an earlier, interrupted run of the folder below. It will not be mixed with a different folder.</p><div class="path-card"><span>Recorded back then</span><code>${esc(resumeConflict?.root ?? "")}</code></div><div class="path-card"><span>Selected now</span><code>${esc(root)}</code></div><p>Continue only if this is the same folder at a new location. Otherwise, choose a new result filename.</p><div class="actions conflict-actions">${button("different", "Choose another file", true)}${button("resume-recorded", "Continue earlier run")}</div></section>`);
   document.querySelector("#different")?.addEventListener("click", () => chooseOutput());
-  document.querySelector("#restart")?.addEventListener("click", async () => {
-    try { resumeConflict = null; review = await api.preflight({ root, output, workers: 2, mode: "fresh" }); renderReview(); }
-    catch (error) { showInlineError(error); }
-  });
   document.querySelector("#resume-recorded")?.addEventListener("click", async () => {
     if (!resumeConflict) return;
     root = resumeConflict.root;

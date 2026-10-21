@@ -78,7 +78,7 @@ type Options struct {
 	Root    string // folder to scan (must exist)
 	Output  string // CSV file to write (must not be inside Root)
 	Workers int    // parallel hashing workers; <1 means DefaultWorkers
-	Fresh   bool   // true: ignore any resumable state and start over
+	Fresh   bool   // true: start a new run; existing output artifacts are never replaced
 	// RehashExisting verifies every current file instead of reusing compatible
 	// rows from an interrupted manifest.
 	RehashExisting bool
@@ -192,15 +192,20 @@ func Validate(opts Options) (Options, error) {
 	if di, derr := os.Stat(filepath.Dir(opts.Output)); derr != nil || !di.IsDir() {
 		return Options{}, fmt.Errorf("output folder does not exist: %s", filepath.Dir(opts.Output))
 	}
-	if !opts.Fresh {
-		st := CheckResume(opts.Output)
+	st := CheckResume(opts.Output)
+	checkpointExists := fileExists(CheckpointPath(opts.Output))
+	if opts.Fresh {
+		if fileExists(opts.Output) || checkpointExists || fileExists(ErrorLogPath(opts.Output)) {
+			return Options{}, fmt.Errorf("output file or its GAMI sidecars already exist; choose a new output filename")
+		}
+	} else {
 		switch {
-		case fileExists(CheckpointPath(opts.Output)) && !st.Resumable:
-			return Options{}, fmt.Errorf("checkpoint or partial manifest is corrupt or incompatible; use --fresh only if you intend to replace it")
+		case checkpointExists && !st.Resumable:
+			return Options{}, fmt.Errorf("checkpoint or partial manifest is corrupt or incompatible; choose a new output filename")
 		case st.Resumable && !(SameRoot(st.Root, opts.Root) || opts.AllowRootMismatch):
-			return Options{}, fmt.Errorf("checkpoint belongs to a different source root; confirm the same moved drive or use --fresh")
+			return Options{}, fmt.Errorf("checkpoint belongs to a different source root; confirm the same moved drive or choose a new output filename")
 		case !st.Resumable && fileExists(opts.Output):
-			return Options{}, fmt.Errorf("output file already exists; use --fresh only if you intend to replace it")
+			return Options{}, fmt.Errorf("output file already exists and is not an interrupted GAMI run; choose a new output filename")
 		}
 	}
 	return opts, nil
@@ -280,13 +285,14 @@ func SameRoot(a, b string) bool {
 // absolute; comparison is lexical, case-insensitive on Windows.
 func isWithin(path, dir string) bool {
 	path, dir = filepath.Clean(path), filepath.Clean(dir)
-	if runtime.GOOS == "windows" {
-		path, dir = strings.ToLower(path), strings.ToLower(dir)
+	rel, err := filepath.Rel(dir, path)
+	if err != nil {
+		return false
 	}
-	if path == dir {
+	if rel == "." {
 		return true
 	}
-	return strings.HasPrefix(path, dir+string(filepath.Separator))
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
 }
 
 // job is one file to hash, in deterministic walk order.
@@ -379,14 +385,14 @@ func runWithAccess(ctx context.Context, opts Options, progressFn func(Progress),
 		checkpointExists := fileExists(CheckpointPath(opts.Output))
 		switch {
 		case checkpointExists && !st.Resumable:
-			return Result{}, fmt.Errorf("checkpoint or partial manifest is corrupt or incompatible; use --fresh only if you intend to replace it")
+			return Result{}, fmt.Errorf("checkpoint or partial manifest is corrupt or incompatible; choose a new output filename")
 		case st.Resumable && (SameRoot(st.Root, opts.Root) || opts.AllowRootMismatch):
 			resuming = true
 			resumeState = st
 		case st.Resumable:
-			return Result{}, fmt.Errorf("checkpoint belongs to a different source root; confirm the same moved drive or use --fresh")
+			return Result{}, fmt.Errorf("checkpoint belongs to a different source root; confirm the same moved drive or choose a new output filename")
 		case fileExists(opts.Output):
-			return Result{}, fmt.Errorf("output file already exists; use --fresh only if you intend to replace it")
+			return Result{}, fmt.Errorf("output file already exists and is not an interrupted GAMI run; choose a new output filename")
 		}
 	}
 
@@ -419,7 +425,9 @@ func runWithAccess(ctx context.Context, opts Options, progressFn func(Progress),
 	}
 	if r.completed != nil {
 		defer func() {
-			if r.completed != nil { _ = r.completed.Close() }
+			if r.completed != nil {
+				_ = r.completed.Close()
+			}
 		}()
 	}
 	if prepared != nil && resumeState.manifestPath != opts.Output {
@@ -460,14 +468,16 @@ func runWithAccess(ctx context.Context, opts Options, progressFn func(Progress),
 	// Always (re)written so the recorded root stays current — e.g. after an
 	// external drive came back under a different drive letter.
 	cpData, _ := json.MarshalIndent(cp, "", "  ")
-	if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData); err != nil {
+	if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData, resuming); err != nil {
 		csvFile.Close()
 		return Result{}, fmt.Errorf("cannot write checkpoint file: %w", err)
 	}
 	// The second traversal recreates the complete warning/error set, including
 	// on resume. Remove only the external directory entry, never truncate it.
-	if err := r.dest.Remove(ErrorLogPath(opts.Output)); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return Result{}, fmt.Errorf("cannot reset error log: %w", err)
+	if resuming {
+		if err := r.dest.Remove(ErrorLogPath(opts.Output)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return Result{}, fmt.Errorf("cannot reset error log: %w", err)
+		}
 	}
 
 	defer func() {
@@ -504,12 +514,12 @@ func runWithAccess(ctx context.Context, opts Options, progressFn func(Progress),
 		if err := csvFile.Close(); err != nil {
 			return Result{}, fmt.Errorf("cannot close canceled manifest: %w", err)
 		}
-		if err := r.dest.Publish(workPath, opts.Output); err != nil {
+		if err := r.dest.Publish(workPath, opts.Output, resuming); err != nil {
 			return Result{}, fmt.Errorf("cannot publish canceled manifest: %w", err)
 		}
 		cp.WorkPath = ""
 		cpData, _ = json.MarshalIndent(cp, "", "  ")
-		if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData); err != nil {
+		if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData, true); err != nil {
 			return Result{}, fmt.Errorf("cannot update canceled checkpoint: %w", err)
 		}
 		r.res.Canceled = true
@@ -641,15 +651,15 @@ func runWithAccess(ctx context.Context, opts Options, progressFn func(Progress),
 			return Result{}, fmt.Errorf("cannot close error log: %w", err)
 		}
 		r.errLog = nil
-	} else if !resuming || opts.Fresh {
+	} else if resuming {
 		_ = r.dest.Remove(ErrorLogPath(opts.Output))
 	}
-	if err := r.dest.Publish(workPath, opts.Output); err != nil {
+	if err := r.dest.Publish(workPath, opts.Output, resuming); err != nil {
 		return Result{}, fmt.Errorf("cannot publish output file: %w", err)
 	}
 	cp.WorkPath = ""
 	cpData, _ = json.MarshalIndent(cp, "", "  ")
-	if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData); err != nil {
+	if err := r.dest.WriteSidecar(CheckpointPath(opts.Output), cpData, true); err != nil {
 		return Result{}, fmt.Errorf("cannot finalize checkpoint: %w", err)
 	}
 
@@ -1064,7 +1074,7 @@ func (r *engineRun) logIssue(severity, code, rel string, issue error) error {
 		r.res.ErrorLog = ErrorLogPath(r.opts.Output)
 	}
 	line := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\n",
-		time.Now().UTC().Format(time.RFC3339Nano), severity, code, strconv.Quote(rel), issue.Error())
+		time.Now().UTC().Format(time.RFC3339Nano), severity, code, strconv.Quote(rel), safeIssueText(issue))
 	if _, err := r.errLog.WriteString(line); err != nil {
 		r.errLogErr = err
 		return err
@@ -1074,6 +1084,20 @@ func (r *engineRun) logIssue(severity, code, rel string, issue error) error {
 		return err
 	}
 	return nil
+}
+
+// safeIssueText keeps diagnostics useful without leaking absolute source
+// paths. The relative path is already recorded in its own structured field.
+func safeIssueText(issue error) string {
+	var pathErr *os.PathError
+	if errors.As(issue, &pathErr) {
+		return pathErr.Op + ": " + pathErr.Err.Error()
+	}
+	var linkErr *os.LinkError
+	if errors.As(issue, &linkErr) {
+		return linkErr.Op + ": " + linkErr.Err.Error()
+	}
+	return issue.Error()
 }
 
 func fileExists(p string) bool {
