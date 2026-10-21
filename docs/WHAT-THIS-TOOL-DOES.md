@@ -2,7 +2,7 @@
 
 ## Current Windows release
 
-Version **1.6.0** uses a native WPF frontend and a private Go hashing worker. It does not include WebView2, Wails, AppContainer, MSIX, an updater, telemetry, or an upload client. Installation is per-user and self-contained.
+Production version **1.6.0** and accepted test candidate **1.6.1** use a native WPF frontend and a private Go hashing worker. They do not include WebView2, Wails, AppContainer, MSIX, an updater, telemetry, or an upload client. Installation is per-user and self-contained.
 
 Installed programs:
 
@@ -30,7 +30,7 @@ relative_path,size_bytes,file_hash,mtime_utc,source_record_id
 
 The CSV is UTF-8 with BOM, RFC 4180, CRLF terminated, and deterministically sorted. Absolute source paths and usernames are not included.
 
-## Verify v1.6.0
+## Verify the installed version
 
 ```powershell
 $file = '.\gami-hash-windows-amd64-installer.exe'

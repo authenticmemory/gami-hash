@@ -2,7 +2,7 @@
 
 Authentic Memory Hashing Tool creates a local CSV inventory of a collection. It reads every eligible file under a selected folder, calculates its SHA-256 checksum, and writes one deterministic manifest. It does not upload files or manifests.
 
-The current production release is **v1.6.0**.
+The current production release is **v1.6.0**. Version 1.6.1 is available only as the accepted `test-v1.6.1` prerelease pending a separate production decision.
 
 ## Platforms
 
@@ -71,7 +71,7 @@ Windows CI signs `GamiHash.exe`, `GamiHashEngine.exe`, and the final installer, 
 
 ## Release
 
-The v1.6.0 release is at https://github.com/authenticmemory/gami-hash/releases/tag/v1.6.0.
+The v1.6.0 production release is at https://github.com/authenticmemory/gami-hash/releases/tag/v1.6.0. The accepted 1.6.1 test candidate is at https://github.com/authenticmemory/gami-hash/releases/tag/test-v1.6.1.
 
 The published Windows installer SHA-256 is:
 

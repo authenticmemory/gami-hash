@@ -23,7 +23,10 @@ jobs:
     needs: validate
     runs-on: windows-latest
     permissions:
-      contents: read
+      # Candidate builds are intentionally held as draft releases until
+      # acceptance. Reading a draft release through the GitHub API requires
+      # contents: write even though this job does not modify the candidate.
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Promote the accepted immutable Windows candidate

@@ -1,6 +1,6 @@
 # How the Windows solution evolved
 
-This document explains, in plain language, the main approaches we tried before arriving at the Windows application shipped in version 1.6.0.
+This document explains, in plain language, the main approaches we tried before arriving at the Windows application used by production version 1.6.0 and accepted test candidate 1.6.1.
 
 ## The problem we were solving
 
@@ -105,7 +105,7 @@ The native prototype then had to survive normal installation and real storage sc
 - idle and active process-tree, DNS, and packet captures;
 - immutable promotion, so the public installer is byte-for-byte the signed candidate that was tested.
 
-The obsolete MSIX, AppContainer, storage-broker, WebView2 sandbox, and prototype packaging paths were removed after the accepted version 1.6.0 release.
+The obsolete MSIX, AppContainer, storage-broker, WebView2 sandbox, and prototype packaging paths were removed after the native Windows architecture was accepted.
 
 ## Current solution
 

@@ -1,6 +1,23 @@
 ﻿# Windows release acceptance
 
-## v1.6.0 status
+## test-v1.6.1 candidate status
+
+The exact signed `test-v1.6.1` installer passed the complete standard-user acceptance matrix. It remains a prerelease and has not been promoted to production.
+
+```text
+Installer: gami-hash-windows-1.6.1-x64-installer.exe
+Bytes:     60,923,280
+SHA-256:   f58fa1270c74f88ae0f8a872997959ec5b6527c602d7ce52f49a807c4bf777ab
+Commit:    ef89bc7c6fc4bb0c2f3b441112a3ce3e1decc779
+```
+
+The candidate passed fresh installation, signed-payload checks, local and remote storage, cached and online-only OneDrive, cancellation and restart/resume, changed-file rehashing, overwrite rejection, relative-path failure logging, a 10,000-file manifest, whole-drive containment, uninstall, manifest preservation, and reinstall.
+
+Six captures ran as standard user `gami_runner` at Medium integrity: idle, local, UNC, mapped drive, online-only OneDrive, and drive root. No GAMI-owned process produced a Sysmon network or DNS event. A Process Monitor trace recorded 189 GAMI events against the source drive and zero writes.
+
+Evidence: [`docs/evidence/2026-10-21-windows-native-signed-1.6.1`](evidence/2026-10-21-windows-native-signed-1.6.1/README.md).
+
+## v1.6.0 production status
 
 Version 1.6.0 is published. The Windows installer is signed, timestamped, self-contained, and was smoke-tested after installation. Its SHA-256 is:
 
