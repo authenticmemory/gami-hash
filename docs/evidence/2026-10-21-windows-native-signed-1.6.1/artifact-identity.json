@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "installer": "gami-hash-windows-1.6.1-x64-installer.exe",
+  "bytes": 60923280,
+  "sha256": "f58fa1270c74f88ae0f8a872997959ec5b6527c602d7ce52f49a807c4bf777ab",
+  "candidateTag": "test-v1.6.1",
+  "commit": "ef89bc7c6fc4bb0c2f3b441112a3ce3e1decc779"
+}

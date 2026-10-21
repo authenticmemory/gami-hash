@@ -7,7 +7,7 @@ GAMI Hash has one job: read a user-selected folder tree and create a local CSV m
 
 ## Supported release
 
-Windows 10/11 x64 is the primary supported desktop platform. Version 1.6.0 ships as a signed, timestamped, per-user, self-contained NSIS installer containing a native WPF GUI and Go worker. The optional CLI uses the same engine.
+Windows 10/11 x64 is the primary supported desktop platform. Production version 1.6.0 ships as a signed, timestamped, per-user, self-contained NSIS installer containing a native WPF GUI and Go worker. Candidate 1.6.1 uses the same architecture and remains a test prerelease pending a separate production decision. The optional CLI uses the same engine.
 
 Linux x64 artifacts include a portable CLI, Ubuntu `.deb`, Fedora-style `.rpm`, and GUI tarball. The Linux GUI uses Wails with GTK/WebKitGTK. macOS builds remain outside the fully supported signed release tier until signing and notarization are complete.
 

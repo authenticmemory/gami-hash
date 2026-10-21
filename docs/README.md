@@ -24,4 +24,4 @@
 
 - [Downloads and website deployment](RELEASE-DOWNLOADS.md)
 
-`docs/evidence/windows-native-architecture-acceptance` retains compact machine-readable acceptance summaries. Raw VM captures, temporary credentials, obsolete prototypes, and superseded plans were removed after the v1.6.0 release.
+`docs/evidence/2026-10-21-windows-native-signed-1.6.1` retains the exact v1.6.1 standard-user acceptance summaries, functional manifests, and compressed raw captures. `docs/evidence/windows-native-architecture-acceptance` retains the earlier architecture-level summaries.

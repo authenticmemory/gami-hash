@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "candidateTag": "test-v1.6.1",
+  "installerSha256": "f58fa1270c74f88ae0f8a872997959ec5b6527c602d7ce52f49a807c4bf777ab",
+  "standardUser": "Gami-VM-PC\\gami_runner",
+  "freshInstall": "pass",
+  "cliVersion": "gami-hash v1.6.1",
+  "signedGui": "pass",
+  "signedEngine": "pass",
+  "signedUninstaller": "pass",
+  "uninstallRemovedInstallFolder": true,
+  "uninstallRemovedCliPath": true,
+  "uninstallPreservedExternalManifests": true,
+  "reinstall": "pass"
+}

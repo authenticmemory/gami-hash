@@ -12,7 +12,7 @@ The production Windows installer is per-user, x64, self-contained, and named **A
 - Working fresh install, upgrade, repair, uninstall, and reinstall paths.
 - No installer-time network or .NET runtime dependency.
 
-The approximately 65 MB signed v1.6.0 installer is intentionally self-contained.
+The approximately 65 MB v1.6.0 production installer and 61 MB `test-v1.6.1` candidate are intentionally self-contained.
 
 ## Immutable release procedure
 
@@ -26,3 +26,9 @@ The approximately 65 MB signed v1.6.0 installer is intentionally self-contained.
 ## v1.6.0
 
 The accepted candidate and stable tag point to commit `751b3dc34617a80bfdc813eb6887a5affb8edab0`. The published installer is byte-for-byte the tested candidate and has SHA-256 `1c6ee47771ae1458f04e7e1d9457038d961398d25d3a6f275c3b816363b97df6`.
+
+## test-v1.6.1
+
+The signed candidate points to commit `ef89bc7c6fc4bb0c2f3b441112a3ce3e1decc779` and has SHA-256 `f58fa1270c74f88ae0f8a872997959ec5b6527c602d7ce52f49a807c4bf777ab`.
+
+It adds drive-root containment, non-overwriting output publication, timestamped automatic filenames, relative-path error logging, registry-based last-run state, .NET 10, exact embedded versioning, and a separately signed uninstaller. Fresh install, CLI PATH, uninstall, manifest preservation, reinstall, and the complete standard-user storage and capture matrix passed. It remains a test prerelease pending a separate production decision.
