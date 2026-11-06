@@ -2,7 +2,7 @@
 
 Authentic Memory Hashing Tool creates a local CSV inventory of a collection. It reads every eligible file under a selected folder, calculates its SHA-256 checksum, and writes one deterministic manifest. It does not upload files or manifests.
 
-The current production release is **v1.6.0**. Version 1.6.1 is available only as the accepted `test-v1.6.1` prerelease pending a separate production decision.
+The current production release is **v1.6.0**. Windows and Ubuntu 26.04.1 acceptance passed for the `test-v1.6.1` candidates, but version 1.6.1 remains a prerelease pending a separate production decision. macOS v1.6.1 evidence is partial and is not completed acceptance.
 
 ## Platforms
 
@@ -58,7 +58,7 @@ See [the archivist guide](docs/ARCHIVIST-GUIDE.md), [the IT summary](docs/WHAT-T
 
 ## Build and test
 
-Requirements are Go 1.27.2, .NET 8 SDK, NSIS, and Node.js for the Wails platforms.
+Requirements are Go 1.27.2, .NET 10 SDK, NSIS, and Node.js 24 for the Wails platforms.
 
 ```powershell
 go test ./...
@@ -67,7 +67,7 @@ dotnet build .\windows\GamiHash.Windows\GamiHash.Windows.csproj -c Release
 .\build-windows-installer.ps1 -Version v1.6.0
 ```
 
-Windows CI signs `GamiHash.exe`, `GamiHashEngine.exe`, and the final installer, then verifies signatures and timestamps. Stable tags promote the exact Windows candidate bytes that passed acceptance instead of rebuilding them. See [VERIFY.md](VERIFY.md), [Windows signing](docs/windows-signing.md), and [release publishing](docs/RELEASE-DOWNLOADS.md).
+Windows CI signs `GamiHash.exe`, `GamiHashEngine.exe`, `Uninstall.exe`, and the final installer, then verifies signatures and timestamps. Stable tags promote the exact Windows candidate bytes that passed acceptance instead of rebuilding them. See [VERIFY.md](VERIFY.md), [Windows signing](docs/windows-signing.md), and [release publishing](docs/RELEASE-DOWNLOADS.md).
 
 ## Release
 

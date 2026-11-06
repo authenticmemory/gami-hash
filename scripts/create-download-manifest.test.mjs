@@ -20,7 +20,11 @@ test('release assembly checks the immutable Windows installer and requires Linux
       });
       const checksum = platform === 'windows' ? 'SHA256SUMS-windows.txt' : platform === 'linux-gui' ? 'SHA256SUMS-linux-gui.txt' : `${names[0]}.sha256`;
       writeFileSync(join(dir, checksum), lines.join('\n') + '\n');
-      if (platform !== 'windows') for (const name of [...names, checksum]) writeFileSync(join(dir, `${name}.asc`), 'fixture signature; cryptographic verification occurs in signing jobs');
+      if (platform !== 'windows') {
+        for (const name of [...names, checksum]) writeFileSync(join(dir, `${name}.asc`), 'fixture signature; cryptographic verification occurs in signing jobs');
+        writeFileSync(join(dir, 'gami-linux-signing-key.asc'), 'fixture public key');
+        writeFileSync(join(dir, 'gami-linux-signing-fingerprint.txt'), '0123456789ABCDEF0123456789ABCDEF01234567\n');
+      }
     }
     run('v1.0.0');
     const manifest = JSON.parse(readFileSync(join(root, 'downloads/gami-hash-downloads.json')));
@@ -32,10 +36,15 @@ test('release assembly checks the immutable Windows installer and requires Linux
     assert.equal(manifest.artifacts[0].archive, 'gami-hash-windows-amd64-installer.exe');
     const installer = manifest.artifacts[0].files.find(f => f.name === manifest.artifacts[0].archive);
     assert.match(readFileSync(join(root, 'downloads/SHA256SUMS-windows.txt'), 'utf8'), new RegExp(`${installer.sha256}  gami-hash-windows-amd64-installer.exe`));
+    assert.equal(readFileSync(join(root, 'downloads/gami-linux-signing-key.asc'), 'utf8'), 'fixture public key');
+    assert.equal(readFileSync(join(root, 'downloads/gami-linux-signing-fingerprint.txt'), 'utf8'), '0123456789ABCDEF0123456789ABCDEF01234567\n');
     assert.throws(() => run('test-v1.0.0'));
     writeFileSync(join(root, 'windows/bin/gami-hash-windows-1.0.0-x64-installer.exe'), 'tampered');
     assert.throws(() => run('v1.0.0'), /Checksum mismatch/);
     writeFileSync(join(root, 'windows/bin/gami-hash-windows-1.0.0-x64-installer.exe'), 'gami-hash-windows-1.0.0-x64-installer.exe');
+    writeFileSync(join(root, 'linux-gui/gami-linux-signing-fingerprint.txt'), 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n');
+    assert.throws(() => run('v1.0.0'), /Linux signing identity mismatch/);
+    writeFileSync(join(root, 'linux-gui/gami-linux-signing-fingerprint.txt'), '0123456789ABCDEF0123456789ABCDEF01234567\n');
     rmSync(join(root, 'linux/bin/gami-hash-linux-amd64.tar.gz.asc'));
     assert.throws(() => run('v1.0.0'));
   } finally { rmSync(root, { recursive: true, force: true }); }

@@ -46,8 +46,23 @@ jobs:
       - name: Install pinned Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
+      - name: Set candidate version
+        shell: bash
+        run: |
+          version="dev"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then version="$GITHUB_REF_NAME"; fi
+          numeric="${version#test-v}"
+          numeric="${numeric#v}"
+          if ! [[ "$numeric" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then numeric="0.0.0"; fi
+          PRODUCT_VERSION="$numeric" node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('wails.json','utf8'));p.info.productVersion=process.env.PRODUCT_VERSION;fs.writeFileSync('wails.json',JSON.stringify(p,null,2)+'\\n')"
+          echo "BUILD_VERSION=$version" >> "$GITHUB_ENV"
+
       - name: Build universal macOS application
-        run: wails build -clean -platform darwin/universal
+        run: |
+          wails build \
+            -clean \
+            -platform darwin/universal \
+            -ldflags "-w -s -buildid= -X github.com/authenticmemory/gami-hash/internal/engine.Version=$BUILD_VERSION"
 
       - name: Locate application bundle
         run: |
@@ -60,6 +75,11 @@ jobs:
           app_path=$(find build/bin -maxdepth 1 -type d -name '*.app' -print -quit)
           echo "APP_PATH=$app_path" >> "$GITHUB_ENV"
           echo "Using application bundle: $app_path"
+
+      - name: Verify embedded candidate version
+        run: |
+          actual=$("$APP_PATH/Contents/MacOS/gami-hash" --version)
+          test "$actual" = "gami-hash $BUILD_VERSION" || { echo "Unexpected embedded version: $actual"; exit 1; }
 
       - name: Apply ad-hoc signature
         run: codesign --force --deep --sign - "$APP_PATH"

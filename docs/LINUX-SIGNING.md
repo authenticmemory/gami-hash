@@ -35,7 +35,7 @@ Do not create keys on an ephemeral GitHub runner or paste them into a chat.
    ```bash
    FINGERPRINT='REPLACE_WITH_FULL_PRIMARY_FINGERPRINT'
    gpg --quick-add-key "$FINGERPRINT" rsa4096 sign 1y
-   gpg --armor --output gami-linux-public.asc --export "$FINGERPRINT"
+   gpg --armor --output gami-linux-signing-key.asc --export "$FINGERPRINT"
    gpg --armor --output gami-linux-ci-secret.asc --export-secret-subkeys "$FINGERPRINT"
    ```
 
@@ -61,8 +61,8 @@ Do not create keys on an ephemeral GitHub runner or paste them into a chat.
    release revisions remain the signing boundary. Hardware-backed signing can be
    introduced later without changing the public verification model.
 
-5. Publish `gami-linux-public.asc` and the full primary fingerprint on the official
-   website through a reviewed change. CI also bundles a public key, but a public
+5. Publish `gami-linux-signing-key.asc` and the full primary fingerprint on the official
+   website through a reviewed change. Future stable GitHub releases produced by the current workflow include that public key and a fingerprint file; earlier releases may not. A public
    key downloaded beside a binary is not an independent proof of identity. Users
    must compare its fingerprint to the organization's separately published value.
 

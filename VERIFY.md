@@ -28,7 +28,7 @@ Get-FileHash $file -Algorithm SHA256
 
 Require `Status: Valid`. The v1.6.0 Windows installer hash is `1C6EE47771AE1458F04E7E1D9457038D961398D25D3A6F275C3B816363B97DF6`.
 
-CI verifies the WPF executable, Go worker, and installer signatures and timestamps before creating the candidate. A stable tag must point to the same commit as its accepted `test-vX.Y.Z` tag and promotes those exact bytes.
+The v1.6.0 release gate verified the WPF executable, Go worker, and installer signatures and timestamps. Current candidate CI also verifies the separately signed uninstaller introduced for v1.6.1. A stable tag must point to the same commit as its accepted `test-vX.Y.Z` tag and promotes those exact Windows installer bytes.
 
 ## Scope of assurance
 

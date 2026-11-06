@@ -1,6 +1,6 @@
 # Linux packaging
 
-Linux GUI packages are built in GitHub Actions on Ubuntu 24.04.
+Linux GUI packages are built in GitHub Actions on Ubuntu 24.04. Candidate v1.6.1 was runtime-tested on Ubuntu 26.04.1; build environment and runtime acceptance environment are separate claims.
 
 ## Artifacts
 

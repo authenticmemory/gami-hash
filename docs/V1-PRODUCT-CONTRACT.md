@@ -1,7 +1,7 @@
 ﻿# GAMI Hash version 1 product contract
 
 **Status:** Current
-**Last updated:** 2026-10-19
+**Last updated:** 2026-11-06
 
 GAMI Hash has one job: read a user-selected folder tree and create a local CSV manifest containing technical metadata and a SHA-256 checksum for every eligible file. It does not interpret, upload, or modify the collection.
 
@@ -36,7 +36,7 @@ The manifest does not contain absolute paths, usernames, machine identifiers, fi
 
 Included entries are stable regular files beneath the selected root, including hidden and zero-byte files. Directories are traversed but receive no row. Symlinks, junctions, reparse points, sockets, devices, and other special entries are not followed and are reported.
 
-The engine opens source files read-only. It rejects all output, checkpoint, log, and temporary paths that resolve inside the source tree. Existing output is replaced through a separate work file rather than modified through a link target.
+The engine opens source files read-only. It rejects all output, checkpoint, log, and temporary paths that resolve inside the source tree. It refuses to replace an existing completed output. During a validated interrupted-run resume, it reconstructs the manifest through a separate work file rather than modifying a link target in place.
 
 A file is accepted only when size and modification time match before and after hashing and the byte count matches. A changing file is retried once, then omitted and reported.
 
@@ -55,7 +55,7 @@ Failure to create or persist required output or error records is fatal.
 
 ## Privacy and network boundary
 
-The product has no account, upload, telemetry, remote help, automatic update, or background service. Windows uses no browser runtime. Runtime acceptance observed no GAMI-attributed network or DNS connection in the documented scenarios. Network shares and cloud providers can communicate outside the application process tree to satisfy filesystem access.
+The product has no account, upload, telemetry, remote help, automatic update, or background service. Windows uses no browser runtime. Exact-candidate runtime acceptance on Windows v1.6.1 and Ubuntu 26.04.1 observed no external network connection from GAMI-owned processes in the documented scenarios. The current macOS evidence is incomplete because it did not cover every WebKit helper process. Network shares and cloud providers can communicate outside the application process tree to satisfy filesystem access.
 
 The product does not claim an OS-enforced inability to open a network connection. Any future network feature requires a new contract and security review.
 

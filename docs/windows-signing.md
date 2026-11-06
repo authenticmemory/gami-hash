@@ -16,15 +16,15 @@ The federated Azure identity must have Artifact Signing Certificate Profile Sign
 
 1. Run dependency checks and Go tests.
 2. Build the native WPF GUI and Go worker.
-3. Sign and timestamp `GamiHash.exe` and `GamiHashEngine.exe`.
-4. Verify both payload signatures.
-5. Package NSIS without rebuilding either payload.
+3. Sign and timestamp `GamiHash.exe`, `GamiHashEngine.exe`, and the generated `Uninstall.exe`.
+4. Verify all three payload signatures.
+5. Package NSIS without rebuilding any payload.
 6. Sign and timestamp the final installer.
 7. Verify all signatures, timestamp certificates, expected organization, and hashes.
 8. Write `windows-release-report.json`, checksums, and dependency inventories.
 9. Store test-tag assets in an immutable draft release.
 
-The NSIS-generated uninstaller is not separately signed.
+The payload contains a separately signed `Uninstall.exe`; NSIS packages that signed executable without rebuilding it.
 
 ## Promotion
 

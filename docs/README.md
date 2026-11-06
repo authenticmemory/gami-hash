@@ -17,8 +17,15 @@
 ## Linux
 
 - [Desktop use](LINUX-DESKTOP.md)
+- [Ubuntu acceptance tester guide](LINUX-ACCEPTANCE-TESTER-GUIDE.md)
+- [Ubuntu v1.6.1 acceptance results](LINUX-ACCEPTANCE.md)
 - [Packaging](LINUX-PACKAGING.md)
 - [Signing](LINUX-SIGNING.md)
+
+## macOS
+
+- [macOS acceptance tester guide](MACOS-ACCEPTANCE-TESTER-GUIDE.md)
+- [macOS v1.6.1 acceptance status](MACOS-ACCEPTANCE.md)
 
 ## Release operations
 

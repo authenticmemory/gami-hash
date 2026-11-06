@@ -20,6 +20,7 @@ Stable release names include:
 - `gami-hash-linux-amd64-gui.deb`
 - `gami-hash-linux-amd64-gui.rpm`
 - Checksums, detached Linux signatures, dependency metadata, and `gami-hash-downloads.json`
+- `gami-linux-signing-key.asc` and `gami-linux-signing-fingerprint.txt`
 
 The website copies only approved public release assets and validates the manifest and Linux signatures. Windows Authenticode is verified on the signing runner and can be checked by users after download.
 

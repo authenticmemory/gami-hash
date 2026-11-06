@@ -46,7 +46,13 @@ The same native WPF and Go-worker architecture passed the broader acceptance mat
 | Uninstall and reinstall lifecycle | Pass |
 | Open folder selects the result | Pass |
 
-## Network evidence
+## Network evidence by release
+
+### test-v1.6.1
+
+The six captures listed above ran against the exact signed `test-v1.6.1` candidate. Idle, local, UNC SMB, mapped-drive, online-only OneDrive, and drive-root captures reported zero GAMI-attributed network and DNS events. The application process tree contained only `GamiHash.exe` and `GamiHashEngine.exe`.
+
+### v1.6.0 and the earlier architecture run
 
 Idle, local, UNC SMB, and mapped-drive captures reported zero GAMI-attributed network and DNS events. The Windows application process tree contained only `GamiHash.exe` and `GamiHashEngine.exe`.
 

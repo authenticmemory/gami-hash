@@ -9,6 +9,7 @@ Installed programs:
 - `GamiHash.exe`: native GUI
 - `GamiHashEngine.exe`: private worker
 - `gami-hash.exe`: optional CLI copy of the worker
+- `Uninstall.exe`: per-user uninstaller; separately signed in the v1.6.1 candidate
 
 ## Data access
 

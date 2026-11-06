@@ -19,8 +19,14 @@ for (const platform of ['windows-x64', 'linux-x64', 'linux-x64-gui']) {
   const checksum = gui ? 'SHA256SUMS-linux-gui.txt' : linux ? `${archive}.sha256` : 'SHA256SUMS-windows.txt';
   const signature = linux ? `${archive}.asc` : null;
   const names = linux ? [archive, checksum, signature, `${checksum}.asc`] : [archive, checksum];
+  if (platform === 'linux-x64') names.push('gami-linux-signing-key.asc', 'gami-linux-signing-fingerprint.txt');
   let sourceRpm;
   if (gui) {
+    for (const keyFile of ['gami-linux-signing-key.asc', 'gami-linux-signing-fingerprint.txt']) {
+      const cliKey = readFileSync(join(root, 'linux', 'bin', keyFile));
+      const guiKey = readFileSync(join(source, keyFile));
+      if (!cliKey.equals(guiKey)) throw new Error(`Linux signing identity mismatch: ${keyFile}`);
+    }
     sourceRpm = readdirSync(source).find(name => /^gami-hash-.*\.x86_64\.rpm$/.test(name));
     if (!sourceRpm) throw new Error('Missing Linux GUI RPM');
     names.push('gami-hash-linux-amd64-gui.tar.gz', 'gami-hash-linux-amd64-gui.tar.gz.asc', 'gami-hash-linux-amd64-gui.rpm', 'gami-hash-linux-amd64-gui.rpm.asc');

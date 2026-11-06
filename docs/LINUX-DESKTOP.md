@@ -1,6 +1,6 @@
 # Linux desktop release
 
-The signed desktop downloads target **Ubuntu 24.04, x64 (Intel/AMD)**.
+The signed desktop downloads are built on and packaged for **Ubuntu 24.04, x64 (Intel/AMD)**. Runtime acceptance for candidate v1.6.1 was performed separately on **Ubuntu 26.04.1 x64**; that result does not by itself prove compatibility with every Ubuntu release.
 The separate Linux CLI download remains available for machines without a desktop.
 
 Download `gami-hash-linux-amd64-gui.deb` from the Tools page, open Terminal,
@@ -22,14 +22,15 @@ The Fedora RPM also contains a native RPM header signature. Fedora can check it
 during installation after importing the public key:
 
 ```sh
-gpg --import gami-linux-public.asc
-sudo rpm --import gami-linux-public.asc
-rpm --checksig --verbose gami-hash-1.6.0-1.x86_64.rpm
-sudo dnf install ./gami-hash-1.6.0-1.x86_64.rpm
+gpg --import gami-linux-signing-key.asc
+sudo rpm --import gami-linux-signing-key.asc
+rpm --checksig --verbose gami-hash-linux-amd64-gui.rpm
+sudo dnf install ./gami-hash-linux-amd64-gui.rpm
 ```
 
 The desktop downloads and their checksum list also have detached OpenPGP signatures.
 See [Linux signing](LINUX-SIGNING.md) for the release key and verification process.
+See [Linux acceptance](LINUX-ACCEPTANCE.md) for the exact v1.6.1 runtime results and limitations.
 
 Stable `vX.Y.Z` tags run Windows, Linux CLI and Linux GUI builds before publishing
 the combined download manifest. The GUI job installs the Debian package and

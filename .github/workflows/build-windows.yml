@@ -94,7 +94,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Sign GUI and worker payloads
+      - name: Sign GUI, worker, and uninstaller payloads
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: https://neu.codesigning.azure.net
