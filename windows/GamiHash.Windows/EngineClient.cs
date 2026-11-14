@@ -31,14 +31,14 @@ internal sealed class EngineClient : IAsyncDisposable
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true
-        }) ?? throw new InvalidOperationException("The GAMI Hash engine could not be started.");
+        }) ?? throw new InvalidOperationException("The hashing engine could not be started.");
 
         var client = new EngineClient(process);
         var hello = await client.CallAsync("hello", new { });
         if (hello.GetProperty("protocol").GetInt32() != 1)
         {
             await client.DisposeAsync();
-            throw new InvalidOperationException("The GAMI Hash engine protocol is incompatible.");
+            throw new InvalidOperationException("The hashing engine protocol is incompatible.");
         }
         return client;
     }
@@ -87,7 +87,7 @@ internal sealed class EngineClient : IAsyncDisposable
                 if (root.GetProperty("ok").GetBoolean()) completion.SetResult(root.GetProperty("result").Clone());
                 else completion.SetException(new InvalidOperationException(root.GetProperty("error").GetString()));
             }
-            throw new InvalidOperationException("The GAMI Hash engine stopped unexpectedly.");
+            throw new InvalidOperationException("The hashing engine stopped unexpectedly.");
         }
         catch (Exception error)
         {

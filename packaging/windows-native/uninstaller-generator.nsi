@@ -13,7 +13,7 @@ OutFile "uninstaller-generator.exe"
 InstallDir "$LOCALAPPDATA\Programs\Authentic Memory\GAMI Hash"
 RequestExecutionLevel user
 SilentInstall silent
-!define MUI_UNICON "..\..\windows\GamiHash.Windows\Assets\gami-logo.ico"
+!define MUI_UNICON "..\..\windows\GamiHash.Windows\Assets\authentic-memory.ico"
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"

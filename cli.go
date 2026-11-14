@@ -179,7 +179,7 @@ Flags:
 
 func promptCLI(stdin *os.File, stderr *os.File) (string, string, bool) {
 	reader := bufio.NewReader(stdin)
-	fmt.Fprintln(stderr, "GAMI Hash interactive CLI")
+	fmt.Fprintln(stderr, "Authentic Memory Hashing Tool, interactive command line")
 	root, ok := promptLine(reader, stderr, "Enter root folder: ")
 	if !ok {
 		return "", "", false

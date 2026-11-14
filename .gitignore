@@ -7,7 +7,6 @@ dist/
 /build/*
 !/build/appicon.png
 !/build/appicon-source.svg
-!/build/gami-logo.svg
 !/build/windows/
 /build/windows/*
 !/build/windows/installer/

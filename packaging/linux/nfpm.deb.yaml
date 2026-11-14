@@ -6,7 +6,7 @@ section: utils
 priority: optional
 maintainer: Authentic Memory <info@authenticmemory.org>
 description: |
-  GAMI Hash creates SHA-256 CSV manifests for preservation collections.
+  Authentic Memory Hashing Tool (formerly GAMI Hash) creates SHA-256 CSV manifests for preservation collections.
   It runs locally, reads source folders without modifying them, and writes
   one CSV manifest plus safety sidecars for resumable runs.
 vendor: Authentic Memory

@@ -67,7 +67,7 @@ public partial class MainWindow : Window
         }
         catch (Exception error)
         {
-            MessageBox.Show(this, error.Message, "GAMI Hash could not start", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, error.Message, "The Hashing Tool could not start", MessageBoxButton.OK, MessageBoxImage.Error);
             Close();
         }
     }
@@ -86,7 +86,7 @@ public partial class MainWindow : Window
     {
         if (_engine is null)
         {
-            MessageBox.Show(this, "The GAMI Hash engine is unavailable.", "GAMI Hash", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, "The hashing engine is unavailable.", "Authentic Memory Hashing Tool", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
         var trimmedRoot = _root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -97,7 +97,7 @@ public partial class MainWindow : Window
         if (baseName.Length > 60) baseName = baseName[..60];
         var picker = new SaveFileDialog
         {
-            Title = "Save the GAMI hash manifest",
+            Title = "Save the result file",
             Filter = "CSV manifest (*.csv)|*.csv",
             DefaultExt = ".csv",
             AddExtension = true,
@@ -250,16 +250,19 @@ public partial class MainWindow : Window
         ResultWarning.Visibility = Visibility.Collapsed;
         ResultInstruction.Visibility = result.Canceled ? Visibility.Collapsed : Visibility.Visible;
         ResultHomeButton.Content = "Close";
-        ResultIconCircle.Background = result.Canceled ? (System.Windows.Media.Brush)FindResource("Surface2") : (System.Windows.Media.Brush)FindResource("GreenBg");
-        ResultIcon.Foreground = result.Canceled ? (System.Windows.Media.Brush)FindResource("InkFaint") : (System.Windows.Media.Brush)FindResource("Green");
-        ResultIcon.Text = result.Canceled ? "Ⅱ" : "✓";
-        ResultTitle.Text = result.Canceled ? "Stopped. Nothing is lost." : "Done";
+        var issues = result.FilesFailed + result.Warnings;
+        var warning = !result.Canceled && issues > 0;
+        // Confirmed: light blue with a petrol tick. Files missing: coral, as the
+        // warning card below. Stopped: quiet grey.
+        ResultIconCircle.Background = (System.Windows.Media.Brush)FindResource(result.Canceled ? "RuleSoft" : warning ? "AccentBg" : "Tint");
+        ResultIcon.Foreground = (System.Windows.Media.Brush)FindResource(result.Canceled ? "InkSoft" : warning ? "AccentStrong" : "Brand");
+        ResultIcon.Text = result.Canceled ? "Ⅱ" : warning ? "!" : "✓";
+        Brand.SetHeading(ResultTitle, result.Canceled ? "Stopped. Nothing is lost." : "Done.");
         ResultSummary.Text = result.Canceled
             ? "Your progress is saved. Continue now, or close the program and continue another day: the next start will offer to pick up where you stopped."
             : $"{result.FilesHashed + result.FilesResumed:N0} files ({FormatBytes(result.BytesTotal)}) were recorded.";
         ResultOutput.Text = result.Output;
-        var issues = result.FilesFailed + result.Warnings;
-        if (!result.Canceled && issues > 0)
+        if (warning)
         {
             ResultWarning.Visibility = Visibility.Visible;
             var detail = string.IsNullOrWhiteSpace(result.ErrorLog)
@@ -360,7 +363,7 @@ public partial class MainWindow : Window
         _elapsedTimer.Stop();
         ProgressView.Visibility = Visibility.Collapsed;
         ResultView.Visibility = Visibility.Visible;
-        ResultTitle.Text = "The run could not continue";
+        Brand.SetHeading(ResultTitle, "The run could not continue.");
         ResultSummary.Text = message;
         ResultOutputCard.Visibility = Visibility.Collapsed;
         ResultWarning.Visibility = Visibility.Collapsed;
@@ -368,8 +371,8 @@ public partial class MainWindow : Window
         OpenFolderButton.Visibility = Visibility.Collapsed;
         ResultHomeButton.Content = "Back to start";
         ResultInstruction.Visibility = Visibility.Collapsed;
-        ResultIconCircle.Background = (System.Windows.Media.Brush)FindResource("RedBg");
-        ResultIcon.Foreground = (System.Windows.Media.Brush)FindResource("Red");
+        ResultIconCircle.Background = (System.Windows.Media.Brush)FindResource("DangerBg");
+        ResultIcon.Foreground = (System.Windows.Media.Brush)FindResource("Danger");
         ResultIcon.Text = "!";
     }
 

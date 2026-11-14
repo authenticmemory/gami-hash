@@ -44,8 +44,8 @@ VIAddVersionKey "FileDescription" "${PRODUCT_NAME} Installer"
 VIAddVersionKey "FileVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 Authentic Memory"
-!define MUI_ICON "..\..\windows\GamiHash.Windows\Assets\gami-logo.ico"
-!define MUI_UNICON "..\..\windows\GamiHash.Windows\Assets\gami-logo.ico"
+!define MUI_ICON "..\..\windows\GamiHash.Windows\Assets\authentic-memory.ico"
+!define MUI_UNICON "..\..\windows\GamiHash.Windows\Assets\authentic-memory.ico"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${PRODUCT_EXE}"
 !define MUI_FINISHPAGE_RUN_TEXT "Run Authentic Memory Hashing Tool now"
@@ -138,7 +138,7 @@ FunctionEnd
 # uses the application's normal shutdown path, which cancels an active hash and
 # waits for its checkpoint before the process exits.
 Function CloseRunningApplication
-  DetailPrint "Closing the running GAMI Hash application..."
+  DetailPrint "Closing the running ${PRODUCT_NAME}..."
   nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -Command "Get-Process -Name $\'GamiHash$\' -ErrorAction SilentlyContinue | ForEach-Object { [void]$$_.CloseMainWindow(); if (-not $$_.WaitForExit(15000)) { exit 25 } }"'
   Pop $0
   Pop $1
@@ -147,7 +147,7 @@ Function CloseRunningApplication
   Sleep 500
   Return
 timeout:
-  MessageBox MB_OK|MB_ICONSTOP "GAMI Hash is still running. Close it, then run this installer again. Your interrupted progress will be preserved."
+  MessageBox MB_OK|MB_ICONSTOP "${PRODUCT_NAME} is still running. Close it, then run this installer again. Your interrupted progress will be preserved."
   Abort
 FunctionEnd
 
@@ -156,7 +156,7 @@ Function CheckWorkerNotRunning
   Pop $0
   Pop $1
   StrCmp $0 24 0 done
-  MessageBox MB_OK|MB_ICONSTOP "A GAMI Hash command-line or hashing process is still running. Let it finish or stop it, close Authentic Memory Hashing Tool, then run this installer again. Interrupted progress will be preserved."
+  MessageBox MB_OK|MB_ICONSTOP "A command-line or hashing process of ${PRODUCT_NAME} is still running. Let it finish or stop it, close ${PRODUCT_NAME}, then run this installer again. Interrupted progress will be preserved."
   Abort
 done:
 FunctionEnd
@@ -166,7 +166,7 @@ Function CheckConflictingMsix
   Pop $0
   Pop $1
   StrCmp $0 23 0 done
-  MessageBox MB_OK|MB_ICONSTOP "A packaged GAMI Hash release is installed for this Windows account. Uninstall GAMI Hash from Windows Settings > Apps > Installed apps, then run this installer again. Your manifests outside the application remain untouched."
+  MessageBox MB_OK|MB_ICONSTOP "A packaged release of ${PRODUCT_NAME} (formerly GAMI Hash) is installed for this Windows account. Uninstall it from Windows Settings > Apps > Installed apps, then run this installer again. Your manifests outside the application remain untouched."
   Abort
 done:
 FunctionEnd
@@ -184,7 +184,7 @@ cleanup:
   Delete "$SMPROGRAMS\Authentic Memory\GAMI Hash.lnk"
 FunctionEnd
 
-Section "GAMI Hash application" SEC_APP
+Section "${PRODUCT_NAME}" SEC_APP
   SectionIn RO
   Call CheckConflictingMsix
   Call CloseRunningApplication
@@ -250,8 +250,8 @@ cliSelected:
 SectionEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Install the GAMI Hash desktop application and hashing engine."
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Create a GAMI Hash shortcut on the desktop."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Install the ${PRODUCT_NAME} desktop application and hashing engine."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Create a ${PRODUCT_NAME} shortcut on the desktop."
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_CLI} "Install gami-hash.exe and add its folder to your user PATH."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
