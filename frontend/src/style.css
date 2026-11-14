@@ -10,7 +10,6 @@
 
 :root {
   --bg: #FFFFFF;
-  --sand-faint: #FAF7F1;
   --ink: #0E1712;
   --ink-soft: #34424A;
   --ink-faint: #56606A;
@@ -166,18 +165,18 @@ main {
   letter-spacing: 0.12em; text-transform: uppercase;
 }
 
-/* Paths: mono on the light sand of the brand's code blocks, hairline border. */
+/* Paths: mono on white, set off by the hairline only. */
 .path-card {
   display: grid; gap: 6px; margin: 18px 0; padding: 14px 16px;
   overflow: hidden;
   border: 1px solid var(--rule); border-radius: 10px;
-  background: var(--sand-faint);
+  background: var(--bg);
 }
 .path-card.compact { margin: 22px 0 0; }
 .path-card code, .review-list dd { overflow-wrap: anywhere; color: var(--ink-soft); font-family: var(--mono); font-size: 12.5px; line-height: 1.6; }
 
 .review-list { display: grid; gap: 1px; overflow: hidden; margin: 22px 0; border: 1px solid var(--rule); border-radius: 12px; background: var(--rule); }
-.review-list div { padding: 14px 16px; background: var(--sand-faint); }
+.review-list div { padding: 14px 16px; background: var(--bg); }
 .review-list dt { margin-bottom: 5px; }
 .review-list dd { margin: 0; color: var(--ink); }
 

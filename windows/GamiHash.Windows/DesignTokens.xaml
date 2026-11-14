@@ -5,7 +5,6 @@
        text, petrol for actions, light blue for what is confirmed, coral for the
        heading's full stop and for warnings. -->
   <Color x:Key="BgColor">#FFFFFF</Color>
-  <Color x:Key="SandFaintColor">#FAF7F1</Color>
   <Color x:Key="InkColor">#0E1712</Color>
   <Color x:Key="InkSoftColor">#34424A</Color>
   <Color x:Key="InkFaintColor">#56606A</Color>
@@ -26,7 +25,6 @@
   <Color x:Key="DangerBorderColor">#F5D9DF</Color>
 
   <SolidColorBrush x:Key="Bg" Color="{StaticResource BgColor}" />
-  <SolidColorBrush x:Key="SandFaint" Color="{StaticResource SandFaintColor}" />
   <SolidColorBrush x:Key="Ink" Color="{StaticResource InkColor}" />
   <SolidColorBrush x:Key="InkSoft" Color="{StaticResource InkSoftColor}" />
   <SolidColorBrush x:Key="InkFaint" Color="{StaticResource InkFaintColor}" />
@@ -114,13 +112,13 @@
     <Setter Property="Background" Value="{StaticResource Bg}" />
   </Style>
 
-  <!-- Paths: mono on the light sand of the brand's code blocks. -->
+  <!-- Paths: mono on white, set off by the hairline only. -->
   <Style x:Key="PathCard" TargetType="Border">
     <Setter Property="Padding" Value="16,14" />
     <Setter Property="BorderBrush" Value="{StaticResource Rule}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Background" Value="{StaticResource SandFaint}" />
+    <Setter Property="Background" Value="{StaticResource Bg}" />
   </Style>
 
   <Style x:Key="WarningCard" TargetType="Border">
