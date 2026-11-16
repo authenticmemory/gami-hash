@@ -87,7 +87,7 @@ func (t T) ResumeDifferentRoot(oldRoot string) string {
 func (t T) OverwriteBtn() string { return "Overwrite" }
 
 func (t T) OverwriteExisting() string {
-	return "The chosen filename already exists. GAMI Hash will not replace it. Please choose a new filename."
+	return "The chosen filename already exists. The Hashing Tool will not replace it. Please choose a new filename."
 }
 
 func (t T) ConfirmStart(root, output string) string {

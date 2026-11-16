@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>GamiHash</AssemblyName>
     <RootNamespace>GamiHash.Windows</RootNamespace>
-    <ApplicationIcon>Assets\gami-logo.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\authentic-memory.ico</ApplicationIcon>
     <AssemblyTitle>Authentic Memory Hashing Tool</AssemblyTitle>
     <Product>Authentic Memory Hashing Tool</Product>
     <Company>Authentic Memory</Company>
@@ -15,6 +15,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Assets\Fonts\*.ttf" />
-    <Resource Include="Assets\gami-logo.ico" />
+    <Resource Include="Assets\authentic-memory.ico" />
   </ItemGroup>
 </Project>
