@@ -1,6 +1,6 @@
 module github.com/authenticmemory/gami-hash
 
-go 1.27.2
+go 1.27.4
 
 require (
 	github.com/ncruces/zenity v0.10.15

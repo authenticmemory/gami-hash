@@ -58,7 +58,7 @@ See [the archivist guide](docs/ARCHIVIST-GUIDE.md), [the IT summary](docs/WHAT-T
 
 ## Build and test
 
-Requirements are Go 1.27.2, .NET 10 SDK, NSIS, and Node.js 24 for the Wails platforms.
+Requirements are Go 1.27.4, .NET 10 SDK, NSIS, and Node.js 24 for the Wails platforms.
 
 ```powershell
 go test ./...
