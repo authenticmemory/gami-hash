@@ -28,7 +28,7 @@ Test-Expected ($entry.EstimatedSize -gt 0) 'Installed size is missing.'
 Test-Expected ($entry.InstallDate -match '^\d{8}$') 'Install date is missing or invalid.'
 if ($ExpectedVersion) { Test-Expected ($entry.DisplayVersion -eq "$ExpectedVersion.0") 'Installed version does not match.' }
 
-$gui = Join-Path $install 'GamiHash.exe'
+$gui = Join-Path $install 'Authentic Memory Hashing Tool.exe'
 $worker = Join-Path $install 'GamiHashEngine.exe'
 $cli = Join-Path $install 'gami-hash.exe'
 $uninstaller = Join-Path $install 'Uninstall.exe'

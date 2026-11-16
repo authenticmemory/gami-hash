@@ -6,7 +6,7 @@ Production version **1.6.0** and accepted test candidate **1.6.1** use a native 
 
 Installed programs:
 
-- `GamiHash.exe`: native GUI
+- `Authentic Memory Hashing Tool.exe`: native GUI
 - `GamiHashEngine.exe`: private worker
 - `gami-hash.exe`: optional CLI copy of the worker
 - `Uninstall.exe`: per-user uninstaller; separately signed in the v1.6.1 candidate

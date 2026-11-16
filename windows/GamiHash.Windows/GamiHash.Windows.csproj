@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>GamiHash</AssemblyName>
+    <AssemblyName>Authentic Memory Hashing Tool</AssemblyName>
     <RootNamespace>GamiHash.Windows</RootNamespace>
     <ApplicationIcon>Assets\authentic-memory.ico</ApplicationIcon>
     <AssemblyTitle>Authentic Memory Hashing Tool</AssemblyTitle>

@@ -2,7 +2,7 @@
 
 Authentic Memory Hashing Tool creates a local CSV inventory of a collection. It reads every eligible file under a selected folder, calculates its SHA-256 checksum, and writes one deterministic manifest. It does not upload files or manifests.
 
-The current production release is **v1.6.0**. Windows and Ubuntu 26.04.1 acceptance passed for the `test-v1.6.1` candidates, but version 1.6.1 remains a prerelease pending a separate production decision. macOS v1.6.1 evidence is partial and is not completed acceptance.
+The current production release is **v1.6.0**. Windows and Ubuntu 26.04.1 acceptance passed for the `test-v1.6.1` candidates, but version 1.6.1 remains a prerelease pending a separate production decision. macOS functional acceptance passed for the same candidate commit, but that ZIP reports `gami-hash dev`; an exact-version, Developer ID signed and notarized package still requires a focused retest.
 
 ## Platforms
 
@@ -12,7 +12,7 @@ The current production release is **v1.6.0**. Windows and Ubuntu 26.04.1 accepta
 | Linux x64 | Wails GUI and portable CLI | `.deb`, `.rpm`, GUI tarball, CLI tarball |
 | macOS | Wails GUI | Build workflow exists; public signing and notarization are not complete |
 
-Windows does not package or launch Wails, WebView2, AppContainer, MSIX, a storage broker, an updater, or a network client. The installed process tree is `GamiHash.exe` plus its private `GamiHashEngine.exe` worker.
+Windows does not package or launch Wails, WebView2, AppContainer, MSIX, a storage broker, an updater, or a network client. The installed process tree is `Authentic Memory Hashing Tool.exe` plus its private `GamiHashEngine.exe` worker.
 
 ## Manifest
 
@@ -67,7 +67,7 @@ dotnet build .\windows\GamiHash.Windows\GamiHash.Windows.csproj -c Release
 .\build-windows-installer.ps1 -Version v1.6.0
 ```
 
-Windows CI signs `GamiHash.exe`, `GamiHashEngine.exe`, `Uninstall.exe`, and the final installer, then verifies signatures and timestamps. Stable tags promote the exact Windows candidate bytes that passed acceptance instead of rebuilding them. See [VERIFY.md](VERIFY.md), [Windows signing](docs/windows-signing.md), and [release publishing](docs/RELEASE-DOWNLOADS.md).
+Windows CI signs `Authentic Memory Hashing Tool.exe`, `GamiHashEngine.exe`, `Uninstall.exe`, and the final installer, then verifies signatures and timestamps. Stable tags promote the exact Windows candidate bytes that passed acceptance instead of rebuilding them. See [VERIFY.md](VERIFY.md), [Windows signing](docs/windows-signing.md), and [release publishing](docs/RELEASE-DOWNLOADS.md).
 
 ## Release
 

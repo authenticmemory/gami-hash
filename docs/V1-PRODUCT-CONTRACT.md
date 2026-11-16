@@ -55,7 +55,7 @@ Failure to create or persist required output or error records is fatal.
 
 ## Privacy and network boundary
 
-The product has no account, upload, telemetry, remote help, automatic update, or background service. Windows uses no browser runtime. Exact-candidate runtime acceptance on Windows v1.6.1 and Ubuntu 26.04.1 observed no external network connection from GAMI-owned processes in the documented scenarios. The current macOS evidence is incomplete because it did not cover every WebKit helper process. Network shares and cloud providers can communicate outside the application process tree to satisfy filesystem access.
+The product has no account, upload, telemetry, remote help, automatic update, or background service. Windows uses no browser runtime. Runtime acceptance on Windows v1.6.1, Ubuntu 26.04.1, and the macOS candidate commit observed no external network connection from GAMI-owned processes in the documented scenarios. The macOS run included the main process and separately named WebKit helpers, but its ZIP reports `gami-hash dev` and therefore does not establish exact v1.6.1 package identity. Network shares and cloud providers can communicate outside the application process tree to satisfy filesystem access.
 
 The product does not claim an OS-enforced inability to open a network connection. Any future network feature requires a new contract and security review.
 

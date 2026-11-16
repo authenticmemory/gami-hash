@@ -1,0 +1,36 @@
+{
+  "candidateCommit": "ef89bc7c6fc4bb0c2f3b441112a3ce3e1decc779",
+  "candidateZipSha256": "ca5d5de55b20f1ebbb3a6f6efcf7d44b127113c788e1906202c032381fd9bb6a",
+  "reportedAppVersion": "gami-hash dev",
+  "host": {
+    "provider": "Scaleway",
+    "hardware": "Apple M2 Pro Mac mini",
+    "memoryGb": 16,
+    "os": "macOS Sequoia 15.8.3"
+  },
+  "testedOn": "2026-11-10",
+  "decision": "functional acceptance passed with documented limitations; packaged v1.6.1 identity not accepted",
+  "passed": [
+    "signature-and-launch",
+    "local-gui-hashing",
+    "cancel-resume",
+    "restart-resume",
+    "changed-file",
+    "overwrite-protection",
+    "unreadable-file-reporting",
+    "10000-files",
+    "mounted-apfs-volume",
+    "smb-mounted-folder",
+    "onedrive-cached-file",
+    "onedrive-retry-after-hydration",
+    "observed-active-gui-no-network",
+    "observed-source-no-write"
+  ],
+  "limitations": [
+    "artifact reports gami-hash dev rather than v1.6.1",
+    "first read of an online-only OneDrive file timed out while hydration completed",
+    "completion UI counted total scanned bytes as recorded bytes after a file error",
+    "mounted disk image does not prove physical USB identity or hotplug behavior",
+    "network conclusion is bounded to observed test windows and scenarios"
+  ]
+}

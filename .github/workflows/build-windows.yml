@@ -101,7 +101,7 @@ jobs:
           signing-account-name: authenticmemorysigning
           certificate-profile-name: gami-public-signing
           files: |
-            ${{ github.workspace }}\build\windows-native\payload\GamiHash.exe
+            ${{ github.workspace }}\build\windows-native\payload\Authentic Memory Hashing Tool.exe
             ${{ github.workspace }}\build\windows-native\payload\GamiHashEngine.exe
             ${{ github.workspace }}\build\windows-native\payload\Uninstall.exe
           exclude-environment-credential: true

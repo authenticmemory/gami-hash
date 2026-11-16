@@ -4,7 +4,7 @@ Use this guide with the exact macOS candidate ZIP and its expected SHA-256. Run 
 
 The current macOS build is ad hoc signed and is not notarized. These steps provide functional and runtime evidence, but they do not constitute production signing or Gatekeeper acceptance.
 
-The existing v1.6.1 submission is assessed in [macOS v1.6.1 acceptance status](MACOS-ACCEPTANCE.md). It is incomplete and must not be described as completed acceptance.
+The November 2026 run is assessed in [macOS candidate acceptance](MACOS-ACCEPTANCE.md). Functional testing completed, including the main process and WebKit helper network observation, but the tested ZIP reports `gami-hash dev`. Use this guide for the focused retest of the correctly versioned, Developer ID signed and notarized package.
 
 ## Changes after the first test submission
 

@@ -25,7 +25,8 @@ Unicode true
 !endif
 !define PRODUCT_NAME "Authentic Memory Hashing Tool"
 !define PRODUCT_PUBLISHER "Authentic Memory"
-!define PRODUCT_EXE "GamiHash.exe"
+!define PRODUCT_EXE "Authentic Memory Hashing Tool.exe"
+!define LEGACY_PRODUCT_EXE "GamiHash.exe"
 !define WORKER_EXE "GamiHashEngine.exe"
 !define CLI_EXE "gami-hash.exe"
 !define PATH_SENTINEL ";$INSTDIR;"
@@ -139,7 +140,7 @@ FunctionEnd
 # waits for its checkpoint before the process exits.
 Function CloseRunningApplication
   DetailPrint "Closing the running ${PRODUCT_NAME}..."
-  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -Command "Get-Process -Name $\'GamiHash$\' -ErrorAction SilentlyContinue | ForEach-Object { [void]$$_.CloseMainWindow(); if (-not $$_.WaitForExit(15000)) { exit 25 } }"'
+  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -Command "Get-Process -Name $\'Authentic Memory Hashing Tool$\',$\'GamiHash$\' -ErrorAction SilentlyContinue | ForEach-Object { [void]$$_.CloseMainWindow(); if (-not $$_.WaitForExit(15000)) { exit 25 } }"'
   Pop $0
   Pop $1
   StrCmp $0 25 timeout
@@ -191,6 +192,7 @@ Section "${PRODUCT_NAME}" SEC_APP
   Call CheckWorkerNotRunning
   Call RemoveLegacyExeInstall
   SetOutPath "$INSTDIR"
+  Delete "$INSTDIR\${LEGACY_PRODUCT_EXE}"
   File "${PAYLOAD_DIR}\${PRODUCT_EXE}"
   File "${PAYLOAD_DIR}\${WORKER_EXE}"
   File "/oname=Uninstall.exe" "${PAYLOAD_DIR}\Uninstall.exe"

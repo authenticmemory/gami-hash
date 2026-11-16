@@ -84,7 +84,7 @@ We considered an in-process bridge between .NET and Go, but that would require a
 
 We chose a worker process instead:
 
-- `GamiHash.exe` owns the WPF interface and Windows pickers.
+- `Authentic Memory Hashing Tool.exe` owns the WPF interface and Windows pickers.
 - `GamiHashEngine.exe` owns hashing, CSV creation, safety checks, errors, cancellation, and resume.
 - The two processes exchange small JSON messages over standard input and output.
 
@@ -112,7 +112,7 @@ The obsolete MSIX, AppContainer, storage-broker, WebView2 sandbox, and prototype
 The Windows release now consists of two processes:
 
 ```text
-GamiHash.exe          Native WPF user interface
+Authentic Memory Hashing Tool.exe    Native WPF user interface
     |
     +-- GamiHashEngine.exe --native-ui-worker
                        Existing Go hashing engine

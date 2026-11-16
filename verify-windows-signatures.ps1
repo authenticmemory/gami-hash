@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 $files = @()
 if ($Stage -in @("Payload", "All")) {
-  $files += Join-Path $PSScriptRoot "build/windows-native/payload/GamiHash.exe"
+  $files += Join-Path $PSScriptRoot "build/windows-native/payload/Authentic Memory Hashing Tool.exe"
   $files += Join-Path $PSScriptRoot "build/windows-native/payload/GamiHashEngine.exe"
   $files += Join-Path $PSScriptRoot "build/windows-native/payload/Uninstall.exe"
 }

@@ -1,0 +1,1 @@
+10a6ad2a5a6ac3594d1c929b387d64454b16cff49eb15ec6d5ea63ae19648ef2  macos-acceptance-scaleway-2026-11-10.tar.gz

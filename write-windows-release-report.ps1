@@ -10,7 +10,7 @@ if ($installer.Count -ne 1) { throw "Expected exactly one signed installer; foun
 
 $paths = @(
   $installer[0].FullName,
-  (Join-Path $PSScriptRoot 'build/windows-native/payload/GamiHash.exe'),
+  (Join-Path $PSScriptRoot 'build/windows-native/payload/Authentic Memory Hashing Tool.exe'),
   (Join-Path $PSScriptRoot 'build/windows-native/payload/GamiHashEngine.exe'),
   (Join-Path $PSScriptRoot 'build/windows-native/payload/Uninstall.exe')
 )

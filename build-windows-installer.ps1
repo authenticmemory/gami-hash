@@ -9,6 +9,7 @@ foreach ($part in $numeric.Split('.')) { if ([long]$part -gt 65535) { throw 'Ver
 $project = Join-Path $PSScriptRoot 'windows/GamiHash.Windows/GamiHash.Windows.csproj'
 $payload = Join-Path $PSScriptRoot 'build/windows-native/payload'
 $dist = Join-Path $PSScriptRoot 'build/bin'
+$guiExe = 'Authentic Memory Hashing Tool.exe'
 $installer = Join-Path $dist "gami-hash-windows-$numeric-x64-installer.exe"
 $go = if (Get-Command go -ErrorAction SilentlyContinue) { (Get-Command go).Source } else { 'C:\Program Files\Go\bin\go.exe' }
 $makensis = if (Get-Command makensis -ErrorAction SilentlyContinue) { (Get-Command makensis).Source } else { 'C:\Program Files (x86)\NSIS\makensis.exe' }
@@ -45,7 +46,7 @@ if (-not $PackageOnly) {
     Pop-Location
   }
 }
-foreach ($name in @('GamiHash.exe','GamiHashEngine.exe','Uninstall.exe')) {
+foreach ($name in @($guiExe,'GamiHashEngine.exe','Uninstall.exe')) {
   if (-not (Test-Path -LiteralPath (Join-Path $payload $name))) { throw "Missing payload: $name" }
 }
 $payloadBytes = (Get-ChildItem -LiteralPath $payload -File | Measure-Object -Property Length -Sum).Sum
@@ -54,11 +55,11 @@ $installedSizeKB = [math]::Ceiling(($payloadBytes + $cliBytes) / 1KB)
 Push-Location (Join-Path $PSScriptRoot 'packaging/windows-native')
 try { & $makensis "/DPRODUCT_VERSION=$windowsVersion" "/DVERSION_MAJOR=$($versionParts[0])" "/DVERSION_MINOR=$($versionParts[1])" "/DINSTALL_DATE=$installDate" "/DINSTALLED_SIZE_KB=$installedSizeKB" "/DPAYLOAD_DIR=$payload" "/DOUTPUT_FILE=$installer" 'installer.nsi' } finally { Pop-Location }
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $installer)) { throw 'NSIS build failed.' }
-$guiVersion = (Get-Item -LiteralPath (Join-Path $payload 'GamiHash.exe')).VersionInfo
+$guiVersion = (Get-Item -LiteralPath (Join-Path $payload $guiExe)).VersionInfo
 if ($guiVersion.ProductName -ne 'Authentic Memory Hashing Tool') { throw "Incorrect GUI product metadata: $($guiVersion.ProductName)" }
 $installerVersion = (Get-Item -LiteralPath $installer).VersionInfo
 if ($installerVersion.ProductName -ne 'Authentic Memory Hashing Tool') { throw "Incorrect installer product metadata: $($installerVersion.ProductName)" }
-foreach ($file in @((Join-Path $payload 'GamiHash.exe'),(Join-Path $payload 'GamiHashEngine.exe'),$installer)) {
+foreach ($file in @((Join-Path $payload $guiExe),(Join-Path $payload 'GamiHashEngine.exe'),$installer)) {
   [pscustomobject]@{ Path=$file; Bytes=(Get-Item $file).Length; SHA256=(Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() }
 }
 

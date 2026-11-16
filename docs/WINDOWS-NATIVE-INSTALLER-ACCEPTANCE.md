@@ -1,6 +1,6 @@
 ﻿# Windows native installer acceptance
 
-The production Windows installer is per-user, x64, self-contained, and named **Authentic Memory Hashing Tool**. Stable executable names are `GamiHash.exe`, `GamiHashEngine.exe`, and optional `gami-hash.exe`.
+The production Windows installer is per-user, x64, self-contained, and named **Authentic Memory Hashing Tool**. Stable executable names are `Authentic Memory Hashing Tool.exe`, `GamiHashEngine.exe`, and optional `gami-hash.exe`.
 
 ## Installer requirements
 

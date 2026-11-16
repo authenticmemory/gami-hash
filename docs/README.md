@@ -25,10 +25,10 @@
 ## macOS
 
 - [macOS acceptance tester guide](MACOS-ACCEPTANCE-TESTER-GUIDE.md)
-- [macOS v1.6.1 acceptance status](MACOS-ACCEPTANCE.md)
+- [macOS candidate acceptance results](MACOS-ACCEPTANCE.md)
 
 ## Release operations
 
 - [Downloads and website deployment](RELEASE-DOWNLOADS.md)
 
-`docs/evidence/2026-10-21-windows-native-signed-1.6.1` retains the exact v1.6.1 standard-user acceptance summaries, functional manifests, and compressed raw captures. `docs/evidence/windows-native-architecture-acceptance` retains the earlier architecture-level summaries.
+`docs/evidence/2026-10-21-windows-native-signed-1.6.1` retains the exact v1.6.1 standard-user acceptance summaries, functional manifests, and compressed raw captures. `docs/evidence/windows-native-architecture-acceptance` retains the earlier architecture-level summaries. `docs/evidence/2026-11-10-macos-scaleway-candidate` indexes the macOS functional acceptance evidence and its exact artifact and archive checksums.
